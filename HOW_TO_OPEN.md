@@ -38,7 +38,7 @@ If you opened an earlier download, open this one fresh: the build re-runs by its
 3. **The saloon:**
    - Play Nemo's **organ** (E at the keyboard): Bach's Toccata in D minor.
    - Press the small **ceiling switch** on the brass plate by the library door, then **throw the lever** beside it: the luminous ceiling goes dark and the iron panels slide off the crystal windows onto the live sea, fish and medusae drifting past in the Nautilus' light. That's the book's order (I.XIV).
-   - Sixteen canvases by the masters Verne names (Met open-access scans) hang on the walls; the pearls and shells in the cases can be examined.
+   - Twenty-four canvases by the masters Verne names (Met open-access scans) hang on the walls; the pearls and shells in the cases can be examined.
 4. **Library:** twelve thousand volumes, and a cigar from the bronze brazier.
 5. **Aft**, down the port corridor: Ned and Conseil's cabin (Ned's harpoon), the kitchen with its still, the bath-room, then the **robing-room**.
 6. **Dress** at the bench, one piece at a time in the book's order. Each piece leaves the bench; once the helmet is on you see through its glass port, and your breath fogs it.

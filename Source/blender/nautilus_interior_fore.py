@@ -563,6 +563,9 @@ def frames(bm):
                 walls.append(('y', yw, d, xc, 1.95, 0.95 + rnd.random() * 0.25, 0.75 + rnd.random() * 0.2))
                 walls.append(('y', yw, d, xc + rnd.uniform(-0.15, 0.15), 3.15, 0.7 + rnd.random() * 0.2, 0.55 + rnd.random() * 0.1))
         walls.append(('y', yw, d, WIN['xc'], 3.45, 1.0, 0.45))
+        # run 2: the salon hang is dense in im022: smaller canvases into the corners
+        for (xc, zc, w, h) in ((10.55, 2.0, 0.55, 0.7), (10.55, 3.1, 0.5, 0.5), (19.15, 2.0, 0.6, 0.75), (19.15, 3.1, 0.55, 0.5)):
+            walls.append(('y', yw, d, xc, zc, w, h))
     # aft wall pictures
     for (yc, zc, w, h) in [(1.5, 2.0, 0.7, 0.6), (2.55, 1.95, 0.55, 0.7), (1.9, 3.15, 1.3, 0.8), (0.0, 3.3, 1.0, 0.6), (-1.6, 3.2, 0.9, 0.6), (-2.6, 3.25, 0.6, 0.5)]:
         walls.append(('x', S['x0'], 1, yc, zc, w, h))
