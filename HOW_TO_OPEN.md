@@ -1,6 +1,8 @@
 # How to open the game
 
-The Unity project builds itself the first time you open it. It is early: the Nautilus and the two excursions are walkable **greybox** at the book's true dimensions, with working controls. The real models, the underwater look and the music arrive milestone by milestone (see `PROGRESS.md`).
+The Unity project builds itself the first time you open it. The **Nautilus is modelled inside and out** (Blender, at the book's dimensions); the two excursions are still greybox ground with the **first version of the underwater look**. Creatures, divers, the excursions' art and the music arrive milestone by milestone (see `PROGRESS.md`).
+
+If you opened an earlier download, open this one fresh: the build re-runs by itself once (or use **Verne → Build Everything**).
 
 1. **Download.** Get the branch as a ZIP: https://github.com/PKrshnaChaitanya1879/claude-code-tests/archive/refs/heads/twenty-thousand-leagues.zip
 2. **Unzip.** Unzip it somewhere with a short path, e.g. `C:\Games\TwentyThousandLeagues`. Long paths break Unity.
@@ -30,16 +32,21 @@ The Unity project builds itself the first time you open it. It is early: the Nau
 
 ## What to try now
 
-1. In **Aronnax's cabin**, read Captain Nemo's note on the dressing-table.
-2. Walk aft:
-   - Nemo's room has the instrument wall.
-   - In the **saloon**, throw the brass lever by the port divan and the iron panels slide off the crystal windows.
-   - Then go through the library, the dining room and the central staircase.
-3. Go down the port corridor to the **robing room** and put on the diving dress (four steps, in the book's order). You will feel the lead soles.
-4. In the **flooding cell**:
-   1. Close the inner door.
-   2. Hold the sea tap: hear it hiss and watch the gauge climb to the outside pressure.
+1. In **Aronnax's cabin**, read Captain Nemo's note on the writing-table.
+2. **Nemo's room:** look at the instrument wall (E to read what Nemo says of it). The 24-hour electric clock keeps your own time.
+3. **The saloon:**
+   - Play Nemo's **organ** (E at the keyboard): Bach's Toccata in D minor.
+   - Press the small **ceiling switch** on the brass plate by the library door, then **throw the lever** beside it: the luminous ceiling goes dark and the iron panels slide off the crystal windows onto the live sea, fish and medusae drifting past in the Nautilus' light. That's the book's order (I.XIV).
+   - Thirty Old Masters hang on the walls; the pearls and shells in the cases can be examined.
+4. **Library:** twelve thousand volumes, and a cigar from the bronze brazier.
+5. **Aft**, down the port corridor: Ned and Conseil's cabin (Ned's harpoon), the kitchen with its still, the bath-room, then the **robing-room**.
+6. **Dress** at the bench, one piece at a time in the book's order. Each piece leaves the bench; once the helmet is on you see through its glass port, and your breath fogs it.
+7. Through the small door beside the cell: the **engine-room**, after the 1871 engraving, with Bunsen's piles and the great wheel turning on the screw's axle.
+8. **The flooding cell** (Iron Lung style, everything by hand):
+   1. Close the inner door, then **turn the stopper-plate wheel** on it until the plates are home.
+   2. Hold the sea tap: hiss, the cold rising, the gauge climbing to the outside pressure.
    3. When the cell is full, open the outer door and step out onto the sea floor.
-5. The title menu can also jump straight to either excursion.
+9. After the first excursion, the Nautilus prepares the second: midnight, no lamps, an iron-pointed stick, and the door opens 150 fathoms down.
+10. The title menu can also jump straight to either excursion.
 
 **Settings:** Esc → Settings has quality (Light / Balanced / Full), 30/60 fps cap, field of view, sensitivity, invert look, head movement, subtitles and volumes. On your laptop the game starts on **Light** automatically.
