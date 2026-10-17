@@ -593,6 +593,47 @@ namespace Verne.EditorTools
         }
 
         /// <summary>The M3 water for a scene: its colour script (see Source/INSIDE_NOTES.md).</summary>
+        static Material LitMat(string name, Color c, float metal, float smooth, Color emission = default)
+        {
+            string path = VerneBootstrap.Generated + "/Materials/M_" + name + ".mat";
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            if (m == null) { m = new Material(lit); AssetDatabase.CreateAsset(m, path); }
+            m.shader = lit;
+            m.SetColor("_BaseColor", c); m.SetFloat("_Metallic", metal); m.SetFloat("_Smoothness", smooth);
+            if (emission.maxColorComponent > 0f) { m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", emission); }
+            m.enableInstancing = true;
+            EditorUtility.SetDirty(m);
+            return m;
+        }
+
+        /// <summary>M4 fauna, first pass: the schools of I.XVI, the medusae "of opal or rose-pink, escalloped with a band of blue",
+        /// and two tintoreas passing in the dark of the gallery.</summary>
+        static void CrespoFauna(Transform root)
+        {
+            var fauna = new GameObject("Fauna of Crespo").transform; fauna.SetParent(root, false);
+            Vector3 W(float x, float h, float z) => new Vector3(x, GroundAt(new Vector3(x, 0, z)) + h, z);
+            FishSchool School(string name, FishSchool.Kind kind, Material m, int n, float size, float speed, float spread, params Vector3[] wps)
+            {
+                var go = new GameObject(name); go.transform.SetParent(fauna, false); go.transform.position = wps[0];
+                var f = go.AddComponent<FishSchool>();
+                f.kind = kind; f.material = m; f.count = n; f.size = size; f.speed = speed; f.spread = spread; f.waypoints = wps;
+                return f;
+            }
+            var silver = LitMat("Fish_Silver", new Color(0.72f, 0.78f, 0.82f), 0.55f, 0.8f);
+            var gold = LitMat("Fish_Gold", new Color(0.95f, 0.72f, 0.12f), 0.2f, 0.6f);
+            var blue = LitMat("Fish_Blue", new Color(0.18f, 0.32f, 0.78f), 0.3f, 0.7f);
+            var red = LitMat("Fish_Red", new Color(0.88f, 0.22f, 0.1f), 0.1f, 0.6f);
+            var shark = LitMat("Fish_Tintorea", new Color(0.22f, 0.24f, 0.27f), 0.1f, 0.4f);
+            var medusa = LitMat("Medusa", new Color(0.95f, 0.62f, 0.72f), 0f, 0.85f, new Color(0.08f, 0.14f, 0.35f));
+            School("Little fishes (plain)", FishSchool.Kind.Fish, silver, 36, 0.2f, 1.4f, 2.6f, W(-8, 2, 10), W(8, 3, 18), W(5, 2.2f, 30), W(-6, 3, 24));
+            School("Fish-flies (prairie)", FishSchool.Kind.Fish, blue, 24, 0.16f, 2.2f, 1.8f, W(-3, 1.2f, 32), W(6, 1.5f, 40), W(-5, 1.2f, 46), W(2, 1.8f, 36));
+            School("Lepisacanthi (forest)", FishSchool.Kind.Fish, gold, 18, 0.26f, 1.0f, 2.0f, W(0, 2.5f, 50), W(9, 3, 62), W(-8, 3.5f, 74), W(3, 2.5f, 88));
+            School("Red fish (gallery)", FishSchool.Kind.Fish, red, 16, 0.22f, 0.9f, 1.6f, W(-3, 1.4f, 96), W(4, 1.6f, 100), W(-2, 1.2f, 104), W(5, 1.8f, 98));
+            School("Medusae", FishSchool.Kind.Medusa, medusa, 9, 0.7f, 0.25f, 9f, W(0, 5.5f, 12), W(6, 6f, 26), W(-5, 5f, 40));
+            School("Tintoreas (sharks in the dark)", FishSchool.Kind.BigFish, shark, 2, 2.4f, 1.6f, 6f, W(-18, 2.5f, 82), W(16, 3.5f, 96), W(-14, 3f, 112), W(12, 2.5f, 74));
+        }
+
         static Material SnowMaterial()
         {
             string path = VerneBootstrap.Generated + "/Materials/M_MarineSnow.mat";
@@ -907,6 +948,7 @@ namespace Verne.EditorTools
                 Box("Coral cross arms", glade, new Vector3(gp.x, GroundAt(gp) + 2.2f, gp.z), new Vector3(1.3f, 0.2f, 0.22f), "CoralRed");
             }
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
+            CrespoFauna(root);
             var sp = new Vector3(0, 0, 0);
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
             Water("Mission1");

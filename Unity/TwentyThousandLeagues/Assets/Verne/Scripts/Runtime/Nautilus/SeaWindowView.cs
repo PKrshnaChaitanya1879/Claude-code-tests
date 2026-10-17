@@ -37,6 +37,9 @@ namespace Verne
         }
         readonly List<School> m_Schools = new List<School>();
         static Mesh s_Fish, s_Medusa;
+        /// <summary>The shared low-poly fish and medusa meshes (also used by the excursions' FishSchool).</summary>
+        public static Mesh FishMesh => s_Fish != null ? s_Fish : (s_Fish = BuildFish());
+        public static Mesh MedusaMesh => s_Medusa != null ? s_Medusa : (s_Medusa = BuildMedusa());
 
         static readonly int ID_Sigma = Shader.PropertyToID("_VerneSigma"), ID_Water = Shader.PropertyToID("_VerneWater"),
             ID_Ambient = Shader.PropertyToID("_VerneAmbient"), ID_Mirror = Shader.PropertyToID("_VerneLampMirror"), ID_LampPos = Shader.PropertyToID("_VerneLampPos"), ID_LampColor = Shader.PropertyToID("_VerneLampColor");
