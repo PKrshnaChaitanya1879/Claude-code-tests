@@ -949,6 +949,25 @@ namespace Verne.EditorTools
             }
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             CrespoFauna(root);
+            // Captain Nemo leads, a crewman follows him (I.XV); the lamps are lit where the coral gallery darkens
+            Vector3 G(float x, float z) => new Vector3(x, GroundAt(new Vector3(x, 0, z)), z);
+            var nemo = Divers.Build(root, "Captain Nemo (diver)", G(0.6f, 5f), 0f, true, false, true);
+            if (nemo != null)
+            {
+                var guide = nemo.gameObject.AddComponent<DiverGuide>();
+                guide.waypoints = new[] { G(0.3f, 14f), G(0f, 30f), G(0f, 46f), G(0.2f, 70f), G(0f, 95f), G(0f, 103f), G(-0.5f, 106f) };
+                guide.lamp = nemo.GetComponentInChildren<Light>(true); guide.lampOnAfterZ = 92f;
+                guide.lampLine = "“The light from our lamps produced sometimes magical effects, following the rough outlines of the natural arches and pendants disposed like lustres.” (L: your lamp)";
+                guide.arrivedLine = "“Captain Nemo had stopped. We occupied, in this place, the centre of a vast glade surrounded by the lofty foliage of the submarine forest.”";
+                var crew = Divers.Build(root, "A crewman (diver)", G(-1.4f, 3.5f), 0f, true, false, false);
+                if (crew != null)
+                {
+                    var g2 = crew.gameObject.AddComponent<DiverGuide>();
+                    g2.waypoints = new[] { G(-1.1f, 12f), G(-0.9f, 28f), G(-0.9f, 44f), G(-1.0f, 68f), G(-1.0f, 93f), G(-1.0f, 101f), G(-2.0f, 105f) };
+                    g2.lamp = crew.GetComponentInChildren<Light>(true); g2.lampOnAfterZ = 91f; g2.pace = 0.72f;
+                }
+            }
+            else Notes.Add("Diver parts FBX missing: no divers in Mission I.");
             var sp = new Vector3(0, 0, 0);
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
             Water("Mission1");
@@ -975,6 +994,16 @@ namespace Verne.EditorTools
             l.type = LightType.Point; l.color = new Color(1f, 0.38f, 0.16f); l.intensity = 30f; l.range = 400f; l.shadows = LightShadows.None;
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);
+            // Captain Nemo with his iron-pointed stick, no lamps ("They will be useless"), leading toward the red glow
+            Vector3 G2(float x, float z) => new Vector3(x, GroundAt(new Vector3(x, 0, z)), z);
+            var nemo2 = Divers.Build(root, "Captain Nemo (diver)", G2(0.8f, 5f), 0f, false, true, false);
+            if (nemo2 != null)
+            {
+                var guide = nemo2.gameObject.AddComponent<DiverGuide>();
+                guide.waypoints = new[] { G2(0.5f, 20f), G2(0f, 45f), G2(0.5f, 70f), G2(0f, 90f), G2(0f, 108f), G2(0f, 118f) };
+                guide.waitDistance = 10f; guide.pace = 0.7f;
+                guide.arrivedLine = "“We had now arrived on the first platform, where other surprises awaited me.”";
+            }
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
             Water("Mission2", l);
             GlobalVolume("Mission2");
