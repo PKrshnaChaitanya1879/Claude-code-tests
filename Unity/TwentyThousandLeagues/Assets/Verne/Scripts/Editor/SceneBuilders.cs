@@ -442,6 +442,7 @@ namespace Verne.EditorTools
                 ("Manometer (depth)", 0.2f, 1.75f, 0.2f, 1.2f), ("Electric clock (24 h)", 0.2f, 2.25f, 0.2f, 5f),
                 ("Speed", -0.45f, 1.85f, 0.13f, 3f), ("Barometer", 0.85f, 1.85f, 0.14f, 6f),
             };
+            var instruments = room.gameObject.AddComponent<NautilusInstruments>();
             foreach (var d in dials)
             {
                 var pivot = new GameObject(d.name).transform;
@@ -452,6 +453,10 @@ namespace Verne.EditorTools
                 Box("needle", hand, new Vector3(0, d.r * 0.32f, 0), new Vector3(0.012f, d.r * 0.95f, 0.006f), "IronPaint", 1f, false, null, false);
                 var g = pivot.gameObject.AddComponent<Gauge>();
                 g.needle = hand; g.axis = Vector3.forward; g.minValue = 0; g.maxValue = 10; g.target = d.target;
+                if (d.name.StartsWith("Manometer")) instruments.manometer = g;
+                else if (d.name.StartsWith("Electric clock")) instruments.clock = g;
+                else if (d.name.StartsWith("Speed")) instruments.speed = g;
+                else if (d.name.StartsWith("Barometer")) instruments.barometer = g;
             }
         }
 
