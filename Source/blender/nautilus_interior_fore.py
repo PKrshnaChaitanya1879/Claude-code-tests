@@ -510,17 +510,47 @@ def frames(bm):
     # aft wall pictures
     for (yc, zc, w, h) in [(1.5, 2.0, 0.7, 0.6), (2.55, 1.95, 0.55, 0.7), (1.9, 3.15, 1.3, 0.8), (0.0, 3.3, 1.0, 0.6), (-1.6, 3.2, 0.9, 0.6), (-2.6, 3.25, 0.6, 0.5)]:
         walls.append(('x', S['x0'], 1, yc, zc, w, h))
+    # Run 2: each frame takes one of the Met CC0 canvases (Verne names their painters, I.X) at the canvas's own aspect
+    unused = list(PAINT)
     for i, (ax, c, d, u, zc, w, h) in enumerate(walls):
         t = 0.07
+        want = w / h
+        if not unused: unused = list(PAINT)
+        p = min(unused, key=lambda q: abs(math.log((q['w'] / q['h']) / want)))
+        unused.remove(p)
+        asp = p['w'] / p['h']
+        w2 = min(math.sqrt(w * h * asp), w * 1.25); h2 = w2 / asp
+        w, h = w2, h2
+        pid = p['file'][1:-4]
         if ax == 'y':
             y0, y1 = sorted([c, c + 0.05 * d])
             box(bm, u - w / 2 - t, u + w / 2 + t, y0, y1, zc - h / 2 - t, zc + h / 2 + t, MI['gilt'])
-            PICS.append({'i': i, 'c': [u, c + 0.051 * d, zc], 'n': [0, d, 0], 'w': w, 'h': h})
+            PICS.append({'i': i, 'c': [u, c + 0.051 * d, zc], 'n': [0, d, 0], 'w': w, 'h': h, 'pid': pid, 'ax': 'y', 'd': d})
         else:
             x0, x1 = sorted([c, c + 0.05 * d])
             box(bm, x0, x1, u - w / 2 - t, u + w / 2 + t, zc - h / 2 - t, zc + h / 2 + t, MI['gilt'])
-            PICS.append({'i': i, 'c': [c + 0.051 * d, u, zc], 'n': [d, 0, 0], 'w': w, 'h': h})
+            PICS.append({'i': i, 'c': [c + 0.051 * d, u, zc], 'n': [d, 0, 0], 'w': w, 'h': h, 'pid': pid, 'ax': 'x', 'd': d})
+import json
+PAINT = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'reference', 'assets', 'paint', 'paintings.json')))
 o = obj_from('saloon_frames', frames)
+# the canvases: one quad per picture, UV 0..1, material M_pic_<Met id> (Unity maps it to the canvas texture)
+def canvases():
+    pids = sorted(set(p['pid'] for p in PICS))
+    mats = [mat('M_pic_' + q, (0.4, 0.3, 0.2), rough=0.5) for q in pids]
+    bm = bmesh.new()
+    uvl = bm.loops.layers.uv.new('UVMap')
+    for p in PICS:
+        cx, cy, cz = p['c']; w, h, d = p['w'], p['h'], p['d']
+        if p['ax'] == 'y':
+            p0 = Vector((cx + d * w / 2, cy, cz - h / 2)); du = Vector((-d * w, 0, 0))
+        else:
+            p0 = Vector((cx, cy - d * w / 2, cz - h / 2)); du = Vector((0, d * w, 0))
+        dv = Vector((0, 0, h))
+        f = grid_quad(bm, p0, du, dv, 1, 1, pids.index(p['pid']))[0]
+        for lp, uv in zip(f.loops, [(0, 0), (1, 0), (1, 1), (0, 1)]): lp[uvl].uv = uv
+    ob = new_obj('saloon_canvases', bm, mats)
+    ob['keepuv'] = 1
+canvases()
 import json
 o['pictures'] = json.dumps(PICS)
 
@@ -599,6 +629,39 @@ o = obj_from('library_globes', library_glow, smooth=60)
 o['lights'] = json.dumps([[gx, gy, L['h'] - 0.25] for gx in (L['x0'] + 1.2, L['x1'] - 1.2) for gy in (-1.3, 1.3)])
 o2 = bpy.data.objects['library']
 o2['shelves'] = json.dumps(SHELVES)
+# Run 2: "twelve thousand volumes" (I.XI) on every shelf, in runs of bindings, with gaps, leaning volumes and the odd stack
+BOOKM = [mat('M_book_' + k, c, rough=0.6) for k, c in [('red', (0.33, 0.06, 0.05)), ('green', (0.07, 0.17, 0.09)), ('brown', (0.3, 0.16, 0.07)),
+                                                         ('navy', (0.05, 0.07, 0.13)), ('tan', (0.48, 0.36, 0.2)), ('black', (0.04, 0.035, 0.03))]]
+def books():
+    bm = bmesh.new()
+    rnd = random.Random(12)
+    nb = 0
+    for s in SHELVES:
+        a0, a1, z, d, c = s['a0'], s['a1'], s['z'], s['d'], s['c']
+        nv = max(2, int((a1 - a0) / 1.1))
+        divs = [a0 + (a1 - a0) * i / nv for i in range(nv + 1)]
+        a = a0 + 0.03
+        run_mi, run_left = 0, 0
+        while a < a1 - 0.05:
+            if any(abs(a - dv) < 0.035 for dv in divs): a += 0.01; continue
+            nxt = min([dv for dv in divs if dv > a + 0.01] or [a1])
+            if run_left <= 0:
+                run_mi = rnd.randrange(len(BOOKM)); run_left = rnd.randint(3, 14)
+                hgt0 = rnd.uniform(0.24, 0.38); dep0 = rnd.uniform(0.18, 0.27)
+                if rnd.random() < 0.12: a += rnd.uniform(0.05, 0.18); continue          # a gap where volumes were taken down
+            t = rnd.uniform(0.028, 0.065)
+            if a + t > nxt - 0.03: a = nxt + 0.035; continue
+            hh = min(0.43, hgt0 * rnd.uniform(0.94, 1.04)); dd = dep0
+            if s['ax'] == 'y':
+                ylo, yhi = sorted([c + 0.02 * d, c + (0.02 + dd) * d])
+                box(bm, a, a + t, ylo, yhi, z, z + hh, len(MI) + run_mi, skip=('z0', 'y1' if d < 0 else 'y0'))
+            else:
+                xlo, xhi = sorted([c + 0.02 * d, c + (0.02 + dd) * d])
+                box(bm, xlo, xhi, a, a + t, z, z + hh, len(MI) + run_mi, skip=('z0', 'x1' if d < 0 else 'x0'))
+            a += t + 0.002; run_left -= 1; nb += 1
+    print('books', nb)
+    return new_obj('library_books', bm, MAT_LIST + BOOKM)
+books()
 
 
 # ---------------------------------------------------------------- the captain's room
@@ -741,7 +804,7 @@ for name, loc in (('BOW_TIP', (40.0, 0, 2.0)), ('STERN', (-40.0, 0, 2.0)), ('LAN
     e = bpy.data.objects.new(name, None); e.location = loc; coll('INT').objects.link(e)
 for o in list(coll('INT').objects):
     if o.type == 'MESH' and len(o.data.polygons):
-        world_uv(o, 1.0)
+        if not o.get('keepuv'): world_uv(o, 1.0)
         if o.get('col'): o.name = o.name + '__col'
 bpy.ops.object.select_all(action='DESELECT')
 for o in coll('INT').objects: o.select_set(True)
