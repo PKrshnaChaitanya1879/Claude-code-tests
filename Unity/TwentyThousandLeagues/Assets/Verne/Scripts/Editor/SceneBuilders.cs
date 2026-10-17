@@ -118,12 +118,15 @@ namespace Verne.EditorTools
             Rocks(root, 26, 50f, 11, "Rock");
             KelpStand(root, new Vector3(-6, 0, 24), 18, 7f, 13);
             var hero = AssetDatabase.LoadAssetAtPath<GameObject>(NautilusExterior.PrefabPath);
+            Light lantern = null;
             if (hero != null)
             {
                 var n = (GameObject)PrefabUtility.InstantiatePrefab(hero, root);
                 n.transform.SetPositionAndRotation(new Vector3(14f, 6.5f, 46f), Quaternion.Euler(0f, -72f, 0f));
+                lantern = n.GetComponentsInChildren<Light>(true).FirstOrDefault(x => x.type == LightType.Spot);   // its beam in the water
             }
             var cam = PreviewCamera(new Vector3(0, 2.2f, -4), new Vector3(-8, 14, 0), new Color(0.05f, 0.16f, 0.19f));
+            Water("Title", lantern);
             var t = new GameObject("Title Screen").AddComponent<TitleScreen>();
             t.driftCamera = cam.transform;
             GlobalVolume("Title");
@@ -573,6 +576,26 @@ namespace Verne.EditorTools
                     .GetComponent<MeshRenderer>().sharedMaterial = SeaGlowMaterial();
         }
 
+        /// <summary>The M3 water for a scene: its colour script (see Source/INSIDE_NOTES.md).</summary>
+        static VerneWater Water(string preset, params Light[] hero)
+        {
+            var w = new GameObject("Water (" + preset + ")").AddComponent<VerneWater>();
+            switch (preset)
+            {
+                case "Title":       // the Nautilus resting in blue twilight, sun shafts through the swell
+                    w.surfaceY = 24f; w.extinction = new Color(0.28f, 0.072f, 0.062f); w.scatterAlbedo = new Color(0.5f, 0.75f, 0.8f);
+                    w.kd = new Color(0.3f, 0.065f, 0.05f); w.surfaceAmbient = new Color(0.28f, 0.5f, 0.52f); w.sunShafts = 1.3f; w.maxDistance = 60f; break;
+                case "Mission1":    // Crespo: five fathoms, clear and vibrant near the surface, darker down the slope
+                    w.surfaceY = 9f; w.extinction = new Color(0.2f, 0.055f, 0.05f); w.scatterAlbedo = new Color(0.5f, 0.8f, 0.82f);
+                    w.kd = new Color(0.24f, 0.05f, 0.042f); w.surfaceAmbient = new Color(0.36f, 0.62f, 0.62f); w.sunShafts = 1.5f; w.maxDistance = 50f; break;
+                case "Mission2":    // 150 fathoms at midnight: no daylight; the volcano's red glow is the only light (art-directed so red carries)
+                    w.surfaceY = 274f; w.extinction = new Color(0.015f, 0.025f, 0.03f); w.scatterAlbedo = new Color(0.9f, 0.7f, 0.6f);
+                    w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 60f; w.heroGain = 1500f; w.forwardScatter = 0.45f; break;
+            }
+            foreach (var l in hero) if (l != null) w.heroLights.Add(l);
+            return w;
+        }
+
         static Material s_SeaGlow;
         static Material SeaGlowMaterial()
         {
@@ -810,6 +833,7 @@ namespace Verne.EditorTools
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
+            Water("Mission1");
             GlobalVolume("Mission1");
             Save(s, "Mission1");
         }
@@ -830,10 +854,11 @@ namespace Verne.EditorTools
             glow.transform.SetParent(root, false);
             glow.transform.position = new Vector3(0, 70, 170);
             var l = glow.AddComponent<Light>();
-            l.type = LightType.Point; l.color = new Color(1f, 0.38f, 0.16f); l.intensity = 30f; l.range = 220f; l.shadows = LightShadows.None;
+            l.type = LightType.Point; l.color = new Color(1f, 0.38f, 0.16f); l.intensity = 30f; l.range = 400f; l.shadows = LightShadows.None;
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
+            Water("Mission2", l);
             GlobalVolume("Mission2");
             Save(s, "Mission2");
         }

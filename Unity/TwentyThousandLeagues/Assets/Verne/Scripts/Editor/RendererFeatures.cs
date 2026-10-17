@@ -15,6 +15,11 @@ namespace Verne.EditorTools
         public static void Install(UniversalRendererData rd)
         {
             AddFeature<DecalRendererFeature>(rd, "Decals (hand-placed AO and shadows)");
+            // M3: INSIDE-style water (ray-marched shafts and lamp beams, per-channel absorption, temporal, dithered)
+            var water = AddFeature<Verne.VerneUnderwaterFeature>(rd, "Verne underwater (volumetric water)");
+            var sh = AssetDatabase.LoadAssetAtPath<Shader>(VerneBootstrap.Root + "/Shaders/VerneUnderwater.shader");
+            if (sh == null) VerneBootstrap.Note("Underwater shader missing: scenes fall back to built-in fog.");
+            else if (water.shader != sh) { water.shader = sh; EditorUtility.SetDirty(water); EditorUtility.SetDirty(rd); AssetDatabase.SaveAssets(); }
         }
 
         public static T AddFeature<T>(UniversalRendererData rd, string name) where T : ScriptableRendererFeature
