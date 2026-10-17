@@ -424,6 +424,62 @@ CASES = [(17.5, 18.6, 2.35, 2.95), (17.5, 18.6, -2.95, -2.35), (10.1, 10.7, 1.35
 def cases(bm):
     for c in CASES: case(bm, *c)
 obj_from('saloon_cases', cases, props={'col': 1, 'cases': str(CASES)})
+# Run 2: what the cases hold (I.XI): chaplets of pearls; the molluscs (spiral and bivalve shells); corals and sea-stars
+def specimens(bm):
+    rnd = random.Random(31)
+    z = 0.8
+    # case 0 (port): pearls on chaplets, pink, white, black, some "larger than a pigeon's egg"
+    x0, x1, y0, y1 = CASES[0]
+    for row in range(4):
+        yy = y0 + 0.1 + row * 0.13
+        n = 14
+        for k in range(n):
+            xx = x0 + 0.08 + (x1 - x0 - 0.16) * k / (n - 1)
+            r = 0.011 + 0.004 * rnd.random()
+            lathe(bm, [(0.0, -r), (r * 0.7, -r * 0.7), (r, 0), (r * 0.7, r * 0.7), (0.0, r)], 6, (xx, yy + 0.015 * math.sin(k * 0.7), z + r), MI['pearl'])
+    for (xx, yy) in ((x0 + 0.35, y1 - 0.08), (x1 - 0.3, y1 - 0.09)):
+        r = 0.03
+        lathe(bm, [(0.0, -r), (r * 0.7, -r * 0.7), (r, 0), (r * 0.7, r * 0.7), (0.0, r)], 8, (xx, yy, z + r), MI['pearl'])
+    # case 1 (starboard): spiral shells (trochi, the royal hammer) and fragile bivalves
+    x0, x1, y0, y1 = CASES[1]
+    for k in range(9):
+        xx = x0 + 0.1 + (k % 5) * 0.2; yy = y0 + 0.14 + (k // 5) * 0.28
+        if k % 2 == 0:   # a turreted spiral: stacked, shrinking whorls
+            for w in range(5):
+                rr = 0.045 * (1 - w * 0.17); hz = z + w * 0.022
+                lathe(bm, [(0.0, hz), (rr, hz + 0.006), (rr * 0.85, hz + 0.022)], 8, (xx, yy, 0), MI['shell'])
+        else:            # a scallop: a ribbed fan
+            for rib in range(7):
+                a0 = math.radians(-60 + rib * 20)
+                vs = [Vector((xx, yy, z + 0.005)), Vector((xx + math.cos(a0 - 0.15) * 0.07, yy + math.sin(a0 - 0.15) * 0.07, z + 0.012)),
+                      Vector((xx + math.cos(a0 + 0.15) * 0.07, yy + math.sin(a0 + 0.15) * 0.07, z + 0.012))]
+                f = bm.faces.new([bm.verts.new(v) for v in vs]); f.material_index = MI['shell']
+    # case 2 (aft wall): red coral branches and five-armed sea-stars
+    x0, x1, y0, y1 = CASES[2]
+    for k in range(3):
+        bx, by = (x0 + x1) / 2, y0 + 0.25 + k * 0.38
+        def branch(p, d, l, depth):
+            q = p + d * l
+            cylinder(bm, tuple(p), 0.008 * (depth + 1), l, 5, MI['coral'], axis='Z') if abs(d.z) > 0.99 else None
+            if depth > 0:
+                for s_ in (-1, 1):
+                    nd = (d + Vector((s_ * 0.5 * rnd.uniform(0.6, 1.2), rnd.uniform(-0.3, 0.3), 0.3))).normalized()
+                    branch(q, nd, l * 0.68, depth - 1)
+            # a thin quad ribbon for the segment so the branching reads at a glance
+            side = d.cross(Vector((0, 0, 1)))
+            side = (side.normalized() if side.length > 1e-3 else Vector((1, 0, 0))) * 0.006 * (depth + 1)
+            vs = [p - side, p + side, q + side * 0.7, q - side * 0.7]
+            fa = bm.faces.new([bm.verts.new(v) for v in vs]); fa.material_index = MI['coral']
+            fb = bm.faces.new([bm.verts.new(v) for v in vs[::-1]]); fb.material_index = MI['coral']
+        branch(Vector((bx, by, z)), Vector((0, 0, 1)), 0.09, 3)
+    for k in range(2):
+        cx, cy = x0 + 0.15 + k * 0.3, y1 - 0.12
+        for arm in range(5):
+            a0 = arm * 2 * math.pi / 5 + k
+            vs = [Vector((cx, cy, z + 0.012)), Vector((cx + math.cos(a0 - 0.35) * 0.025, cy + math.sin(a0 - 0.35) * 0.025, z + 0.008)),
+                  Vector((cx + math.cos(a0) * 0.075, cy + math.sin(a0) * 0.075, z + 0.004)), Vector((cx + math.cos(a0 + 0.35) * 0.025, cy + math.sin(a0 + 0.35) * 0.025, z + 0.008))]
+            f = bm.faces.new([bm.verts.new(v) for v in vs]); f.material_index = MI['coral']
+obj_from('saloon_specimens', specimens, smooth=50)
 
 def mosaic_table(bm):
     xc, yc = 12.0, -1.5

@@ -33,6 +33,17 @@ for m in bpy.data.materials:   # the Met canvases, as Unity shows them
             nt = m.node_tree; tx = nt.nodes.new('ShaderNodeTexImage'); tx.image = bpy.data.images.load(f)
             nt.links.new(tx.outputs['Color'], nt.nodes['Principled BSDF'].inputs['Base Color'])
 
+# as Unity shows them: the project's textures on the remapped materials (world UVs, 1 m tiles)
+TEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'Unity', 'TwentyThousandLeagues', 'Assets', 'Verne', 'Textures')
+for mname, t in (('M_carpet', 'carpet'), ('M_tapestry', 'tapestry'), ('M_ebony', 'ebony'), ('M_oak', 'oak'), ('M_marble', 'marble'),
+                 ('M_leather', 'leather'), ('M_plaster', 'plaster'), ('M_ceiling', 'ceiling')):
+    m = bpy.data.materials.get(mname)
+    f = os.path.join(TEX, t + '_c.jpg')
+    if m is None or not m.use_nodes or not os.path.exists(f): continue
+    nt = m.node_tree; bsdf = nt.nodes['Principled BSDF']; tx = nt.nodes.new('ShaderNodeTexImage'); tx.image = bpy.data.images.load(f)
+    nt.links.new(tx.outputs['Color'], bsdf.inputs['Base Color'])
+    if mname == 'M_ceiling': nt.links.new(tx.outputs['Color'], bsdf.inputs['Emission Color'])
+
 def pl(loc, energy, color=(1, 0.92, 0.8)):
     ld = bpy.data.lights.new('l', 'POINT'); ld.energy = energy; ld.color = color; ld.shadow_soft_size = 0.5
     o = bpy.data.objects.new('l', ld); o.location = loc; sc.collection.objects.link(o)

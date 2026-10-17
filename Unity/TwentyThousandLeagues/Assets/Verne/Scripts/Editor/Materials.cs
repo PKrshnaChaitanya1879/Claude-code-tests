@@ -29,7 +29,7 @@ namespace Verne.EditorTools
             new Spec { name = "Marble",      tex = "marble",    tint = new Color(0.92f, 0.92f, 0.90f), metal = 0f,   smooth = 0.7f,  tile = 1f },
             new Spec { name = "Plaster",     tex = "plaster",   tint = new Color(0.86f, 0.83f, 0.78f), metal = 0f,   smooth = 0.15f, tile = 1f },
             new Spec { name = "Tapestry",    tex = "tapestry",  tint = new Color(0.72f, 0.60f, 0.52f), metal = 0f,   smooth = 0.08f, tile = 1f },
-            new Spec { name = "Ceiling",     tex = "ceiling",   tint = new Color(0.95f, 0.92f, 0.86f), metal = 0f,   smooth = 0.2f,  tile = 1f },
+            new Spec { name = "Ceiling",     tex = "ceiling0",   tint = new Color(0.95f, 0.92f, 0.86f), metal = 0f,   smooth = 0.2f,  tile = 1f },
             new Spec { name = "Rock",        tex = "rock",      tint = new Color(0.62f, 0.62f, 0.62f), metal = 0f,   smooth = 0.25f, tile = 1f },
             new Spec { name = "Rock2",       tex = "rock2",     tint = new Color(0.55f, 0.55f, 0.56f), metal = 0f,   smooth = 0.25f, tile = 1f },
             new Spec { name = "Sand",        tex = "sand",      tint = new Color(0.95f, 0.92f, 0.84f), metal = 0f,   smooth = 0.15f, tile = 1f },
@@ -76,6 +76,9 @@ namespace Verne.EditorTools
             if (s.emission.maxColorComponent > 0f)
             {
                 m.EnableKeyword("_EMISSION");
+                // the light comes through the pattern (the saloon's gilt lattice, the lava's cracks)
+                var em = !string.IsNullOrEmpty(s.tex) ? AssetDatabase.LoadAssetAtPath<Texture2D>(VerneBootstrap.Root + "/Textures/" + s.tex + "_c.jpg") : null;
+                m.SetTexture("_EmissionMap", em);
                 m.SetColor("_EmissionColor", s.emission);
                 m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.BakedEmissive;
             }
