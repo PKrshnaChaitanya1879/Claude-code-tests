@@ -63,7 +63,7 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 - [ ] Chalk ATLANTIS on the basalt; the moon's gleam; respawn on falls.
 
 ### M6 · Sound and music
-- [~] SFX library and ambient beds; mixer snapshots for air, water, helmet and cell flooding; depth-driven filtering; rain heard from below. *(42 procedural SFX; no mixer or beds yet.)*
+- [~] SFX library and ambient beds; mixer snapshots for air, water, helmet and cell flooding; depth-driven filtering; rain heard from below. *(42 procedural SFX. Run 2: `ambience.py` beds (hull hum with the screw's thrum, the underwater rumble with creaks and far bubbles) and the Rouquayrol breath (valve hiss in, bubbles out) at -24/-22 LUFS, spectrograms `m6_beds_and_breath.png`; `Ambience` plays them per scene, breathes with the helmet's fog and low-passes the listener in the helmet. Still to do: mixer snapshots, depth-driven filtering, the rain from below.)*
 - [ ] Original score, mixed and exported as OGG: title, Nautilus interior, Nemo's organ, Mission I wonder, the burial, Mission II night walk, the Atlantis reveal, end card.
 
 ### M7 · Interface

@@ -13,6 +13,10 @@ namespace Verne
     public class HelmetView : MonoBehaviour
     {
         static HelmetView s_Instance;
+        /// <summary>The breathing cycle (0..1): inhale from 0, exhale from 0.6. Ambience plays the Rouquayrol on it.</summary>
+        public static float BreathPhase { get; private set; }
+        public static bool On { get; private set; }
+        public static event System.Action Inhale, Exhale;
         CanvasGroup m_Group;
         RawImage m_Fog;
         float m_Breath;
@@ -57,13 +61,17 @@ namespace Verne
 
         void Update()
         {
-            float target = HelmetOn() ? 1f : 0f;
+            On = HelmetOn();
+            float target = On ? 1f : 0f;
             m_Group.alpha = Mathf.MoveTowards(m_Group.alpha, target, Time.unscaledDeltaTime / 0.45f);
             if (m_Group.alpha <= 0f || m_Fog == null) return;
             var p = PlayerMotor.Instance;
             float exertion = p != null ? Mathf.Clamp01(p.SpeedNormalized) : 0f;
             m_Breath += Time.deltaTime / Mathf.Lerp(4.6f, 2.6f, exertion);         // seconds per breath
             float phase = Mathf.Repeat(m_Breath, 1f);
+            if (On && BreathPhase < 0.6f && phase >= 0.6f) Exhale?.Invoke();
+            if (On && phase < BreathPhase) Inhale?.Invoke();
+            BreathPhase = phase;
             // exhale over the last 40% of the cycle: the fog blooms quickly and clears slowly
             float fog = phase > 0.6f ? Mathf.SmoothStep(0f, 1f, (phase - 0.6f) / 0.15f) : Mathf.Clamp01(1f - phase / 0.55f) * 0.9f;
             var c = m_Fog.color; c.a = fog * Mathf.Lerp(0.55f, 0.9f, exertion); m_Fog.color = c;
