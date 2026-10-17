@@ -38,9 +38,9 @@ M = {
 }
 ML = list(M.values()); MI = {k: ML.index(v) for k, v in M.items()}
 PROPS = []
-def prop(name, build, smooth=None):
+def prop(name, build, smooth=None, recalc=True):
     bm = bmesh.new(); build(bm)
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    if recalc: bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     o = new_obj(name, bm, ML, 'FLORA', None, smooth)
     PROPS.append(o)
     return o
@@ -323,6 +323,29 @@ def mound(bm):
     for f in t.faces: f.material_index = MI['coral_white']
     merge_into(bm, t); jitter(bm, 0.02, 17)
 prop('grave_mound', mound, smooth=50)
+
+# ------------------------------------------------------------ the dark gallery's vault (I.XXIII: "a dark gallery ... natural arches")
+def gallery_vault(bm, seed=19):
+    """A lumpy half-tube of coral rock, 13 m long along Y, 8 m wide, with a few ragged skylights: the way goes dark
+    under it (the lamps come on) and the sun falls through the holes in shafts. Two skins so it reads from both sides."""
+    r = random.Random(seed)
+    L, R0, T = 13.0, 4.1, 0.45
+    nu, nv = 14, 18                        # around (0..pi), along
+    holes = {(r.randrange(4, 11), r.randrange(2, nv - 2)) for _ in range(6)}
+    def P(i, j, rad):
+        a = math.pi * i / nu
+        n = 1.0 + 0.09 * math.sin(i * 1.7 + j * 0.9) + 0.06 * math.sin(i * 3.1 - j * 1.3)
+        return Vector((math.cos(a) * rad * n, -L / 2 + L * j / nv, math.sin(a) * rad * n * 0.95))
+    inner = [[bm.verts.new(P(i, j, R0)) for j in range(nv + 1)] for i in range(nu + 1)]
+    outer = [[bm.verts.new(P(i, j, R0 + T)) for j in range(nv + 1)] for i in range(nu + 1)]
+    for i in range(nu):
+        for j in range(nv):
+            if (i, j) in holes or (i + 1, j) in holes and (i, j + 1) in holes: continue
+            # winding chosen by hand (no normal recalculation): the inner skin faces the axis, the outer skin faces away
+            f = bm.faces.new([inner[i][j], inner[i + 1][j], inner[i + 1][j + 1], inner[i][j + 1]]); f.material_index = MI['coral_stone']
+            f = bm.faces.new([outer[i][j], outer[i][j + 1], outer[i + 1][j + 1], outer[i + 1][j]]); f.material_index = MI['rock']
+    jitter(bm, 0.06, seed)
+prop('gallery_vault', gallery_vault, smooth=35, recalc=False)
 
 # ------------------------------------------------------------ export: one FBX, each prop a child at the origin
 for o in PROPS: world_uv(o, 1.0)

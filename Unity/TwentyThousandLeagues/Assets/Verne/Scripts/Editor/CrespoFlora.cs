@@ -48,7 +48,9 @@ namespace Verne.EditorTools
             Scatter(new[] { "laminaria_a", "laminaria_b" }, 130, -26, 26, 44, 96, 0.85f, 1.25f, lane: 2.2f);
             Scatter(new[] { "alaria", "fucus" }, 50, -24, 24, 44, 96, 0.85f, 1.3f, lane: 2.2f);
             Scatter(new[] { "red_algae", "padina" }, 40, -24, 24, 44, 96, 1f, 1.6f);
-            // 4. the coral gallery (z 96–106): arches across the way, pendants from their crowns, the coral kingdom on both sides
+            // 4. the coral gallery (z 96–106): "a dark gallery" vaulted over, with ragged skylights the sun falls through in shafts;
+            //    arches across the way, pendants from their crowns, the coral kingdom on both sides
+            Put("gallery_vault", new Vector3(0, 0, 101f), YawAlong("gallery_vault", 0f), 1f);
             foreach (float z in new[] { 97.5f, 101f, 104.5f })
             {
                 var a = Put("coral_arch", new Vector3(0, 0, z), YawAlong("coral_arch", 90f), 1f + (float)s_R.NextDouble() * 0.1f);   // spans the way
@@ -199,6 +201,13 @@ namespace Verne.EditorTools
                 case "brain_coral": case "brain_coral_teal":
                 {
                     var sc = host.AddComponent<SphereCollider>(); sc.radius = Mathf.Max(b.extents.x, b.extents.z) * 0.9f; sc.center = new Vector3(0, b.size.y * 0.3f, 0); break;
+                }
+                case "gallery_vault":
+                {
+                    Object.DestroyImmediate(host);
+                    var mc = go.AddComponent<MeshCollider>(); mc.sharedMesh = go.GetComponent<MeshFilter>().sharedMesh;
+                    var r0 = go.GetComponent<MeshRenderer>(); if (r0 != null) r0.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
+                    return;
                 }
                 case "coral_pendant": case "bindweed_garland":
                     Object.DestroyImmediate(host); return;                                   // overhead
