@@ -75,6 +75,7 @@ def build_hull():
         xs.append(x); x += pitch
     xs.append(HALF - 0.6)
     rings = []
+    uvl = bm.loops.layers.uv.new('UVMap')     # Run 2: one plate = one tile of hull_c / hull_n (rivets round the edges)
     for i in range(len(xs) - 1):
         x0, x1 = xs[i], xs[i + 1]
         r0, r1 = radius_at(x0), radius_at(x1)
@@ -88,6 +89,7 @@ def build_hull():
         for k in range(SEG):
             f = bm.faces.new([ring0[k], ring0[(k + 1) % SEG], ring1[(k + 1) % SEG], ring1[k]])
             f.material_index = 0
+            for lp, uv in zip(f.loops, ((0, 0), (1, 0), (1, 1), (0, 1))): lp[uvl].uv = uv
         # the step face where this ring's proud aft edge meets the previous ring's fore edge
         rings.append((ring0, ring1))
     for i in range(len(rings) - 1):
@@ -105,6 +107,7 @@ def build_hull():
         tv = bm.verts.new((tipx, 0, AXIS_Z))
         for k in range(SEG):
             f = bm.faces.new([ring[k], ring[(k + 1) % SEG], tv]); f.material_index = 0
+            for lp, uv in zip(f.loops, ((0, 0), (1, 0), (0.5, 1))): lp[uvl].uv = uv
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     me = bpy.data.meshes.new('Hull'); bm.to_mesh(me); bm.free()
     o = bpy.data.objects.new('Hull', me)

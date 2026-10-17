@@ -40,6 +40,7 @@ namespace Verne.EditorTools
             new Spec { name = "LampWhite",   tex = null,        tint = Color.white, metal = 0f, smooth = 0.5f, tile = 1f, emission = new Color(6f, 6.2f, 6.4f) },
             new Spec { name = "Linen",       tex = null,        tint = new Color(0.86f, 0.85f, 0.82f), metal = 0f, smooth = 0.1f, tile = 1f },
             new Spec { name = "CoralRed",    tex = null,        tint = new Color(0.78f, 0.12f, 0.10f), metal = 0f, smooth = 0.3f, tile = 1f },
+            new Spec { name = "HullPlate",   tex = "hull",      tint = new Color(1f, 1f, 1f),          metal = 0.55f, smooth = 0.45f, tile = 1f },   // one riveted plate per UV tile (Source/tools/hull_plate_maps.py)
             new Spec { name = "Greybox",     tex = null,        tint = new Color(0.5f, 0.5f, 0.5f), metal = 0f, smooth = 0.2f, tile = 1f },
         };
 

@@ -31,6 +31,12 @@ namespace Verne.EditorTools
                 if (mi.isReadable != path.EndsWith("_col.fbx")) { mi.isReadable = path.EndsWith("_col.fbx"); changed = true; }
                 if (mi.materialImportMode != ModelImporterMaterialImportMode.ImportViaMaterialDescription) { mi.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription; changed = true; }
                 if (mi.animationType != ModelImporterAnimationType.None && path.Contains("/Nautilus/")) { mi.animationType = ModelImporterAnimationType.None; mi.importAnimation = false; changed = true; }
+                if (path.Contains("Nautilus_Exterior") && !path.EndsWith("_col.fbx"))
+                {
+                    var hull = Materials.Get("HullPlate");
+                    var id = new AssetImporter.SourceAssetIdentifier(typeof(Material), "M_HullPlate");
+                    if (hull != null && (!mi.GetExternalObjectMap().TryGetValue(id, out var cur) || cur != hull)) { mi.AddRemap(id, hull); changed = true; }
+                }
                 if (changed) mi.SaveAndReimport();
             }
         }
