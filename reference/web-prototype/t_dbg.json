@@ -1,0 +1,10 @@
+[
+ {"waitFor": "window.__game && window.__game.mode === 'title'", "timeout": 240000},
+ {"eval": "document.getElementById('title').hidden = true; const g = window.__game; g.fade=null; g.pipe.finalMat.uniforms.uFade.value=0; window.__f0 = g.pipe.frame; window.__t0 = performance.now(); 'ok'"},
+ {"wait": 8000},
+ {"eval": "const g = window.__game; ({fps: (g.pipe.frame - window.__f0) / ((performance.now() - window.__t0)/1000)})"},
+ {"shot": "shots/g_dbg1.png"},
+ {"eval": "const g = window.__game; g.mode='free'; g.camera.position.set(-10, 0.5, 6); g.camera.lookAt(-10, -1, -20); 'ok'"},
+ {"wait": 6000},
+ {"shot": "shots/g_dbg2.png"}
+]

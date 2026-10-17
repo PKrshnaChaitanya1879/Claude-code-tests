@@ -1,0 +1,6 @@
+[
+ {"waitFor": "window.__game && window.__game.mode === 'title'", "timeout": 300000},
+ {"eval": "const g=window.__game; g.renderer.info.autoReset=false; g.renderer.info.reset(); window.__t0=performance.now(); window.__f0=g.pipe.frame; 'ok'"},
+ {"wait": 15000},
+ {"eval": "const g=window.__game; const i=g.renderer.info; const n=g.pipe.frame-window.__f0; ({frames:n, msPerFrame:(performance.now()-window.__t0)/n, calls:i.render.calls/n, tris:i.render.triangles/n, progs:i.programs.length, geos:i.memory.geometries, tex:i.memory.textures})"}
+]

@@ -1,0 +1,13 @@
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/*
+!Logs/verne_setup_report.txt
+UserSettings/
+*.csproj
+*.sln
+.vs/
+__pycache__/
+node_modules/

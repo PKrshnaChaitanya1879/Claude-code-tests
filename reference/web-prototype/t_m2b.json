@@ -1,0 +1,16 @@
+[{"eval": "window.__noAudio = true; 'ok'"},
+ {"waitFor": "window.__game && window.__game.mode === 'title'", "timeout": 300000},
+ {"eval": "window.__game.debugJump(2, -224, {yaw: 0.15, pitch: -0.55, ahead: 0})"},
+ {"wait": 3000},
+ {"eval": "const g=window.__game, m=g.mission; const f=g.camera.getWorldDirection(new g.camera.position.constructor()); const prof=[]; for (let d=0; d<=200; d+=10){ const x=0+(-0.28)*d, z=-224-0.96*d; prof.push([d, +m.ground(x,z).toFixed(1)]); } ({cam:g.camera.position.toArray().map(v=>+v.toFixed(1)), fwd:f.toArray().map(v=>+v.toFixed(2)), yaw:g.player.yaw, prof})"},
+ {"eval": "const g=window.__game; g.player.yaw=0.28; g.player.pitch=-0.62; 'ok'"},
+ {"wait": 9000},
+ {"shot": "shots/m2s_a.png"},
+ {"eval": "const g=window.__game; g.player.yaw=-0.28; g.player.pitch=-0.62; 'ok'"},
+ {"wait": 9000},
+ {"shot": "shots/m2s_b.png"},
+ {"eval": "const g=window.__game; g.timeScale=0.0001; g.player.pos.y += 40; g.player.pos.z += 30; g.player.yaw=0.28; g.player.pitch=-0.6; 'ok'"},
+ {"wait": 9000},
+ {"shot": "shots/m2s_c.png"},
+ {"eval": "const g=window.__game; ({cam:g.camera.position.toArray().map(v=>+v.toFixed(1)), fwd:g.camera.getWorldDirection(new g.camera.position.constructor()).toArray().map(v=>+v.toFixed(2)), tris:g.renderer.info.render.triangles})"}
+]

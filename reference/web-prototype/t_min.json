@@ -1,0 +1,1 @@
+[{"wait": 20000}, {"eval": "({g: typeof window.__game, body: document.getElementById('loadtext') && document.getElementById('loadtext').textContent, scripts: document.scripts.length})"}]

@@ -1,0 +1,10 @@
+import * as esbuild from 'esbuild';
+import fs from 'fs';
+const minify = !process.argv.includes('--dev');
+await esbuild.build({ entryPoints: ['src/main.js'], bundle: true, format: 'iife', outfile: 'dist/game.js', minify, logLevel: 'error', legalComments: 'none' });
+const js = fs.readFileSync('dist/game.js', 'utf8');
+const page = fs.readFileSync('page.html', 'utf8');
+const body = page.replace('<!--SCRIPT-->', () => '<script>' + js.replace(/<\/script/g, () => '<\\/script') + '</script>');
+fs.writeFileSync('dist/index.html', body);
+fs.writeFileSync('dist/local.html', '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>' + body + '</body></html>');
+console.log('bundle', (js.length / 1024).toFixed(0) + 'KB');

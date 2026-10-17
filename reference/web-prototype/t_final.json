@@ -1,0 +1,11 @@
+[{"eval": "window.__noAudio = true; 'ok'"},
+ {"waitFor": "window.__game && window.__game.mode === 'title'", "timeout": 300000},
+ {"eval": "window.__game.debugJump(1, -60, {yaw: 0.0, pitch: 0.05})"},
+ {"wait": 8000},
+ {"eval": "const g=window.__game; ({tris: g.renderer.info.render.triangles, calls: g.renderer.info.render.calls, q: g.settings.quality})"},
+ {"shot": "shots/fin_m1.png"},
+ {"eval": "window.__game.debugJump(2, -224, {yaw: 0.2, pitch: -0.3, ahead: 0})"},
+ {"wait": 8000},
+ {"shot": "shots/fin_m2.png"},
+ {"eval": "const g=window.__game; ({mode: g.mode, mission: g.missionId, err: window.__lastError || null})"}
+]

@@ -1,0 +1,190 @@
+<title>Twenty Thousand Leagues</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Geist:wght@400;500&family=Geist+Mono:wght@400&display=swap">
+<style>
+/* Layout: full-bleed game canvas; title and cards sit in a left column over the live scene. */
+:root {
+  --ink: #0a0b0f; --ink-2: #12141a; --paper: #e6e3dc; --muted: #9a968e; --faint: rgba(230, 227, 220, 0.16);
+  --accent: #c47a4e;
+  --serif: "EB Garamond", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: "Geist", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; background: var(--ink); color: var(--paper); font-family: var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
+#game { position: fixed; inset: 0; }
+#game canvas { width: 100%; height: 100%; display: block; }
+#ui { position: fixed; inset: 0; pointer-events: none; font-family: var(--serif); }
+#ui button, #ui a, #ui input, #ui select, #ui label, .interactive { pointer-events: auto; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
+[hidden] { display: none !important; }
+
+/* crosshair: a dot that opens into a ring over things you can touch */
+#cross { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(230, 227, 220, 0.55); transition: all .18s ease; }
+#cross[data-state="none"] { opacity: 0; }
+#cross[data-state="ring"] { width: 22px; height: 22px; margin: -11px 0 0 -11px; background: transparent; box-shadow: inset 0 0 0 1px rgba(230, 227, 220, 0.75); }
+#holdring { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%;
+  background: conic-gradient(var(--accent) calc(var(--p) * 360deg), transparent 0); -webkit-mask: radial-gradient(circle, transparent 13px, #000 14px); mask: radial-gradient(circle, transparent 13px, #000 14px); }
+#verb { position: absolute; left: 50%; top: calc(50% + 24px); transform: translateX(-50%); font-family: var(--sans); font-size: 13px; letter-spacing: 0.06em; color: rgba(230, 227, 220, 0.82); white-space: nowrap; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
+#verb::before { content: "E  "; font-family: var(--mono); font-size: 11px; color: var(--accent); }
+
+/* Aronnax's thoughts, from the book */
+#say { position: absolute; left: max(48px, env(safe-area-inset-left, 0px)); bottom: 56px; max-width: 34em; font-style: italic; font-size: 21px; line-height: 1.45; color: rgba(236, 233, 226, 0.92);
+  text-shadow: 0 1px 14px rgba(0,0,0,.85); opacity: 0; transform: translateY(6px); transition: opacity .9s ease, transform .9s ease; }
+#say.on { opacity: 1; transform: none; }
+#goal { position: absolute; left: max(48px, env(safe-area-inset-left, 0px)); top: 40px; font-family: var(--sans); font-size: 13px; letter-spacing: .04em; color: rgba(230,227,220,.7); opacity: 0; transition: opacity 1.2s ease; text-shadow: 0 1px 8px rgba(0,0,0,.8); }
+#goal.on { opacity: 1; }
+#goal::before { content: ""; display: inline-block; width: 18px; height: 1px; background: var(--accent); vertical-align: middle; margin-right: 10px; }
+
+/* title */
+#title { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 560px) 1fr; background: linear-gradient(90deg, rgba(10,11,15,.92) 0%, rgba(10,11,15,.75) 34%, rgba(10,11,15,0) 62%); pointer-events: auto; }
+.tcol { padding-block: clamp(28px, 7vh, 64px) 28px; padding-left: max(56px, env(safe-area-inset-left, 0px)); padding-right: 32px; display: flex; flex-direction: column; gap: clamp(14px, 2.8vh, 28px); min-width: 0; max-height: 100dvh; overflow-y: auto; box-sizing: border-box; }
+.kicker { font-family: var(--sans); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-weight: 400; font-size: clamp(36px, min(5.4vw, 8.4vh), 72px); line-height: 0.98; letter-spacing: -0.015em; text-wrap: balance; }
+h1 em { color: var(--accent); font-style: italic; }
+.lede { font-size: 19px; line-height: 1.5; color: rgba(230,227,220,.78); max-width: 30em; margin: 0; }
+.missions { display: flex; flex-direction: column; border-top: 1px solid var(--faint); margin-top: 8px; }
+.mission { display: grid; grid-template-columns: 44px 1fr auto; align-items: baseline; gap: 12px; padding: clamp(12px, 2.2vh, 18px) 0; border-bottom: 1px solid var(--faint); text-align: left; transition: color .2s, padding .2s; }
+.mission .num { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.mission .name { font-size: 26px; }
+.mission .where { font-family: var(--sans); font-size: 13px; color: var(--muted); }
+.mission:hover, .mission:focus-visible { color: var(--accent); padding-left: 6px; }
+.mission:active { transform: scale(.995); }
+.row { display: flex; gap: 22px; flex-wrap: wrap; font-family: var(--sans); font-size: 13px; color: var(--muted); }
+.row button { padding: 6px 0; border-bottom: 1px solid transparent; }
+.row button:hover { color: var(--paper); border-color: var(--faint); }
+.credits { position: absolute; right: max(32px, env(safe-area-inset-right, 0px)); bottom: 24px; max-width: 460px; text-align: right; font-family: var(--mono); font-size: 11px; line-height: 1.7; color: rgba(190,186,178,.72); text-shadow: 0 0 12px rgba(10,11,15,.9); }
+.keys { font-family: var(--sans); font-size: 13px; color: var(--muted); line-height: 1.9; }
+.keys b { font-family: var(--mono); font-weight: 400; font-size: 11px; color: var(--paper); border: 1px solid var(--faint); border-radius: 3px; padding: 1px 6px; margin-right: 6px; }
+
+/* chapter card: the 1871 engraving and the book's words */
+#card { position: absolute; inset: 0; background: var(--ink); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); pointer-events: auto; transition: opacity .9s ease; }
+#card.out { opacity: 0; }
+.cardtext { padding-block: 80px 56px; padding-left: max(64px, env(safe-area-inset-left, 0px)); padding-right: 48px; display: flex; flex-direction: column; justify-content: center; gap: 26px; min-width: 0; }
+#cardTitle { margin: 0; font-weight: 400; font-size: clamp(36px, 4.4vw, 60px); line-height: 1.02; text-wrap: balance; }
+#cardQuote { margin: 0; font-size: 22px; line-height: 1.55; font-style: italic; color: rgba(230,227,220,.86); max-width: 28em; }
+#cardCite { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+#cardGo { align-self: flex-start; margin-top: 12px; font-family: var(--sans); font-size: 14px; letter-spacing: .06em; padding: 12px 0; border-bottom: 1px solid var(--accent); }
+#cardGo:hover { color: var(--accent); }
+.cardimg { position: relative; overflow: hidden; }
+#cardImg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.05) brightness(.82); mix-blend-mode: screen; opacity: .8; }
+.cardimg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--ink) 0%, rgba(10,11,15,0) 40%); }
+.engr-credit { position: absolute; right: 16px; bottom: 14px; z-index: 1; font-family: var(--mono); font-size: 10px; color: rgba(154,150,142,.8); }
+
+/* note from the captain */
+#note { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(5,6,8,.55); pointer-events: auto; }
+.paper { width: min(520px, calc(100vw - 32px)); background: #e9e2cf; color: #2a2620; padding: 40px 44px 32px; box-shadow: 0 24px 60px rgba(0,0,0,.55); font-family: var(--serif); transform: rotate(-0.6deg); }
+#noteHead { font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: #6a6252; margin: 0 0 18px; }
+#noteBody { font-size: 21px; line-height: 1.55; white-space: pre-line; margin: 0; }
+#noteSign { margin: 22px 0 0; text-align: right; font-style: italic; font-size: 20px; }
+#noteClose { margin-top: 24px; font-family: var(--sans); font-size: 12px; color: #6a6252; letter-spacing: .06em; }
+
+/* pause and settings */
+#pause { position: absolute; inset: 0; background: rgba(10,11,15,.82); display: flex; align-items: center; pointer-events: auto; }
+.pcol { padding-left: max(56px, env(safe-area-inset-left, 0px)); padding-right: 24px; display: flex; flex-direction: column; gap: 22px; width: min(520px, 100%); }
+.pcol h2 { margin: 0; font-weight: 400; font-size: 40px; }
+.set { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 12px; font-family: var(--sans); font-size: 14px; color: var(--muted); }
+.set select, .set input[type=range] { width: 100%; accent-color: var(--accent); background: var(--ink-2); color: var(--paper); border: 1px solid var(--faint); padding: 6px; font: inherit; }
+.pbtns { display: flex; gap: 28px; flex-wrap: wrap; font-family: var(--sans); font-size: 15px; }
+.pbtns button { padding: 8px 0; border-bottom: 1px solid var(--faint); }
+.pbtns button:hover { border-color: var(--accent); color: var(--accent); }
+
+#loading { position: absolute; inset: 0; background: var(--ink); display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; padding: 56px; gap: 14px; }
+#loadtext { font-family: var(--sans); font-size: 13px; color: var(--muted); letter-spacing: .04em; }
+.bar { width: min(420px, 80vw); height: 1px; background: var(--faint); }
+#loadbar { height: 1px; background: var(--paper); transform-origin: 0 50%; transform: scaleX(0); transition: transform .3s; }
+
+#end { position: absolute; inset: 0; background: rgba(10,11,15,.9); display: flex; align-items: center; pointer-events: auto; }
+#endTitle { margin: 0; font-weight: 400; font-size: 44px; }
+#endLines p { margin: 0 0 12px; font-size: 21px; line-height: 1.5; font-style: italic; color: rgba(230,227,220,.86); max-width: 30em; }
+#endCite { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+#clickToLook { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); font-family: var(--sans); font-size: 13px; color: rgba(230,227,220,.7); }
+#mobile { display: none; }
+@media (max-width: 720px) {
+  #title { grid-template-columns: 1fr; background: rgba(10,11,15,.88); }
+  .credits { position: static; text-align: left; max-width: none; }
+  #card { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .cardimg { display: none; }
+  .tcol, .cardtext { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  #mobile { display: block; font-family: var(--sans); font-size: 13px; color: var(--accent); }
+  #say { left: max(16px, env(safe-area-inset-left, 0px)); right: 16px; font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="game"></div>
+<div id="ui">
+  <div id="cross" data-state="none"></div>
+  <div id="holdring" hidden></div>
+  <div id="verb" hidden></div>
+  <div id="goal"></div>
+  <div id="say"></div>
+  <div id="clickToLook" hidden>Click to look around</div>
+
+  <section id="title" hidden aria-label="Title">
+    <div class="tcol">
+      <div class="kicker">Jules Verne, 1870 · A playable sample</div>
+      <h1>Twenty Thousand Leagues <em>Under the Sea</em></h1>
+      <p class="lede">You are Professor Aronnax, a captive guest aboard the Nautilus. Chapter One holds two excursions on foot across the bottom of the sea.</p>
+      <p id="mobile">This sample needs a keyboard and a mouse.</p>
+      <div class="missions" role="list">
+        <button class="mission" id="m1" role="listitem"><span class="num">I</span><span class="name">The Coral Kingdom</span><span class="where">15 fathoms to 300 yards</span></button>
+        <button class="mission" id="m2" role="listitem"><span class="num">II</span><span class="name">A Vanished Continent</span><span class="where">150 fathoms, by night</span></button>
+      </div>
+      <div class="keys"><b>W A S D</b>walk &nbsp; <b>Shift</b>hurry &nbsp; <b>Space</b>hop &nbsp; <b>C</b>kneel &nbsp; <b>E</b>touch &nbsp; <b>F</b>lamp &nbsp; <b>Tab</b>recall &nbsp; <b>Esc</b>pause</div>
+      <div class="row"><button id="tSettings">Settings</button><span id="perfNote"></span></div>
+      <div class="credits">Text: Jules Verne, <i>Vingt mille lieues sous les mers</i> (1870), tr. Lewis Mercier. Engravings: Alphonse de Neuville &amp; Édouard Riou (Hetzel, 1871), via Project Gutenberg. Paintings in the saloon: The Metropolitan Museum of Art Open Access (CC0). Surface textures: ambientCG (CC0). Models built in Blender.</div>
+    </div>
+    <div></div>
+  </section>
+
+  <section id="card" hidden aria-label="Chapter">
+    <div class="cardtext">
+      <div class="kicker" id="cardKicker"></div>
+      <h2 id="cardTitle"></h2>
+      <p id="cardQuote"></p>
+      <div id="cardCite"></div>
+      <button id="cardGo">Begin</button>
+    </div>
+    <div class="cardimg"><img id="cardImg" alt="Engraving from the 1871 edition"><div class="engr-credit">Engraving, Hetzel edition, 1871</div></div>
+  </section>
+
+  <section id="note" hidden aria-label="Note">
+    <div class="paper">
+      <p id="noteHead"></p>
+      <p id="noteBody"></p>
+      <p id="noteSign"></p>
+      <button id="noteClose">Fold the note · E</button>
+    </div>
+  </section>
+
+  <section id="pause" hidden aria-label="Paused">
+    <div class="pcol">
+      <h2>Paused</h2>
+      <div class="set"><label for="sQuality">Picture</label><select id="sQuality"><option value="low">Light (older laptops)</option><option value="medium" selected>Balanced</option><option value="high">Full</option></select></div>
+      <div class="set"><label for="sSens">Look speed</label><input id="sSens" type="range" min="0.3" max="2.5" step="0.05" value="1"></div>
+      <div class="set"><label for="sVol">Volume</label><input id="sVol" type="range" min="0" max="1" step="0.02" value="0.9"></div>
+      <div class="set"><label for="sInv">Invert look</label><select id="sInv"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div class="pbtns"><button id="pResume">Resume</button><button id="pTitle">Leave to title</button></div>
+    </div>
+  </section>
+
+  <section id="end" hidden aria-label="Excursion complete">
+    <div class="pcol">
+      <h2 id="endTitle"></h2>
+      <div id="endLines"></div>
+      <div id="endCite"></div>
+      <div class="pbtns"><button id="eNext">Next excursion</button><button id="eTitle">Back to title</button></div>
+    </div>
+  </section>
+
+  <section id="loading" aria-label="Loading">
+    <div id="loadtext">Flooding the reservoirs</div>
+    <div class="bar"><div id="loadbar"></div></div>
+  </section>
+</div>
+<!--SCRIPT-->

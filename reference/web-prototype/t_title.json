@@ -1,0 +1,8 @@
+[{"eval": "window.__noAudio = true; 'ok'"},
+ {"waitFor": "window.__game && window.__game.mode === 'title'", "timeout": 300000},
+ {"eval": "window.__game.timeScale = 12; 'ok'"},
+ {"wait": 12000},
+ {"eval": "window.__game.timeScale = 1; 'ok'"},
+ {"wait": 4000},
+ {"shot": "shots/title.png"}
+]
