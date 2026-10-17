@@ -820,6 +820,36 @@ namespace Verne.EditorTools
             return Physics.Raycast(new Vector3(p.x, 200f, p.z), Vector3.down, out var hit, 400f) ? hit.point.y : 0f;
         }
 
+        static Material s_AoMat;
+        /// <summary>
+        /// Hand-placed contact shadow / AO under a thing, as Playdead did ("no global illumination or even automated AO"):
+        /// a URP decal projecting a soft dark blob straight down.
+        /// </summary>
+        static void AoBlob(Transform parent, Vector3 worldPos, float w, float l, float yaw = 0f, float depth = 2f)
+        {
+            if (s_AoMat == null)
+            {
+                var sh = AssetDatabase.LoadAssetAtPath<Shader>("Packages/com.unity.render-pipelines.universal/Shaders/Decal.shadergraph");
+                if (sh == null) return;
+                string path = VerneBootstrap.Generated + "/Materials/M_DecalAO.mat";
+                s_AoMat = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (s_AoMat == null) { s_AoMat = new Material(sh); AssetDatabase.CreateAsset(s_AoMat, path); }
+                s_AoMat.SetTexture("Base_Map", AssetDatabase.LoadAssetAtPath<Texture2D>(VerneBootstrap.Root + "/Textures/ao_blob.png"));
+                s_AoMat.enableInstancing = true;
+                EditorUtility.SetDirty(s_AoMat);
+            }
+            var go = new GameObject("AO decal");
+            go.transform.SetParent(parent, false);
+            go.transform.position = worldPos + Vector3.up * (depth * 0.5f);
+            go.transform.rotation = Quaternion.Euler(90f, yaw, 0f);     // projects along its +Z: straight down
+            var d = go.AddComponent<DecalProjector>();
+            d.material = s_AoMat;
+            d.size = new Vector3(w, l, depth);
+            d.pivot = Vector3.zero;
+            d.fadeFactor = 1f;
+            d.drawDistance = 60f;
+        }
+
         static void Rocks(Transform parent, int count, float radius, int seed, string mat, float scale = 1f)
         {
             var rnd = new System.Random(seed);
@@ -834,6 +864,7 @@ namespace Verne.EditorTools
                 var go = Box("Rock " + i, root, p, s, mat, 1.2f, true, "rock");
                 go.transform.position = new Vector3(p.x, GroundAt(p) + s.y * 0.3f, p.z);
                 go.transform.rotation = Quaternion.Euler((float)rnd.NextDouble() * 20f, (float)rnd.NextDouble() * 360f, (float)rnd.NextDouble() * 20f);
+                AoBlob(root, new Vector3(p.x, GroundAt(p), p.z), s.x * 1.7f, s.z * 1.7f, go.transform.eulerAngles.y);
             }
         }
 
@@ -917,6 +948,7 @@ namespace Verne.EditorTools
             if (ship == null) return;
             Physics.SyncTransforms();
             float deck = ship.transform.position.y;
+            AoBlob(root, new Vector3(0f, g, -6.6f), 64f, 10f, 0f, 4f);   // the hull's contact shadow on the sand
             var rungs = new GameObject("Iron rungs below the door");
             rungs.transform.SetParent(root, false);
             rungs.transform.position = new Vector3(0f, GroundAt(new Vector3(0, 0, -2.3f)), -2.3f);
