@@ -52,6 +52,7 @@ namespace Verne
             motor.SetMode(mode);
             motor.SetLook(yaw, 0f);
             root.AddComponent<Footsteps>();
+            head.gameObject.AddComponent<RuhmkorffLamp>();   // follows the look a little, so the beam lands where you look
 
             VerneInput.LockCursor(true);
             return motor;

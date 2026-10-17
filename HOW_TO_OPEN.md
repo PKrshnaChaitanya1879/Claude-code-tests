@@ -26,6 +26,7 @@ If you opened an earlier download, open this one fresh: the build re-runs by its
 | Crouch | C or Ctrl | B |
 | Kneel | K | Y |
 | Small hop | Space | X |
+| Ruhmkorff lamp (first excursion) | L | Right shoulder |
 | Pause and settings | Esc | Start |
 
 - **Levers and wheels:** hold E on one, then move the mouse up or down to throw a lever. Hold E on a wheel to turn it.

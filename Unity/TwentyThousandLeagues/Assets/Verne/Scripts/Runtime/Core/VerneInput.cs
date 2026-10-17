@@ -79,6 +79,8 @@ namespace Verne
         public static bool SprintHeld => !GameplayBlocked && (Input.GetKey(KeyCode.LeftShift) || PadHeld(PadButton.LeftStickPress));
         public static bool CrouchDown => !GameplayBlocked && (Input.GetKeyDown(KeyCode.C) || Input.GetKeyDown(KeyCode.LeftControl) || PadDown(PadButton.East));
         public static bool KneelDown => !GameplayBlocked && (Input.GetKeyDown(KeyCode.K) || PadDown(PadButton.North));
+        /// <summary>The Ruhmkorff lamp's screw (L / right shoulder).</summary>
+        public static bool LampDown => !GameplayBlocked && (Input.GetKeyDown(KeyCode.L) || PadDown(PadButton.RightShoulder));
         public static bool JumpDown => !GameplayBlocked && (Input.GetKeyDown(KeyCode.Space) || PadDown(PadButton.West));
         public static bool PauseDown => Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P) || PadDown(PadButton.Start);
         public static bool SubmitDown => Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space) || PadDown(PadButton.South);
@@ -108,7 +110,7 @@ namespace Verne
             }
         }
 
-        public enum PadButton { South, East, West, North, Start, LeftStickPress }
+        public enum PadButton { South, East, West, North, Start, LeftStickPress, RightShoulder }
 
         static bool PadDown(PadButton b)
         {
@@ -147,6 +149,7 @@ namespace Verne
                 case PadButton.West: return pad.buttonWest;
                 case PadButton.North: return pad.buttonNorth;
                 case PadButton.Start: return pad.startButton;
+                case PadButton.RightShoulder: return pad.rightShoulder;
                 default: return pad.leftStickButton;
             }
         }
