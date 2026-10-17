@@ -1,0 +1,85 @@
+using System;
+using UnityEngine;
+using UnityEngine.Events;
+
+namespace Verne
+{
+    /// <summary>
+    /// A hinged or sliding door. It refuses to close onto the player (no pushing anyone into a
+    /// wall) and can be locked by scripts (the flooding cell interlocks).
+    /// </summary>
+    public class Door : Interactable
+    {
+        public enum Kind { Hinge, Slide }
+        public Kind kind = Kind.Hinge;
+        public Transform leaf;
+        public float openAngle = 100f;
+        public Vector3 slideOffset = new Vector3(0.9f, 0f, 0f);
+        public float speed = 1.2f;
+        public bool open;
+        public bool locked;
+        public string lockedMessage = "It is fastened from the other side.";
+        public AudioClip openClip, closeClip, lockedClip;
+        public UnityEvent onOpened = new UnityEvent(), onClosed = new UnityEvent();
+
+        float m_T;
+        Quaternion m_RestRot;
+        Vector3 m_RestPos;
+        Collider[] m_Colliders;
+
+        public override string Prompt => locked ? "Locked" : (open ? "Close" : "Open") + (string.IsNullOrEmpty(noun) ? "" : " " + noun);
+
+        protected override void Awake()
+        {
+            base.Awake();
+            if (leaf == null) leaf = transform;
+            m_RestRot = leaf.localRotation;
+            m_RestPos = leaf.localPosition;
+            m_Colliders = leaf.GetComponentsInChildren<Collider>();
+            m_T = open ? 1f : 0f;
+            Pose();
+        }
+
+        protected override void OnBegin(Interactor who)
+        {
+            if (locked) { PlayOneShot(lockedClip, 0.6f); Hud.Toast(lockedMessage); return; }
+            SetOpen(!open);
+            base.OnBegin(who);
+        }
+
+        public void SetOpen(bool o)
+        {
+            if (o == open) return;
+            open = o;
+            PlayOneShot(o ? openClip : closeClip, 0.8f);
+        }
+
+        void Update()
+        {
+            float target = open ? 1f : 0f;
+            if (Mathf.Approximately(m_T, target)) return;
+            float next = Mathf.MoveTowards(m_T, target, Time.deltaTime * speed);
+            if (!open && BlockedByPlayer()) return; // wait, don't crush
+            m_T = next;
+            Pose();
+            if (Mathf.Approximately(m_T, target)) { if (open) onOpened.Invoke(); else onClosed.Invoke(); }
+        }
+
+        bool BlockedByPlayer()
+        {
+            var p = PlayerMotor.Instance;
+            if (p == null) return false;
+            var cc = p.GetComponent<CharacterController>();
+            Bounds pb = cc.bounds; pb.Expand(0.1f);
+            foreach (var c in m_Colliders) if (c != null && !c.isTrigger && c.bounds.Intersects(pb)) return true;
+            return false;
+        }
+
+        void Pose()
+        {
+            float e = m_T * m_T * (3f - 2f * m_T);
+            if (kind == Kind.Hinge) leaf.localRotation = m_RestRot * Quaternion.Euler(0f, openAngle * e, 0f);
+            else leaf.localPosition = m_RestPos + slideOffset * e;
+        }
+    }
+}
