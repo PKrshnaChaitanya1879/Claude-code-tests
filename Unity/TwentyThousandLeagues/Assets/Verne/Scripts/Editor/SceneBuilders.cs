@@ -999,6 +999,22 @@ namespace Verne.EditorTools
                         if (fc.innerDoor == null || fc.outerDoor == null || fc.floodTap == null || fc.pressureGauge == null) { problems++; Notes.Add($"{n}: flooding cell has a missing reference"); }
                     foreach (var lv in root.GetComponentsInChildren<Lever>(true))
                         if (lv.onValueChanged.GetPersistentEventCount() == 0) Notes.Add($"{n}: lever '{lv.name}' drives nothing yet");
+                    foreach (var fc in root.GetComponentsInChildren<FloodingCell>(true))
+                        if (fc.dogs == null) Notes.Add($"{n}: the cell's stopper-plate wheel is missing");
+                    foreach (var st in root.GetComponentsInChildren<SuitStation>(true))
+                        if (st.kitDress == null || st.kitReservoir == null || st.kitHelmet == null) Notes.Add($"{n}: the robing-room kit is incomplete (greybox suit station?)");
+                    foreach (var sw in root.GetComponentsInChildren<SeaWindowView>(true))
+                        if (sw.fishMaterial == null || sw.panels == null) { problems++; Notes.Add($"{n}: the saloon window view has a missing reference"); }
+                    foreach (var ca in root.GetComponentsInChildren<ChapterAboard>(true))
+                        if (ca.note == null || ca.cell == null || ca.seaDoor == null) { problems++; Notes.Add($"{n}: ChapterAboard has a missing reference"); }
+                    int rot = root.GetComponentsInChildren<Rotator>(true).Length;
+                    if (rot > 0) Notes.Add($"{n}: {rot} turning machine parts");
+                }
+                if (n.StartsWith("Mission") || n == "Title")
+                {
+                    var w = Object.FindObjectsByType<VerneWater>(FindObjectsSortMode.None);
+                    if (w.Length == 0) Notes.Add($"{n}: no VerneWater (built-in fog only)");
+                    else Notes.Add($"{n}: water '{w[0].name}', {w[0].heroLights.Count} hero light(s), surface at {w[0].surfaceY:0} m");
                 }
                 bool needsSpawn = n != "Title";
                 bool hasSpawn = Object.FindObjectsByType<PlayerSpawn>(FindObjectsSortMode.None).Length > 0;
