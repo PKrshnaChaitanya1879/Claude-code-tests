@@ -27,6 +27,7 @@ Shader "Hidden/Verne/Underwater"
         float4 _VerneLampColArr[4];    // rgb * intensity, w cos(inner half-angle)
         int _VerneLampCount;
         float4x4 _VernePrevVP;
+        float4 _VerneSunRaw;           // the sun before VerneWater tints it for the eye's depth (w = 1 when set)
         TEXTURE2D(_VerneHistory);
         TEXTURE2D(_VerneScatterTex);
 
@@ -86,7 +87,8 @@ Shader "Hidden/Verne/Underwater"
                     float3 day = Daylight(p.y);
                     float3 Lin = _VerneSurfaceAmbient.rgb * day;                         // diffuse sky light, isotropic
                     float sh = MainLightRealtimeShadow(TransformWorldToShadowCoord(p));   // real shafts through the scene
-                    Lin += sun.color * day * sh * phaseSun;
+                    float3 sunCol = _VerneSunRaw.w > 0.5 ? _VerneSunRaw.rgb : sun.color;   // daylight is applied per sample, once
+                    Lin += sunCol * day * sh * phaseSun;
                     [loop] for (int j = 0; j < 4; j++)
                     {
                         if (j >= _VerneLampCount) break;

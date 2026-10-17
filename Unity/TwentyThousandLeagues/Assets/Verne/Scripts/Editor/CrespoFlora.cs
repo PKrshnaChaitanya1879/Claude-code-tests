@@ -120,7 +120,10 @@ namespace Verne.EditorTools
             foreach (Transform t in s_Root)
             {
                 var d = t.position - p; d.y = 0f;
-                if (d.magnitude < r && !t.name.StartsWith("coral_cross") && !t.name.StartsWith("grave_mound")) kill.Add(t.gameObject);
+                string n = t.name;
+                bool keep = n.StartsWith("coral_cross") || n.StartsWith("grave_mound") || n.StartsWith("gallery_vault") || n.StartsWith("coral_arch")
+                            || n.StartsWith("coral_pendant") || n.StartsWith("bindweed_garland") || n.StartsWith("coral_tree");
+                if (d.magnitude < r && !keep) kill.Add(t.gameObject);
             }
             foreach (var g in kill) { Object.DestroyImmediate(g); Placed--; }
         }

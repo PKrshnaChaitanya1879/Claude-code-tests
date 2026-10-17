@@ -41,7 +41,7 @@ namespace Verne
         Light m_Sun; Color m_SunBase; Color m_AmbSky, m_AmbEq, m_AmbGround; bool m_Captured;
 
         static readonly int ID_Sigma = Shader.PropertyToID("_VerneSigma"), ID_Water = Shader.PropertyToID("_VerneWater"),
-            ID_Ambient = Shader.PropertyToID("_VerneAmbient");
+            ID_Ambient = Shader.PropertyToID("_VerneAmbient"), ID_SunRaw = Shader.PropertyToID("_VerneSunRaw");
 
         void OnEnable()
         {
@@ -82,7 +82,13 @@ namespace Verne
                 if (m_Captured && cam != null)
                 {
                     var day = DaylightAt(cam.transform.position.y - 1f);
-                    if (m_Sun != null) m_Sun.color = m_SunBase * day;
+                    if (m_Sun != null)
+                    {
+                        m_Sun.color = m_SunBase * day;
+                        // the march applies daylight per sample itself: give it the untinted sun
+                        Shader.SetGlobalVector(ID_SunRaw, new Vector4(m_SunBase.linear.r * m_Sun.intensity, m_SunBase.linear.g * m_Sun.intensity, m_SunBase.linear.b * m_Sun.intensity, 1f));
+                    }
+                    else Shader.SetGlobalVector(ID_SunRaw, Vector4.zero);
                     RenderSettings.ambientSkyColor = m_AmbSky * day; RenderSettings.ambientEquatorColor = m_AmbEq * day; RenderSettings.ambientGroundColor = m_AmbGround * day;
                 }
             }

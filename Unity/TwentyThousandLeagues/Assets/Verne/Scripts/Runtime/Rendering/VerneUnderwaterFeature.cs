@@ -31,7 +31,7 @@ namespace Verne
 
         public override void Create()
         {
-            m_Pass = new UnderwaterPass { renderPassEvent = RenderPassEvent.BeforeRenderingTransparents };
+            m_Pass = new UnderwaterPass { renderPassEvent = RenderPassEvent.BeforeRenderingTransparents, requiresIntermediateTexture = true };
             Installed = true;
         }
 
@@ -49,7 +49,6 @@ namespace Verne
             m_Pass.Setup(m_Mat, water);
             m_Pass.ConfigureInput(ScriptableRenderPassInput.Depth);
             renderer.EnqueuePass(m_Pass);
-            s_LastFrame = Time.frameCount;
         }
 
         protected override void Dispose(bool disposing)
@@ -158,6 +157,7 @@ namespace Verne
                 var res = frameData.Get<UniversalResourceData>();
                 var camData = frameData.Get<UniversalCameraData>();
                 if (res.isActiveTargetBackBuffer || !res.cameraDepthTexture.IsValid()) return;
+                s_LastFrame = Time.frameCount;     // the water really is drawn this frame (else scenes keep their fallback fog)
 
                 Quality(out int down, out int steps);
                 var desc = camData.cameraTargetDescriptor;

@@ -555,6 +555,7 @@ namespace Verne.EditorTools
             var shell = new GameObject("Sea beyond (backdrop shell)");
             shell.transform.SetParent(room, false);
             shell.transform.localPosition = new Vector3(0f, 2f, 15f);
+            shell.transform.localScale = Vector3.one * 1.45f;   // radius ≈ 70 m: well clear of the engine-room aft (the mesh asset is cached at 48 m)
             shell.AddComponent<MeshFilter>().sharedMesh = InvertedSphere(48f);
             var mr = shell.AddComponent<MeshRenderer>();
             mr.sharedMaterial = SeaMat("Backdrop", Color.black, Color.black, 0f, 0f, 1f, 0f);
@@ -863,10 +864,19 @@ namespace Verne.EditorTools
             return go;
         }
 
+        /// <summary>The sea floor's height under p: only the "Sea floor" mesh counts (never a rock, a prop or a vault roof).</summary>
         static float GroundAt(Vector3 p)
         {
             Physics.SyncTransforms();
-            return Physics.Raycast(new Vector3(p.x, 200f, p.z), Vector3.down, out var hit, 400f) ? hit.point.y : 0f;
+            var hits = Physics.RaycastAll(new Vector3(p.x, 400f, p.z), Vector3.down, 800f, ~0, QueryTriggerInteraction.Ignore);
+            float best = float.NegativeInfinity, any = float.NegativeInfinity;
+            foreach (var h in hits)
+            {
+                any = Mathf.Max(any, h.point.y);
+                if (h.collider != null && h.collider.name == "Sea floor") best = Mathf.Max(best, h.point.y);
+            }
+            if (!float.IsNegativeInfinity(best)) return best;
+            return float.IsNegativeInfinity(any) ? 0f : any;
         }
 
         static Material s_AoMat;
@@ -889,7 +899,7 @@ namespace Verne.EditorTools
             }
             var go = new GameObject("AO decal");
             go.transform.SetParent(parent, false);
-            go.transform.position = worldPos + Vector3.up * (depth * 0.5f);
+            go.transform.position = worldPos;   // centred on the ground: reaches above and below it
             go.transform.rotation = Quaternion.Euler(90f, yaw, 0f);     // projects along its +Z: straight down
             var d = go.AddComponent<DecalProjector>();
             d.material = s_AoMat;
@@ -981,7 +991,7 @@ namespace Verne.EditorTools
                 foreach (var (bx, bz) in new[] { (-0.42f, 102.0f), (0.42f, 102.0f), (-0.42f, 103.2f), (0.42f, 103.2f) })
                 {
                     var b = Divers.Build(root, "A bearer (diver)", G(bx, bz), 0f, true, false, false);
-                    if (b != null) { bearers.Add(b); var bl = b.GetComponentInChildren<Light>(true); if (bl != null) bl.enabled = true; }
+                    if (b != null) { bearers.Add(b); var bl = b.GetComponentInChildren<Light>(true); if (bl != null) bl.enabled = bearers.Count % 2 == 1; }   // two lit lamps of four: stay inside URP's per-object light limit
                 }
                 var rite = new GameObject("The burial (I.XXIV)").AddComponent<BurialRite>();
                 rite.transform.SetParent(root, false);
