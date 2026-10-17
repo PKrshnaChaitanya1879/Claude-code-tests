@@ -21,6 +21,9 @@ namespace Verne
         DiverPuppet m_Puppet;
         int m_I;
         bool m_Waiting, m_Done;
+        public bool Arrived => m_Done;
+        /// <summary>A scripted scene (the burial) has taken over this diver: the guide stands still and lets it act.</summary>
+        public bool hold;
         float m_BeckonTimer;
 
         void Start() { m_Puppet = GetComponent<DiverPuppet>(); }
@@ -36,6 +39,7 @@ namespace Verne
             }
             var p = PlayerMotor.Instance;
             float d = p != null ? Vector3.Distance(p.transform.position, transform.position) : 0f;
+            if (hold) return;
             if (m_Done) { m_Puppet.gesture = DiverPuppet.Gesture.Idle; m_Puppet.speed = 0f; Face(p != null ? p.transform.position : transform.position + transform.forward); return; }
             if (!m_Waiting && d > waitDistance) m_Waiting = true;
             if (m_Waiting && d < resumeDistance) m_Waiting = false;

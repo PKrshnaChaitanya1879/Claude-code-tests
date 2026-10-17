@@ -955,17 +955,32 @@ namespace Verne.EditorTools
             if (nemo != null)
             {
                 var guide = nemo.gameObject.AddComponent<DiverGuide>();
-                guide.waypoints = new[] { G(0.3f, 14f), G(0f, 30f), G(0f, 46f), G(0.2f, 70f), G(0f, 95f), G(0f, 103f), G(-0.5f, 106f) };
+                guide.waypoints = new[] { G(0.3f, 14f), G(0f, 30f), G(0f, 46f), G(0.2f, 70f), G(0f, 95f), G(-1.6f, 101f), G(-1.6f, 105.4f) };
                 guide.lamp = nemo.GetComponentInChildren<Light>(true); guide.lampOnAfterZ = 92f;
                 guide.lampLine = "“The light from our lamps produced sometimes magical effects, following the rough outlines of the natural arches and pendants disposed like lustres.” (L: your lamp)";
                 guide.arrivedLine = "“Captain Nemo had stopped. We occupied, in this place, the centre of a vast glade surrounded by the lofty foliage of the submarine forest.”";
-                var crew = Divers.Build(root, "A crewman (diver)", G(-1.4f, 3.5f), 0f, true, false, false);
+                var crew = Divers.Build(root, "A crewman with a pickaxe (diver)", G(-1.4f, 3.5f), 0f, true, false, false, true);
                 if (crew != null)
                 {
                     var g2 = crew.gameObject.AddComponent<DiverGuide>();
-                    g2.waypoints = new[] { G(-1.1f, 12f), G(-0.9f, 28f), G(-0.9f, 44f), G(-1.0f, 68f), G(-1.0f, 93f), G(-1.0f, 101f), G(-2.0f, 105f) };
+                    g2.waypoints = new[] { G(-1.1f, 12f), G(-0.9f, 28f), G(-0.9f, 44f), G(-1.0f, 68f), G(-1.0f, 93f), G(1.6f, 101f), G(1.0f, 104.7f) };
                     g2.lamp = crew.GetComponentInChildren<Light>(true); g2.lampOnAfterZ = 91f; g2.pace = 0.72f;
                 }
+                // the burial (I.XXIV): four bearers waiting in the glade with the body on their shoulders, the grave to be dug
+                var grave = G(0f, 104f);
+                foreach (var c in new[] { new Vector3(0, 0, 102.6f), grave, new Vector3(-1.6f, 0, 105.4f), new Vector3(1.0f, 0, 104.7f) }) CrespoFlora.ClearAround(c, 1.8f);
+                var bearers = new List<DiverPuppet>();
+                foreach (var (bx, bz) in new[] { (-0.42f, 102.0f), (0.42f, 102.0f), (-0.42f, 103.2f), (0.42f, 103.2f) })
+                {
+                    var b = Divers.Build(root, "A bearer (diver)", G(bx, bz), 0f, true, false, false);
+                    if (b != null) { bearers.Add(b); var bl = b.GetComponentInChildren<Light>(true); if (bl != null) bl.enabled = true; }
+                }
+                var rite = new GameObject("The burial (I.XXIV)").AddComponent<BurialRite>();
+                rite.transform.SetParent(root, false);
+                rite.nemo = guide; rite.digger = crew; rite.bearers = bearers.ToArray(); rite.grave = grave;
+                rite.shroud = Divers.Shroud(root, G(0f, 102.6f) + Vector3.up * 1.72f);
+                rite.mound = CrespoFlora.Spawn("grave_mound", grave, 0f);
+                AoBlob(root, grave, 1.1f, 2.0f);   // the dark of the fresh grave
             }
             else Notes.Add("Diver parts FBX missing: no divers in Mission I.");
             var sp = new Vector3(0, 0, 0);

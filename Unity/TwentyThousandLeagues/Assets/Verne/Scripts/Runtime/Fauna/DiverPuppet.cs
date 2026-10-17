@@ -12,7 +12,7 @@ namespace Verne
     /// </summary>
     public class DiverPuppet : MonoBehaviour
     {
-        public enum Gesture { Idle, Walk, Beckon, Kneel, KneelCross, Dig, Carry, Lower, Adieu }
+        public enum Gesture { Idle, Walk, Beckon, Kneel, KneelCross, Dig, Carry, Lower, Adieu, KneelAdieu }
         public Gesture gesture = Gesture.Idle;
         [Tooltip("Steps per second at full walking pace (heavy: 'I am not superman').")]
         public float cadence = 0.75f;
@@ -75,6 +75,8 @@ namespace Verne
                     tShL = tShR = -100f; tElL = tElR = -75f; tTorso = -3f; break;   // hands at the shoulder, the burden on it
                 case Gesture.Lower:
                     tShL = tShR = -65f; tElL = tElR = -20f; tTorso = -32f; tKnL = tKnR = 35f; tHipL = tHipR = -25f; tDrop = -0.12f; break;
+                case Gesture.KneelAdieu:     // "they knelt again, and all extended their hands in sign of a last adieu"
+                    tKnL = 88f; tKnR = 88f; tDrop = -0.38f; tTorso = -6f; tHead = -6f; tShL = tShR = -78f + 3f * Mathf.Sin(m_T * 0.8f); tElL = tElR = -8f; break;
                 case Gesture.Adieu:
                     tShR = -165f + 8f * Mathf.Sin(m_T * 1.2f); tElR = -5f; tShRz = 12f; tHead = 6f; break;
             }

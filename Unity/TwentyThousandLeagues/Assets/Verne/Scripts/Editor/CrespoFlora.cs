@@ -100,6 +100,22 @@ namespace Verne.EditorTools
         /// <summary>The yaw that lays a prop's long axis along a world heading (degrees from +Z).</summary>
         static float YawAlong(string name, float heading) => LongAxisIsX(name) ? heading - 90f : heading;
 
+        /// <summary>Places one more prop after Place() (the burial's mound).</summary>
+        public static GameObject Spawn(string name, Vector3 pos, float yaw) => s_Root != null ? PutAt(name, pos, yaw, 1f) : null;
+
+        /// <summary>Clears placed props within r metres (xz) of p, so a scene's actors stand free.</summary>
+        public static void ClearAround(Vector3 p, float r)
+        {
+            if (s_Root == null) return;
+            var kill = new List<GameObject>();
+            foreach (Transform t in s_Root)
+            {
+                var d = t.position - p; d.y = 0f;
+                if (d.magnitude < r && !t.name.StartsWith("coral_cross") && !t.name.StartsWith("grave_mound")) kill.Add(t.gameObject);
+            }
+            foreach (var g in kill) { Object.DestroyImmediate(g); Placed--; }
+        }
+
         static void Scatter(string[] names, int count, float x0, float x1, float z0, float z1, float sMin, float sMax, float lane = 0f, Vector3 avoid = default, float avoidR = 0f)
         {
             int tries = 0;

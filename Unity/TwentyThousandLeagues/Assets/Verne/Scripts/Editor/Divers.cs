@@ -29,6 +29,18 @@ namespace Verne.EditorTools
             return t;
         }
 
+        /// <summary>The body "enveloped in a tissue of white linen", lying along the bearers' shoulders (long axis along +Z).</summary>
+        public static Transform Shroud(Transform parent, Vector3 pos)
+        {
+            var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(Fbx);
+            if (fbx == null) return null;
+            var go = Part(fbx, "shroud", parent, Vector3.zero);
+            if (go == null) return null;
+            go.transform.position = pos;
+            go.name = "The body in white linen";
+            return go.transform;
+        }
+
         /// <summary>Builds a diver standing at pos, facing yaw. Returns null if the FBX is missing.</summary>
         public static DiverPuppet Build(Transform parent, string name, Vector3 pos, float yaw, bool lamp, bool stick, bool gun, bool pickaxe = false)
         {
