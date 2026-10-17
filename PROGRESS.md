@@ -148,3 +148,26 @@ Each run appends to the log at the bottom and keeps this checklist honest.
     5. Rivet and plate normal map on the hull.
     6. Then M3 (the volumetrics renderer feature).
   - **Blockers:** none. Keep shader code conservative, since Unity shaders can't be compiled here.
+
+- **2026-10-17/18 (run 2 = Part 2, 21:10 UTC / 02:40 IST onward):**
+  - **Access.** `add_repo` wasn't in this session either; the repo was already cloned and in scope and pushes work, so the run went ahead (as in run 1). Lock taken and pushed first.
+  - **Toolchain.** Rebuilt from `setup_toolchain.sh`. The streamed Unity download was cut off once, so the script now downloads resumably. **New: Microsoft DXC** and `Source/tools/shader_check.py`, a real compile check of every pass and keyword variant of our shaders against the URP 17 / Core RP includes.
+  - **M2, the Nautilus (Part 2's milestone), done to the extent possible without Unity:**
+    - `nautilus_interior_aft.py`: central well and ladder, corridor, Ned and Conseil's cabin (Ned's harpoon), kitchen (electric ranges with platinum sponges, the still), bath-room, crew's room, robing-room (twelve dresses, helmets, reservoirs, lamps, air-guns, and the player's own kit on the bench), the flooding cell, a passage, and the 20 m **engine-room** after im024 (Bunsen's piles, electro-magnets, the great toothed wheel and the screw's axle, which turn in Unity).
+    - Forward rooms dressed: 1,439 books, 24 Met canvases at their own aspect (dense salon hang), specimens in the cases, a patterned carpet and a gilt-lattice luminous ceiling.
+    - Exterior: per-plate UVs and a generated rivet tile on the hull; the pilot's and lantern's cages remodelled after im027.
+    - Interactions from the book: organ (Bach's Toccata, synthesised pipe organ), ceiling switch then panel lever (I.XIV), Nemo's dials driven by depth, speed and real time, the suit-up in the book's order for each excursion, the stopper-plate wheel, readable plaques in Verne's words, the Ruhmkorff lamp (L).
+    - The flooding cell completed (dogs, undressed refusal, the cold rising, a water veil) and the excursion state (Crespo, then Atlantis at 150 fathoms).
+    - **The saloon window** is a live view: `Verne/SeaLit` water model, backdrop shell, instanced fish schools and medusae.
+  - **M3 started (Part 3 owns it):** `VerneUnderwaterFeature` (RenderGraph): reduced-res march with real sun shafts from the shadow map, hero lamp beams, HG phase, per-channel extinction, temporal reprojection with clamp, depth-aware composite, analytic far field, Snell's window, dither. `VerneWater` colour scripts (Title, Crespo, Atlantis). Caustic light cookie, marine snow, helmet port with breath fog, AO decals. Built-in fog stays only as a fallback.
+  - **M4 started (Part 3 owns it):** 31 flora species (`crespo_flora.py`) laid along the route in the book's order; fish schools, medusae, tintoreas; divers as puppets of Blender parts with all eight gestures; Nemo guides each excursion; **the burial** scripted from I.XXIV.
+  - **Verified:**
+    - C# compiles (editor and player passes) after every change; all shaders pass DXC against the URP includes.
+    - Looked at, next to the engravings: aft rooms (`m2_robing_vs_im033.jpg`), engine-room (`m2_engine_vs_im024.jpg`), dressed saloon and library (`m2_fore_dressed_vs_im022.jpg`), pilot cage (`m2_pilot_cage_vs_im027.jpg`), hull rivets (`m2_hull_rivets.png`), flora sheet (`m4_flora_sheet.png`), diver and poses (`m4_diver_vs_im033.jpg`, `m4_diver_poses.png`).
+    - The water look was tuned on CPU mocks of the shader equations (`m2_saloon_window_mock.png`, `m3_water_mock_Mission1.png`, `m3_helmet_port_mock.jpg`). The organ was checked by spectrogram (`m2_organ_spectrogram.png`).
+    - **Not verified:** nothing has run inside Unity yet. The riskiest new parts are the RenderGraph water pass (first in-engine look), FBX axis assumptions for flora and divers (the code measures the long axis rather than trusting it), and the bootstrap's prefab wiring. The validation step now reports the new wiring in `verne_setup_report.txt`.
+  - **Next (Part 3):**
+    1. If GUM has sent `verne_setup_report.txt` or a screenshot, fix what it shows first.
+    2. M3: in-Unity look pass on the water (tune `VerneWater` presets, shafts, Snell's window), bounce cards and lamp-following shadow decals, quality-tier check.
+    3. M4: NavMesh agents for the divers, Ned and Conseil, the sea-spider beat and crustaceans, the forest sway, polyps that retract, terrain art beyond the greybox seabed, burial timing.
+  - **Blockers:** none, except that only GUM's machine can run Unity.
