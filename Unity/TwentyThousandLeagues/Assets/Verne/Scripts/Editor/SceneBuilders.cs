@@ -190,6 +190,19 @@ namespace Verne.EditorTools
             }
             Wall("Corridor end", ship, new Vector2(X0, -15f), new Vector2(CX, -15f), 0, 2.4f, "Iron");
 
+            // the passage beside the cell and the engine-room, 65 ft long (I.XI, plate im024)
+            Room(ship, "Passage to the engine-room", 1.2f, X1, -17.5f, -15f, 2.3f, null, "Iron", "Ceiling", "iron");
+            Wall("Passage starboard", ship, new Vector2(X1, -17.5f), new Vector2(X1, -15f), 0, 2.3f, "Iron");
+            var engine = Room(ship, "Engine-room", X0, X1, -37.5f, -17.5f, 4.4f, null, "Iron", "Ceiling", "iron");
+            Wall("Engine-room fore", ship, new Vector2(1.2f, -17.5f), new Vector2(X1, -17.5f), 0, 4.4f, "Iron", new Opening(1.475f, 0.75f, 2.0f));
+            Wall("Engine-room fore, above the cell", ship, new Vector2(X0, -17.5f), new Vector2(1.2f, -17.5f), 2.3f, 2.1f, "Iron");
+            SideWalls(ship, X0, X1, -37.5f, -17.5f, 4.4f, "Iron");
+            Wall("Engine-room aft (the screw's stuffing box)", ship, new Vector2(X0, -37.5f), new Vector2(X1, -37.5f), 0, 4.4f, "Iron");
+            foreach (float z in new[] { -21f, -28f, -34f })
+                PointLight("Engine-room light", engine, new Vector3(0f, 3.8f, z), new Color(1f, 0.94f, 0.84f), 1.6f, 9f);
+            var engDoor = HingedDoor(engine, "Engine-room door", new Vector3(2.3f, 0, -15f), 90f, 0.75f, 2.0f, "Iron");
+            engDoor.openAngle = 100f;
+
             // ---- art for both blocks (Blender, Source/blender/nautilus_interior_fore.py and _aft.py) or greybox furniture
             bool art = NautilusInterior.Place(ship) != null;
             Art = art;
@@ -204,7 +217,7 @@ namespace Verne.EditorTools
             FurnishLibrary(library, X0, X1);
             FurnishDining(dining);
             if (art) HideGreyboxWhereArt(ship, 0f, 27.6f);
-            if (s_AftArt != null) HideGreyboxWhereArt(ship, -17.6f, -0.01f);
+            if (s_AftArt != null) { HideGreyboxWhereArt(ship, -37.6f, -0.01f); MachineryTurns(s_AftArt); }
             else Notes.Add("Aft block FBX missing: the aft rooms stay greybox.");
             var chapter = ship.gameObject.AddComponent<ChapterAboard>();
             chapter.note = s_Note; chapter.cell = s_Cell; chapter.seaDoor = s_SeaDoor;
@@ -217,6 +230,20 @@ namespace Verne.EditorTools
 
         static bool Art;
         static Transform s_AftArt;
+
+        /// <summary>The axle of the screw, the great wheel and the cog turn ("about a hundred and twenty revolutions", slowed for the eye).</summary>
+        static void MachineryTurns(Transform art)
+        {
+            foreach (var (n, rpm) in new[] { ("rot_shaft", 30f), ("rot_great_wheel", 30f), ("rot_cog", -30f * 1.62f / 0.66f) })
+            {
+                var t = Markers.Find(art, n);
+                if (t == null) { Notes.Add("Engine part missing: " + n); continue; }
+                var r = t.gameObject.AddComponent<Rotator>();
+                r.axis = Vector3.forward;   // the ship's fore-and-aft axis (the ship sits unrotated at the origin)
+                r.rpm = rpm;
+                GameObjectUtility.SetStaticEditorFlags(t.gameObject, 0);
+            }
+        }
         static Readable s_Note;
         static FloodingCell s_Cell;
         static SceneExit s_SeaDoor;
@@ -514,7 +541,7 @@ namespace Verne.EditorTools
             Wall("Cell starboard", ship, new Vector2(x1, z0), new Vector2(x1, z1), 0, h, "Iron");
             Wall("Cell port (outer door, in the hull)", ship, new Vector2(x0, z0), new Vector2(x0, z1), 0, h, "Iron", new Opening(1.25f, 0.9f, 2.0f));
             // where the corridor would continue: closed off, this is the sea side
-            Wall("Robing room aft, beside the cell", ship, new Vector2(x1, z1), new Vector2(3.2f, z1), 0, 2.4f, "IronPaint");
+            Wall("Robing room aft, beside the cell", ship, new Vector2(x1, z1), new Vector2(3.2f, z1), 0, 2.4f, "IronPaint", new Opening(1.475f, 0.75f, 2.0f));
             Wall("Sea-side port", ship, new Vector2(-3.2f, z0), new Vector2(-3.2f, z1), 0, h, "Iron");
             Box("Sea-side sill", ship, new Vector3(-2.6f, -0.1f, (z0 + z1) * 0.5f), new Vector3(1.2f, 0.2f, z1 - z0), "Iron", 1.6f, true, "iron");
             Box("Sea-side roof", ship, new Vector3(-2.6f, h + 0.1f, (z0 + z1) * 0.5f), new Vector3(1.2f, 0.2f, z1 - z0), "Iron");
@@ -574,7 +601,7 @@ namespace Verne.EditorTools
             GameObject suits;
             if (s_AftArt != null)
             {
-                suits = Box("The bench where the visitors are dressed", robing, new Vector3(1.33f, 0.9f, -14.72f), new Vector3(2.95f, 1.8f, 0.5f), "Greybox", 1f, true, null, false);
+                suits = Box("The bench where the visitors are dressed", robing, new Vector3(1.0f, 0.9f, -14.72f), new Vector3(2.3f, 1.8f, 0.5f), "Greybox", 1f, true, null, false);
                 suits.GetComponent<MeshRenderer>().enabled = false;
             }
             else suits = Box("A dozen diving apparatuses", robing, new Vector3(3.0f, 1.2f, -13.75f), new Vector3(0.3f, 2.0f, 2.2f), "Leather");

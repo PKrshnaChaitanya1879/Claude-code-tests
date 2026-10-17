@@ -55,7 +55,7 @@ namespace Verne.EditorTools
             foreach (var mf in inst.GetComponentsInChildren<MeshFilter>(true))
             {
                 var go = mf.gameObject;
-                bool kit = go.name.StartsWith("kit_");
+                bool kit = go.name.StartsWith("kit_") || go.name.StartsWith("rot_");   // these move: never static
                 if (!kit) GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic | StaticEditorFlags.ContributeGI | StaticEditorFlags.OccluderStatic | StaticEditorFlags.OccludeeStatic | StaticEditorFlags.ReflectionProbeStatic);
                 if (go.name.Contains("__col") && !go.name.Contains("shell"))
                 {
