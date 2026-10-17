@@ -177,6 +177,16 @@ Shader "Hidden/Verne/Underwater"
                 float3 Sfar = Tm * Lfar * _VerneAlbedo.rgb * (1.0 - exp(-sigT * max(0.0, dist - tMax)));
                 float3 T = exp(-sigT * dist);
                 float3 col = scene.rgb * T + S + Sfar;
+                // Snell's window: looking up through open water, the sky is squeezed into a bright disc of
+                // half-angle 48.6°; outside it the surface is a dim mirror (total internal reflection)
+                if (dist > 1e4 && rd.y > 0.05)
+                {
+                    float dS = (_VerneSurface.x - ro.y) / rd.y;
+                    float3 Ts = exp(-sigT * max(dS, 0.0));
+                    float win = smoothstep(0.64, 0.69, rd.y);
+                    float3 sky = _VerneSurfaceAmbient.rgb * (win * 7.0 + (1.0 - win) * 0.5 * rd.y);
+                    col += Ts * sky;
+                }
                 col += (IGN(i.positionCS.xy + _VerneMarch.z * 3.1) - 0.5) * (1.0 / 255.0);   // dither against banding
                 return half4(max(col, 0.0), scene.a);
             }

@@ -45,6 +45,22 @@ namespace Verne.EditorTools
             return v;
         }
 
+        /// <summary>The caustic web on the sun (cookie imported as a repeating light cookie).</summary>
+        static void Caustics(Light sun, float size)
+        {
+            string path = VerneBootstrap.Root + "/Textures/caustics_cookie.png";
+            var ti = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (ti == null) { Notes.Add("Caustics cookie missing."); return; }
+            if (ti.textureType != TextureImporterType.Cookie || ti.wrapMode != TextureWrapMode.Repeat)
+            {
+                ti.textureType = TextureImporterType.Cookie; ti.wrapMode = TextureWrapMode.Repeat; ti.sRGBTexture = false; ti.mipmapEnabled = true;
+                ti.SaveAndReimport();
+            }
+            var c = sun.gameObject.AddComponent<CausticCookie>();
+            c.cookie = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            c.size = size;
+        }
+
         static Light Sun(string name, Vector3 euler, Color color, float intensity, bool shadows = true)
         {
             var go = new GameObject(name);
@@ -112,7 +128,7 @@ namespace Verne.EditorTools
             var s = NewScene("Title");
             Ambient(new Color(0.10f, 0.22f, 0.26f), new Color(0.04f, 0.09f, 0.11f), new Color(0.01f, 0.02f, 0.03f));
             Fog(true, new Color(0.05f, 0.16f, 0.19f), 0.028f);
-            Sun("Sun (refracted)", new Vector3(62, 25, 0), new Color(0.75f, 0.92f, 0.95f), 1.4f);
+            Caustics(Sun("Sun (refracted)", new Vector3(62, 25, 0), new Color(0.75f, 0.92f, 0.95f), 1.4f), 9f);
             var root = new GameObject("Seabed").transform;
             Seabed(root, 120f, 2f, 3.0f, 0.03f, "Sand", 7);
             Rocks(root, 26, 50f, 11, "Rock");
@@ -821,7 +837,8 @@ namespace Verne.EditorTools
             // shallows at ~9 m: bright, green-blue far field (M3 replaces fog with the physical water model)
             Ambient(new Color(0.16f, 0.34f, 0.36f), new Color(0.07f, 0.17f, 0.19f), new Color(0.03f, 0.06f, 0.07f));
             Fog(true, new Color(0.10f, 0.33f, 0.36f), 0.022f);
-            Sun("Sun (refracted)", new Vector3(58, 200, 0), new Color(0.9f, 0.97f, 0.92f), 1.8f);   // from ahead along the route: shafts and silhouettes
+            var sun = Sun("Sun (refracted)", new Vector3(58, 200, 0), new Color(0.9f, 0.97f, 0.92f), 1.8f);   // from ahead along the route: shafts and silhouettes
+            Caustics(sun, 7f);
             var root = new GameObject("Crespo").transform;
             // the route runs north (+Z): sand plain → weed prairie → forest → coral gallery → glade
             Seabed(root, 240f, 2f, 3.5f, 0.025f, "Sand", 21, (x, z) => -Mathf.Clamp01((z - 40f) / 160f) * 18f);
