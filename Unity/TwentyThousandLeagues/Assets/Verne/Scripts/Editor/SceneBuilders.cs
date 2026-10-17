@@ -896,12 +896,16 @@ namespace Verne.EditorTools
             // the route runs north (+Z): sand plain → weed prairie → forest → coral gallery → glade
             Seabed(root, 240f, 2f, 3.5f, 0.025f, "Sand", 21, (x, z) => -Mathf.Clamp01((z - 40f) / 160f) * 18f);
             Rocks(root, 60, 110f, 22, "Rock");
-            KelpStand(root, new Vector3(0, 0, 70), 140, 26f, 23, "Greybox", 3f, 4.6f);
-            var glade = new GameObject("Coral cemetery (placeholder)").transform; glade.SetParent(root, false);
-            var gp = new Vector3(0, 0, 110);
-            Box("Pedestal of rocks", glade, new Vector3(gp.x, GroundAt(gp) + 0.4f, gp.z), new Vector3(1.2f, 0.8f, 1.2f), "Rock", 1.2f, true, "rock");
-            Box("Coral cross upright", glade, new Vector3(gp.x, GroundAt(gp) + 1.8f, gp.z), new Vector3(0.22f, 2.0f, 0.22f), "CoralRed");
-            Box("Coral cross arms", glade, new Vector3(gp.x, GroundAt(gp) + 2.2f, gp.z), new Vector3(1.3f, 0.2f, 0.22f), "CoralRed");
+            // M4: the Blender flora along the route; the greybox stand and cross only if the FBX is missing
+            if (!CrespoFlora.Place(root, GroundAt))
+            {
+                KelpStand(root, new Vector3(0, 0, 70), 140, 26f, 23, "Greybox", 3f, 4.6f);
+                var glade = new GameObject("Coral cemetery (placeholder)").transform; glade.SetParent(root, false);
+                var gp = new Vector3(0, 0, 110);
+                Box("Pedestal of rocks", glade, new Vector3(gp.x, GroundAt(gp) + 0.4f, gp.z), new Vector3(1.2f, 0.8f, 1.2f), "Rock", 1.2f, true, "rock");
+                Box("Coral cross upright", glade, new Vector3(gp.x, GroundAt(gp) + 1.8f, gp.z), new Vector3(0.22f, 2.0f, 0.22f), "CoralRed");
+                Box("Coral cross arms", glade, new Vector3(gp.x, GroundAt(gp) + 2.2f, gp.z), new Vector3(1.3f, 0.2f, 0.22f), "CoralRed");
+            }
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);

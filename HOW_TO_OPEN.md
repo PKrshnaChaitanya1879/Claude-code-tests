@@ -47,7 +47,8 @@ If you opened an earlier download, open this one fresh: the build re-runs by its
    1. Close the inner door, then **turn the stopper-plate wheel** on it until the plates are home.
    2. Hold the sea tap: hiss, the cold rising, the gauge climbing to the outside pressure.
    3. When the cell is full, open the outer door and step out onto the sea floor.
-9. After the first excursion, the Nautilus prepares the second: midnight, no lamps, an iron-pointed stick, and the door opens 150 fathoms down.
-10. The title menu can also jump straight to either excursion.
+9. **The first excursion** now has its flora: sea-stars and shells on the sand, a prairie of red algae, the forest of Crespo's tall laminaries, a gallery of coral arches, and the coral cemetery's glade. Press **L** for the Ruhmkorff lamp in the darker parts.
+10. After the first excursion, the Nautilus prepares the second: midnight, no lamps, an iron-pointed stick, and the door opens 150 fathoms down.
+11. The title menu can also jump straight to either excursion.
 
 **Settings:** Esc → Settings has quality (Light / Balanced / Full), 30/60 fps cap, field of view, sensitivity, invert look, head movement, subtitles and volumes. On your laptop the game starts on **Light** automatically.

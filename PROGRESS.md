@@ -50,8 +50,8 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 - [~] Quality tiers that hold 30 fps on the target laptop (estimate with a budget: triangles, draw calls, fill). *(Estimates in `Docs/PERFORMANCE.md`: the water pass ≈ 1 ms on Light. Measuring is M8.)*
 
 ### M4 · Mission I
-- [ ] Terrain and route: sunlit bottom → submarine forest → coral gallery (lamps) → coral tree forest → cemetery glade.
-- [ ] Flora: corals, isis, gorgonians, sea-anemones, algae and fucus, sponges, sea-stars.
+- [~] Terrain and route: sunlit bottom → submarine forest → coral gallery (lamps) → coral tree forest → cemetery glade. *(Run 2: the flora is laid along the greybox terrain in this order (`CrespoFlora.cs`): sandy plain, prairie, forest with a clear lane, three coral arches with pendants, the glade ringed by coral trees and garlands, the cross and the mounds with one grave left to dig. Terrain art and the lit look are Part 3's.)*
+- [~] Flora: corals, isis, gorgonians, sea-anemones, algae and fucus, sponges, sea-stars. *(Run 2: 31 species in `Source/blender/crespo_flora.py`, named as Verne names them (laminaries, alariae, fucus, laurenciae, pavonari, acetabuli, red coral with white polyps, tuft and pink corals, isis, gorgonian fans, zebra-meandrines, caryophylliae, fungia, anemones, sponges, sea-stars, asterophytons, shells, coral trees, sea-bindweed, pendants, arch, cross, mounds); sheet `m4_flora_sheet.png`; colliders on everything above the ankle. Still to do: sway animation, polyps that retract, an in-Unity look.)*
 - [ ] Fauna: fish schools, medusae, crustaceans and more, animated. Book species first.
 - [ ] Divers (Nemo, crew, Ned, Conseil): rigged and animated (walk, carry, dig, lower, kneel, kneelCross, adieu, beckon), on NavMesh.
 - [ ] Burial timeline with sparks from the pickaxe; the player can kneel.
