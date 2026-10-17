@@ -29,25 +29,25 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 - [x] Settings: quality, sensitivity, invert Y, volumes, subtitles, 30/60 cap.
 
 ### M2 · The Nautilus
-- [~] Exterior faithful to the book and the engravings, with LODs. *(Model, LODs, collider and prefab done; still missing: plate rivet normal map, a closer pass on the cage domes, an in-Unity check.)*
-- [~] Interior upgraded from `reference/blender/build_nautilus.py`: *(forward block done: saloon, library, Nemo's room, Aronnax's room and dining room, at the book's dimensions; still missing: books on the shelves, Met canvases in the frames, carpet and ceiling patterns, and the aft rooms: staircase, cabins, kitchen, robing room, cell, engine room.)*
+- [~] Exterior faithful to the book and the engravings, with LODs. *(Model, LODs, collider, prefab and (run 2) riveted plates (per-plate UVs + generated rivet normal and colour tile, `m2_hull_rivets.png`) done; still missing: a closer pass on the cage domes, an in-Unity check.)*
+- [~] Interior upgraded from `reference/blender/build_nautilus.py`: *(run 2: both blocks done. Fore: saloon, library with 1,439 books, Nemo's room, Aronnax's room, dining room, 16 Met canvases in the saloon frames. Aft (`nautilus_interior_aft.py`): central well and ladder, corridor, Ned and Conseil's cabin, kitchen with still and ranges, bath-room, crew's room, robing-room with twelve dresses and the player's kit, the flooding cell, a passage and the 20 m engine-room after im024 with turning axle and wheel. Still missing: carpet and ceiling arabesques, specimens inside the cases, an in-Unity check.)*
   - Saloon: luminous ceiling, organ, paintings, cases, fountain, crystal windows, sliding panels.
   - Library, Nemo's room with its instruments, Aronnax's cabin, corridors, robing-room, flooding cell.
-- [~] Simplified `_col` collision meshes; no walk-through anywhere. *(Exterior `_col` mesh; interior walls collide through the exact greybox boxes; furniture through its own low-poly meshes (`__col`). The scripted sweep audit comes in M8.)*
-- [ ] Interactables working the way the book describes.
-- [~] The flooding-cell sequence, Iron Lung style. *(Inner door, tap, water, gauge, outer door and loops work in the greybox; still missing: the stopper-plate dogs, the cold-rising feel on the camera, the real cell model.)*
-- [ ] The saloon window as a real view of the exterior.
+- [~] Simplified `_col` collision meshes; no walk-through anywhere. *(Exterior `_col` mesh; interior walls collide through the exact greybox boxes (now including the aft rooms, passage and engine-room); furniture and machinery through their own low-poly meshes (`__col`). Readable plaques are triggers so they never block. The scripted sweep audit comes in M8.)*
+- [x] Interactables working the way the book describes. *(Run 2, compile-verified: the organ plays Bach's Toccata (synthesised, spectrogram `m2_organ_spectrogram.png`); the luminous ceiling's switch then the panel lever (I.XIV order); Nemo's dials driven by depth, speed and a real-time 24-hour clock; the suit-up in the book's order per excursion with the kit leaving the bench; the stopper-plate wheel; the Ruhmkorff lamp; readable instruments, pearls, shells, cigar brazier, dinner service, still, bath, harpoon, air-guns and Bunsen's piles in Verne's words.)*
+- [x] The flooding-cell sequence, Iron Lung style. *(Run 2: real cell model; the stopper-plate wheel must be turned home before the tap works and back before the door opens; the tap refuses an undressed visitor; the book's lines as the cold rises; a water veil when the eye goes under; gauge range follows the outside pressure (9 m Crespo, 274 m Atlantis).)*
+- [x] The saloon window as a real view of the exterior. *(Run 2: backdrop shell of open water and instanced fish schools and medusae in the `Verne/SeaLit` water model, lit by the window light; tuned on a CPU mock, `m2_saloon_window_mock.png`; shaders DXC-checked.)*
 
 ### M3 · Underwater rendering (INSIDE)
-- [ ] URP renderer features:
+- [~] URP renderer features: *(run 2: all written, C# compile-checked and shaders DXC-checked against the URP includes; look tuned on a CPU mock of the shader (`m3_water_mock_Mission1.png`). Needs the in-Unity look check and tuning in Part 3.)*
   - Per-channel absorption and depth fog.
   - Quarter-res ray-marched volumetrics (blue noise plus temporal).
   - Caustic cookie; marine snow lit by the lamps.
   - Snell's window and total internal reflection.
   - Bloom, grade, dithering; the helmet port and its breath fog.
-- [ ] Hand-placed decal AO, contact shadows and bounce cards, as Playdead did.
-- [ ] Colour script per scene: vibrant where the light is; black silhouettes against luminous fog.
-- [ ] Quality tiers that hold 30 fps on the target laptop (estimate with a budget: triangles, draw calls, fill).
+- [~] Hand-placed decal AO, contact shadows and bounce cards, as Playdead did. *(AO decals under rocks and the beached hull; bounce cards and lamp-following shadow decals still to do.)*
+- [~] Colour script per scene: vibrant where the light is; black silhouettes against luminous fog. *(VerneWater presets for Title, Crespo and Atlantis; Crespo tuned on the mock. Atlantis needs its pass in M5.)*
+- [~] Quality tiers that hold 30 fps on the target laptop (estimate with a budget: triangles, draw calls, fill). *(Estimates in `Docs/PERFORMANCE.md`: the water pass ≈ 1 ms on Light. Measuring is M8.)*
 
 ### M4 · Mission I
 - [ ] Terrain and route: sunlit bottom → submarine forest → coral gallery (lamps) → coral tree forest → cemetery glade.
