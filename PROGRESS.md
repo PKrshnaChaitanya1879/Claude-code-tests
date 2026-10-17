@@ -30,10 +30,10 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 
 ### M2 · The Nautilus
 - [~] Exterior faithful to the book and the engravings, with LODs. *(Model, LODs, collider and prefab done; still missing: plate rivet normal map, a closer pass on the cage domes, an in-Unity check.)*
-- [ ] Interior upgraded from `reference/blender/build_nautilus.py`:
+- [~] Interior upgraded from `reference/blender/build_nautilus.py`: *(forward block done: saloon, library, Nemo's room, Aronnax's room and dining room, at the book's dimensions; still missing: books on the shelves, Met canvases in the frames, carpet and ceiling patterns, and the aft rooms: staircase, cabins, kitchen, robing room, cell, engine room.)*
   - Saloon: luminous ceiling, organ, paintings, cases, fountain, crystal windows, sliding panels.
   - Library, Nemo's room with its instruments, Aronnax's cabin, corridors, robing-room, flooding cell.
-- [ ] Simplified `_col` collision meshes; no walk-through anywhere.
+- [~] Simplified `_col` collision meshes; no walk-through anywhere. *(Exterior `_col` mesh; interior walls collide through the exact greybox boxes; furniture through its own low-poly meshes (`__col`). The scripted sweep audit comes in M8.)*
 - [ ] Interactables working the way the book describes.
 - [~] The flooding-cell sequence, Iron Lung style. *(Inner door, tap, water, gauge, outer door and loops work in the greybox; still missing: the stopper-plate dogs, the cold-rising feel on the camera, the real cell model.)*
 - [ ] The saloon window as a real view of the exterior.
@@ -128,9 +128,21 @@ Each run appends to the log at the bottom and keeps this checklist honest.
     - All C# compiles against Unity 6000.0.85 reference assemblies, in both editor and player passes.
     - Exterior previews looked at against the engravings; SFX spectrograms looked at.
     - **Not yet verified:** the bootstrap has never run inside Unity (impossible here). The SerializedObject field names, quality-level edits and FBX orientation are the riskiest parts. GUM's first-open report will tell.
+  - **M2 interior (forward block, after the first log draft):**
+    - `Source/blender/nautilus_interior_fore.py` ports the prototype's saloon, library, Nemo and Aronnax rooms to the book's metres and the Unity layout, and adds a new dining room. About 22k triangles in all.
+      - Saloon: organ between curtains, tridacna on its table, embrasured crystal windows with copper bands, coved luminous ceiling, divans, glass cases, busts, frames.
+      - Library: curved ebony runs with brass, divans, the great table, four globes.
+      - Nemo's room: instrument board on the starboard wall, iron bedstead, skylight.
+      - Aronnax's room.
+      - Dining room: sideboards at both extremities, table and chairs, luminous panel.
+    - Doors and furniture re-placed so no doorway is blocked. The greybox saloon→Nemo door moved beside the organ, and a greybox dining sideboard that blocked the library door was fixed.
+    - The Unity bootstrap places it, remaps its materials to the textured CC0 ones, and gives furniture MeshColliders. The greybox under it turns invisible but keeps colliding. The note, the volume, the panel lever and working gauge needles sit on the art.
+    - Preview against im022, im029, im021, im023, im020 and im051: `Source/previews/m2_interior_vs_engravings.jpg`. It reads right in layout and proportion, but is barer than the engravings.
   - **Next, in order:**
     1. Read GUM's `verne_setup_report.txt` if she sent one, and fix any FAIL.
-    2. **M2 interior:** port `reference/blender/build_nautilus.py` to the Unity layout in `SceneBuilders` (book dimensions above): saloon with organ, tridacna, cases, paintings (Met CC0) and coved luminous ceiling; library; Nemo's room with instruments; Aronnax's room; robing room with a dozen dresses; flooding cell. Export room FBXs with `_col` meshes and swap out the greybox.
+    2. **M2 interior, continued:**
+       - Dress the forward rooms: books on every shelf, the 30 Met canvases in the frames (`reference/assets/paint`), carpet and ceiling arabesques, specimens in the cases.
+       - Then the aft block in Blender, on the greybox: staircase, cabin, kitchen, bath, crew, robing room with a dozen dresses, the flooding cell with stopper-plates, and a glimpse of the engine room.
     3. The full suit-up order.
     4. The saloon window as a live view onto an exterior scene section.
     5. Rivet and plate normal map on the hull.

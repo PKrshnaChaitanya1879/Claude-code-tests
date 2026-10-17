@@ -15,6 +15,21 @@ namespace Verne.EditorTools
 
         public static bool BuildPrefab()
         {
+            var mi = AssetImporter.GetAtPath(Fbx) as ModelImporter;
+            if (mi == null) return false;
+            // swap the flat Blender colours for the project's textured materials (CC0 ambientCG)
+            var remap = new (string from, string to)[]
+            {
+                ("M_ebony", "Ebony"), ("M_oak", "Oak"), ("M_carpet", "Carpet"), ("M_tapestry", "Tapestry"), ("M_plaster", "Plaster"),
+                ("M_marble", "Marble"), ("M_brass", "Brass"), ("M_iron", "Iron"), ("M_ironpaint", "IronPaint"), ("M_leather", "Leather"),
+                ("M_ceiling", "LuminousCeiling"), ("M_linen", "Linen"),
+            };
+            foreach (var (from, to) in remap)
+            {
+                var m = Materials.Get(to);
+                if (m != null) mi.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), from), m);
+            }
+            mi.SaveAndReimport();
             var src = AssetDatabase.LoadAssetAtPath<GameObject>(Fbx);
             if (src == null) return false;
             var root = new GameObject("Nautilus interior (art)");
