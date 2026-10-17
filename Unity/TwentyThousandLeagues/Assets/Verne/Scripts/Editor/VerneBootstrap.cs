@@ -74,6 +74,7 @@ namespace Verne.EditorTools
             Step("URP assets and quality tiers (Light / Balanced / Full)", ProjectSetup.RenderPipelines);
             Step("Volume profiles (grade per scene)", ProjectSetup.VolumeProfiles);
             Step("Materials", Materials.BuildAll);
+            Step("Model: Nautilus exterior (Blender FBX → prefab with LODs and collider)", NautilusExterior.BuildPrefab);
             Step("Scene: Title", SceneBuilders.Title);
             Step("Scene: Nautilus", SceneBuilders.Nautilus);
             Step("Scene: Mission I (Crespo forest, coral kingdom)", SceneBuilders.Mission1);

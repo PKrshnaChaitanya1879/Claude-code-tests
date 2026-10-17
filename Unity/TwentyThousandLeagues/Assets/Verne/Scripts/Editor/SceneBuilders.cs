@@ -117,7 +117,13 @@ namespace Verne.EditorTools
             Seabed(root, 120f, 2f, 3.0f, 0.03f, "Sand", 7);
             Rocks(root, 26, 50f, 11, "Rock");
             KelpStand(root, new Vector3(-6, 0, 24), 18, 7f, 13);
-            var cam = PreviewCamera(new Vector3(0, 2.2f, -4), new Vector3(-6, 8, 0), new Color(0.05f, 0.16f, 0.19f));
+            var hero = AssetDatabase.LoadAssetAtPath<GameObject>(NautilusExterior.PrefabPath);
+            if (hero != null)
+            {
+                var n = (GameObject)PrefabUtility.InstantiatePrefab(hero, root);
+                n.transform.SetPositionAndRotation(new Vector3(14f, 6.5f, 46f), Quaternion.Euler(0f, -72f, 0f));
+            }
+            var cam = PreviewCamera(new Vector3(0, 2.2f, -4), new Vector3(-8, 14, 0), new Color(0.05f, 0.16f, 0.19f));
             var t = new GameObject("Title Screen").AddComponent<TitleScreen>();
             t.driftCamera = cam.transform;
             GlobalVolume("Title");
@@ -543,11 +549,7 @@ namespace Verne.EditorTools
             Box("Pedestal of rocks", glade, new Vector3(gp.x, GroundAt(gp) + 0.4f, gp.z), new Vector3(1.2f, 0.8f, 1.2f), "Rock", 1.2f, true, "rock");
             Box("Coral cross upright", glade, new Vector3(gp.x, GroundAt(gp) + 1.8f, gp.z), new Vector3(0.22f, 2.0f, 0.22f), "CoralRed");
             Box("Coral cross arms", glade, new Vector3(gp.x, GroundAt(gp) + 2.2f, gp.z), new Vector3(1.3f, 0.2f, 0.22f), "CoralRed");
-            var ret = new GameObject("Return to the Nautilus");
-            ret.transform.SetParent(root, false);
-            ret.transform.position = new Vector3(0, GroundAt(new Vector3(0, 0, -6)) + 1f, -6);
-            var bc = ret.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(3, 3, 1);
-            ret.AddComponent<SceneExit>().scene = SceneFlow.Nautilus;
+            NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
             GlobalVolume("Mission1");
@@ -571,10 +573,40 @@ namespace Verne.EditorTools
             glow.transform.position = new Vector3(0, 70, 170);
             var l = glow.AddComponent<Light>();
             l.type = LightType.Point; l.color = new Color(1f, 0.38f, 0.16f); l.intensity = 30f; l.range = 220f; l.shadows = LightShadows.None;
+            NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
             GlobalVolume("Mission2");
             Save(s, "Mission2");
+        }
+
+        /// <summary>
+        /// The Nautilus lying on the bottom behind the spawn point, its port side (with the flooding-cell
+        /// door and the iron rungs below it) facing the player. Climbing the rungs and entering the door
+        /// returns aboard.
+        /// </summary>
+        static void NautilusAtTheDoor(Transform root, string returnScene)
+        {
+            var doorXZ = new Vector3(0f, 0f, -2.6f);
+            float g = GroundAt(new Vector3(0f, 0f, -5f));
+            var ship = NautilusExterior.Place(root, doorXZ, Vector3.right, g);
+            if (ship == null) return;
+            Physics.SyncTransforms();
+            float deck = ship.transform.position.y;
+            var rungs = new GameObject("Iron rungs below the door");
+            rungs.transform.SetParent(root, false);
+            rungs.transform.position = new Vector3(0f, GroundAt(new Vector3(0, 0, -2.3f)), -2.3f);
+            rungs.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+            var rbc = rungs.AddComponent<BoxCollider>(); rbc.isTrigger = true;
+            float climb = Mathf.Max(0.5f, deck - rungs.transform.position.y + 0.3f);
+            rbc.size = new Vector3(1.0f, climb + 0.6f, 1.0f); rbc.center = new Vector3(0f, climb * 0.5f, 0.3f);
+            var lad = rungs.AddComponent<Verne.Ladder>(); lad.length = climb; lad.climbSpeed = 0.7f;
+            var ret = new GameObject("Return aboard (flooding-cell door)");
+            ret.transform.SetParent(root, false);
+            ret.transform.position = new Vector3(0f, deck + 1.0f, -2.75f);
+            var bc = ret.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(1.2f, 2.0f, 0.8f);
+            ret.AddComponent<SceneExit>().scene = returnScene;
+            Notes.Add($"Nautilus placed on the bottom: deck {deck:0.0} m, door above the rungs at z = -2.6.");
         }
 
         // ------------------------------------------------------------------ build settings and validation
