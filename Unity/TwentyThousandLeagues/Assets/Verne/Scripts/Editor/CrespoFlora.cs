@@ -20,6 +20,7 @@ namespace Verne.EditorTools
         static System.Random s_R;
         static Transform s_Root;
         public static int Placed;
+        static readonly List<(GameObject go, string name)> s_NeedCollider = new List<(GameObject, string)>();
 
         public static bool Place(Transform parent, System.Func<Vector3, float> groundAt)
         {
@@ -28,23 +29,24 @@ namespace Verne.EditorTools
             s_Src.Clear();
             foreach (var t in fbx.GetComponentsInChildren<Transform>(true))
                 if (t.GetComponent<MeshFilter>() != null) s_Src[t.name] = t.gameObject;
-            s_Ground = groundAt; s_R = new System.Random(1871); Placed = 0;
+            s_Ground = groundAt; s_R = new System.Random(1871); Placed = 0; s_NeedCollider.Clear();
             s_Root = new GameObject("Flora of Crespo (Blender)").transform;
             s_Root.SetParent(parent, false);
+            s_Collect = true;
 
             // 1. the sandy plain (z 3–35)
             Scatter(new[] { "sea_star_red", "sea_star_orange", "sea_star_violet" }, 46, -22, 22, 3, 36, 0.9f, 1.4f);
             Scatter(new[] { "shells" }, 18, -20, 20, 3, 36, 0.9f, 1.3f);
             Scatter(new[] { "fungia" }, 12, -18, 18, 5, 36, 0.9f, 1.3f);
-            Scatter(new[] { "anemone" }, 14, -18, 18, 5, 36, 0.8f, 1.5f);
-            Scatter(new[] { "cup_corals", "sponge" }, 14, -18, 18, 8, 40, 0.9f, 1.3f);
-            Scatter(new[] { "brain_coral", "brain_coral_teal" }, 6, -16, 16, 10, 40, 0.7f, 1.4f);
+            Scatter(new[] { "anemone" }, 14, -18, 18, 5, 36, 0.8f, 1.5f, lane: 2.2f);
+            Scatter(new[] { "cup_corals", "sponge" }, 14, -18, 18, 8, 40, 0.9f, 1.3f, lane: 2.2f);
+            Scatter(new[] { "brain_coral", "brain_coral_teal" }, 6, -16, 16, 10, 40, 0.7f, 1.4f, lane: 2.5f);
             // 2. the prairie (z 28–46)
             Scatter(new[] { "red_algae", "padina", "acetabularia" }, 70, -20, 20, 26, 48, 0.9f, 1.6f);
-            Scatter(new[] { "fucus" }, 14, -18, 18, 32, 50, 0.9f, 1.3f);
+            Scatter(new[] { "fucus" }, 14, -18, 18, 32, 50, 0.9f, 1.3f, lane: 2.2f);
             // 3. the forest (z 44–96): laminaries and alariae, a walkable lane kept clear down the middle
-            Scatter(new[] { "laminaria_a", "laminaria_b" }, 130, -26, 26, 44, 96, 0.85f, 1.25f, lane: 1.4f);
-            Scatter(new[] { "alaria", "fucus" }, 50, -24, 24, 44, 96, 0.85f, 1.3f, lane: 1.2f);
+            Scatter(new[] { "laminaria_a", "laminaria_b" }, 130, -26, 26, 44, 96, 0.85f, 1.25f, lane: 2.2f);
+            Scatter(new[] { "alaria", "fucus" }, 50, -24, 24, 44, 96, 0.85f, 1.3f, lane: 2.2f);
             Scatter(new[] { "red_algae", "padina" }, 40, -24, 24, 44, 96, 1f, 1.6f);
             // 4. the coral gallery (z 96–106): arches across the way, pendants from their crowns, the coral kingdom on both sides
             foreach (float z in new[] { 97.5f, 101f, 104.5f })
@@ -83,6 +85,10 @@ namespace Verne.EditorTools
                 gar.transform.localScale = LongAxisIsX("bindweed_garland") ? new Vector3(d.magnitude / 4f, 1f, 1f) : new Vector3(1f, 1f, d.magnitude / 4f);
             }
             Scatter(new[] { "red_coral", "isis", "gorgonian_fan", "anemone", "sea_star_red" }, 30, -10, 10, 102, 120, 0.9f, 1.4f, lane: 0f, avoid: c, avoidR: 4.5f);
+            // colliders last, so every prop above was grounded on the sea floor and not on another prop
+            s_Collect = false;
+            foreach (var (go, name) in s_NeedCollider) if (go != null) AddCollider(go, name);
+            s_NeedCollider.Clear();
             VerneBootstrap.Note($"Mission I flora: {Placed} props from {s_Src.Count} Blender species.");
             return true;
         }
@@ -102,6 +108,7 @@ namespace Verne.EditorTools
 
         /// <summary>Places one more prop after Place() (the burial's mound).</summary>
         public static GameObject Spawn(string name, Vector3 pos, float yaw) => s_Root != null ? PutAt(name, pos, yaw, 1f) : null;
+        static bool s_Collect;
 
         /// <summary>Clears placed props within r metres (xz) of p, so a scene's actors stand free.</summary>
         public static void ClearAround(Vector3 p, float r)
@@ -146,7 +153,7 @@ namespace Verne.EditorTools
             var mr = go.GetComponent<MeshRenderer>();
             if (mr != null && scale < 1.4f && (name.StartsWith("sea_star") || name == "shells" || name == "fungia" || name == "acetabularia" || name == "padina"))
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;   // ankle-high: no shadow cost
-            AddCollider(go, name);
+            if (s_Root != null && s_R != null && s_NeedCollider != null && s_Collect) s_NeedCollider.Add((go, name)); else AddCollider(go, name);
             Placed++;
             return go;
         }
