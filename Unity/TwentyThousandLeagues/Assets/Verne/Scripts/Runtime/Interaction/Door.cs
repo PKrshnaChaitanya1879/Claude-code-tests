@@ -33,6 +33,9 @@ namespace Verne
         {
             base.Awake();
             if (leaf == null) leaf = transform;
+            if (openClip == null) openClip = Resources.Load<AudioClip>("VerneAudio/sfx/door_open");
+            if (closeClip == null) closeClip = Resources.Load<AudioClip>("VerneAudio/sfx/door_close");
+            if (lockedClip == null) lockedClip = Resources.Load<AudioClip>("VerneAudio/sfx/door_locked");
             m_RestRot = leaf.localRotation;
             m_RestPos = leaf.localPosition;
             m_Colliders = leaf.GetComponentsInChildren<Collider>();

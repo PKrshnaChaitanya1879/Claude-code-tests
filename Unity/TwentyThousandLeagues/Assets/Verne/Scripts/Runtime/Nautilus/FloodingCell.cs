@@ -33,6 +33,8 @@ namespace Verne
 
         void Start()
         {
+            if (hissLoop == null) hissLoop = MakeLoop("VerneAudio/loops/cell_hiss");
+            if (gurgleLoop == null) gurgleLoop = MakeLoop("VerneAudio/loops/cell_gurgle");
             if (outerDoor != null) { outerDoor.locked = true; outerDoor.lockedMessage = "The sea presses on it. The cell must be flooded first."; }
             if (floodTap != null) floodTap.interactable = innerDoor == null || !innerDoor.open;
             if (pumpKnob != null) pumpKnob.onUsed.AddListener(() => { if (outerDoor == null || !outerDoor.open) m_Draining = true; });
@@ -62,6 +64,18 @@ namespace Verne
 
             UpdateVisuals();
             UpdateAudio(rate);
+        }
+
+        AudioSource MakeLoop(string res)
+        {
+            var clip = Resources.Load<AudioClip>(res);
+            if (clip == null) return null;
+            var go = new GameObject(clip.name);
+            go.transform.SetParent(transform, false);
+            go.transform.position = volume.center;
+            var a = go.AddComponent<AudioSource>();
+            a.clip = clip; a.loop = true; a.volume = 0f; a.spatialBlend = 0.8f; a.minDistance = 1.5f; a.maxDistance = 15f; a.playOnAwake = false;
+            return a;
         }
 
         bool IsInside(Vector3 pos)

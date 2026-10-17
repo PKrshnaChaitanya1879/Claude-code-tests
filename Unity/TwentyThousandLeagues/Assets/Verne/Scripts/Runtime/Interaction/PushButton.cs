@@ -13,7 +13,7 @@ namespace Verne
         float m_Press;
         Vector3 m_Rest;
 
-        protected override void Awake() { base.Awake(); if (cap == null) cap = transform; m_Rest = cap.localPosition; }
+        protected override void Awake() { base.Awake(); if (cap == null) cap = transform; if (click == null) click = Resources.Load<AudioClip>("VerneAudio/sfx/button_click"); m_Rest = cap.localPosition; }
         protected override void OnBegin(Interactor who) { m_Press = 1f; PlayOneShot(click, 0.7f); base.OnBegin(who); }
         void Update()
         {

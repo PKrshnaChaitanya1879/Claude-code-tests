@@ -41,6 +41,7 @@ namespace Verne
         {
             var r = VerneUI.Rect("Menu", parent, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), anchoredTopLeft, new Vector2(width, 600));
             var m = r.gameObject.AddComponent<MenuList>();
+            m.tick = Resources.Load<AudioClip>("VerneAudio/ui/tick");
             m.m_Root = r; m.width = width;
             return m;
         }

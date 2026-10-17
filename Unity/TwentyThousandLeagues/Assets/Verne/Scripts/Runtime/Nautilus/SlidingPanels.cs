@@ -20,6 +20,15 @@ namespace Verne
         {
             m_Rest = new Vector3[panels.Length];
             for (int i = 0; i < panels.Length; i++) m_Rest[i] = panels[i].localPosition;
+            if (rumble == null)
+            {
+                var clip = Resources.Load<AudioClip>("VerneAudio/loops/panel_rumble");
+                if (clip != null)
+                {
+                    rumble = gameObject.AddComponent<AudioSource>();
+                    rumble.clip = clip; rumble.loop = true; rumble.volume = 0f; rumble.spatialBlend = 0.6f; rumble.playOnAwake = false;
+                }
+            }
         }
 
         public void SetOpen(float v) { target = Mathf.Clamp01(v); }

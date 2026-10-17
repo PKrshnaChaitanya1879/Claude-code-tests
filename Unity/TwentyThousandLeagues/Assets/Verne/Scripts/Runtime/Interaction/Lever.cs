@@ -33,6 +33,7 @@ namespace Verne
         {
             base.Awake();
             if (pivot == null) pivot = transform;
+            if (clunk == null) clunk = Resources.Load<AudioClip>("VerneAudio/sfx/lever_clunk");
             m_Target = value;
             m_LastNotch = Notch;
             Pose();

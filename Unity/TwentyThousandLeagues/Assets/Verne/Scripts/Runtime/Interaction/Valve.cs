@@ -35,6 +35,7 @@ namespace Verne
         {
             base.Awake();
             if (wheel == null) wheel = transform;
+            if (squeak == null) squeak = Resources.Load<AudioClip>("VerneAudio/sfx/valve_squeak");
             m_Rest = wheel.localRotation;
             Pose();
         }
