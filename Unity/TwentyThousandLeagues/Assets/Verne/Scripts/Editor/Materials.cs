@@ -96,6 +96,46 @@ namespace Verne.EditorTools
             return m;
         }
 
+        /// <summary>A canvas from the Met's open-access collection (Assets/Verne/Textures/Paint/p&lt;id&gt;.jpg), lightly varnished.</summary>
+        public static Material Paint(string id)
+        {
+            string key = "Paint_" + id;
+            if (s_Cache.TryGetValue(key, out var cached) && cached != null) return cached;
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(VerneBootstrap.Root + "/Textures/Paint/p" + id + ".jpg");
+            if (tex == null) return null;
+            string path = VerneBootstrap.Generated + "/Materials/M_" + key + ".mat";
+            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m == null) { m = new Material(lit); AssetDatabase.CreateAsset(m, path); }
+            m.SetTexture("_BaseMap", tex);
+            m.SetColor("_BaseColor", new Color(0.9f, 0.88f, 0.84f));
+            m.SetFloat("_Metallic", 0f);
+            m.SetFloat("_Smoothness", 0.42f);
+            m.enableInstancing = true;
+            EditorUtility.SetDirty(m);
+            s_Cache[key] = m;
+            return m;
+        }
+
+        /// <summary>A flat emissive colour (the sea glimpsed through the open hull door, bulbs, coals).</summary>
+        public static Material Emissive(string name, Color baseColor, Color emission)
+        {
+            if (s_Cache.TryGetValue(name, out var cached) && cached != null) return cached;
+            string path = VerneBootstrap.Generated + "/Materials/M_" + name + ".mat";
+            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m == null) { m = new Material(lit); AssetDatabase.CreateAsset(m, path); }
+            m.SetColor("_BaseColor", baseColor);
+            m.SetFloat("_Smoothness", 0.3f);
+            m.EnableKeyword("_EMISSION");
+            m.SetColor("_EmissionColor", emission);
+            m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.BakedEmissive;
+            m.enableInstancing = true;
+            EditorUtility.SetDirty(m);
+            s_Cache[name] = m;
+            return m;
+        }
+
         public static Material Get(string name)
         {
             if (s_Cache.TryGetValue(name, out var m) && m != null) return m;

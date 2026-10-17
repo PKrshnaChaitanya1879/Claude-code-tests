@@ -36,7 +36,9 @@ namespace Verne
             {
                 case Mission1: return new Card { image = "im034", quote = "Words are impotent to relate such wonders!", cite = "Part I, Chapter XV" };
                 case Mission2: return new Card { image = "im077", quote = "Branches, like fine black paper cuttings, showed distinctly on the watery ceiling.", cite = "Part II, Chapter IX" };
-                case Nautilus: return new Card { image = "im022", quote = "It was no longer luminous water, but liquid light.", cite = "Part I, Chapter XIII" };
+                case Nautilus:
+                    if (Chapter.Excursion >= 2) return new Card { image = "im022", quote = "Would it suit you to see them in the darkness of the night?", cite = "Part II, Chapter IX" };
+                    return new Card { image = "im022", quote = "It was no longer luminous water, but liquid light.", cite = "Part I, Chapter XIII" };
                 default: return new Card { image = "im014", quote = "Mobilis in Mobili.", cite = "Part I, Chapter VIII" };
             }
         }
@@ -77,7 +79,10 @@ namespace Verne
             m_Canvas.enabled = false;
         }
 
-        public static void Load(string scene) { Ensure().StartCoroutine(Ensure().LoadRoutine(scene)); }
+        public static void Load(string scene) { Chapter.OnSceneLoading(scene); Ensure().StartCoroutine(Ensure().LoadRoutine(scene)); }
+
+        /// <summary>A new game from the title: the first excursion.</summary>
+        public static void NewGame() { Chapter.Excursion = 1; Load(Nautilus); }
 
         IEnumerator LoadRoutine(string scene)
         {

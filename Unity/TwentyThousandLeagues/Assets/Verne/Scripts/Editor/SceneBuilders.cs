@@ -190,18 +190,24 @@ namespace Verne.EditorTools
             }
             Wall("Corridor end", ship, new Vector2(X0, -15f), new Vector2(CX, -15f), 0, 2.4f, "Iron");
 
+            // ---- art for both blocks (Blender, Source/blender/nautilus_interior_fore.py and _aft.py) or greybox furniture
+            bool art = NautilusInterior.Place(ship) != null;
+            Art = art;
+            s_AftArt = NautilusInterior.Place(ship, NautilusInterior.Aft);
+
             // the flooding cell, aft of the robing room
             BuildFloodingCell(ship, robing, CX, -17.5f, -15f);
 
-            // ---- art for the forward block (Blender, Source/blender/nautilus_interior_fore.py) or greybox furniture
-            bool art = NautilusInterior.Place(ship);
-            Art = art;
             FurnishAronnax(aronnax);
             FurnishNemo(nemo);
             FurnishSaloon(saloon, X0, X1);
             FurnishLibrary(library, X0, X1);
             FurnishDining(dining);
             if (art) HideGreyboxWhereArt(ship, 0f, 27.6f);
+            if (s_AftArt != null) HideGreyboxWhereArt(ship, -17.6f, -0.01f);
+            else Notes.Add("Aft block FBX missing: the aft rooms stay greybox.");
+            var chapter = ship.gameObject.AddComponent<ChapterAboard>();
+            chapter.note = s_Note; chapter.cell = s_Cell; chapter.seaDoor = s_SeaDoor;
             Ladder(hall, new Vector3(2.4f, 0, -1.6f), 3.2f);
 
             Spawn(new Vector3(0.8f, 0.05f, 26.2f), 180f, MoveMode.Air, 120f);
@@ -210,6 +216,10 @@ namespace Verne.EditorTools
         }
 
         static bool Art;
+        static Transform s_AftArt;
+        static Readable s_Note;
+        static FloodingCell s_Cell;
+        static SceneExit s_SeaDoor;
 
         /// <summary>The greybox boxes stay as exact, invisible colliders where the Blender rooms are shown.</summary>
         static void HideGreyboxWhereArt(Transform ship, float z0, float z1)
@@ -220,7 +230,7 @@ namespace Verne.EditorTools
                 if (r.GetComponentInParent<NautilusArtMarker>() != null) continue;
                 if (r.GetComponentInParent<Interactable>() != null || r.GetComponentInParent<Gauge>() != null) continue;
                 string nm = r.name;
-                if (nm.StartsWith("Crystal") || nm.StartsWith("Iron panel") || nm.StartsWith("Sea beyond") || nm.Contains("Lever") || nm == "needle") continue;
+                if (nm.StartsWith("Crystal") || nm.StartsWith("Iron panel") || nm.StartsWith("Sea beyond") || nm.Contains("Lever") || nm == "needle" || nm == "Water surface") continue;
                 float z = r.bounds.center.z;
                 if (z < z0 - 0.1f || z > z1) continue;
                 r.enabled = false; n++;
@@ -301,6 +311,7 @@ namespace Verne.EditorTools
             var note = Box("Captain Nemo's note", room, new Vector3(-1.1f, 0.785f, 25.35f), new Vector3(0.21f, 0.01f, 0.15f), "Linen", 1f, true, null, false);
             note.layer = ProjectSetup.InteractableLayer;
             var r = note.AddComponent<Readable>();
+            s_Note = r;
             r.noun = "the note";
             r.title = "A note of invitation";
             r.body = "Captain Nemo invites Professor Aronnax to a hunting-party, which will take place to-morrow morning in the forests of the island of Crespo. He hopes that nothing will prevent the Professor from being present, and he will with pleasure see him joined by his companions.";
@@ -445,11 +456,23 @@ namespace Verne.EditorTools
 
             var inner = HingedDoor(cell, "Inner door (stopper-plates)", new Vector3(x0 + 0.55f, 0, z1), 90f, 0.9f, 2.0f, "Iron");
             inner.openAngle = 100f;
+            // the stopper-plates: a hand-wheel on the cell face of the door drives the dogs home (Iron Lung: you seal yourself in)
+            var dogWheel = Cylinder("Stopper-plate wheel", inner.transform, new Vector3(0.08f, 1.1f, 0.45f), 0.17f, 0.04f, "Brass", true);
+            dogWheel.transform.localRotation = Quaternion.Euler(0, 0, 90);
+            dogWheel.layer = ProjectSetup.InteractableLayer;
+            var dogs = dogWheel.AddComponent<Valve>();
+            dogs.noun = "the stopper-plates"; dogs.axis = Vector3.up; dogs.turns = 1.5f; dogs.turnRate = 0.6f;
+            for (int k = 0; k < 4; k++)   // the four dogs at the leaf's edges
+            {
+                float yy = k < 2 ? 0.35f + k * 1.3f : 1.0f;
+                float zz = k < 2 ? 0.86f : (k == 2 ? 0.86f : 0.04f);
+                Box("Dog " + k, inner.transform, new Vector3(0.06f, yy, zz), new Vector3(0.05f, 0.08f, 0.1f), "Brass", 1f, false, null, false);
+            }
             var outer = HingedDoor(cell, "Outer door (hull)", new Vector3(x0, 0, z0 + 0.8f), 0f, 0.9f, 2.0f, "Iron");
 
             // the tap and the gauge on the starboard wall, the pump knob beside them
             var tapBody = Box("Tap housing", cell, new Vector3(x1 - 0.15f, 1.2f, (z0 + z1) * 0.5f), new Vector3(0.2f, 0.3f, 0.3f), "Brass");
-            var wheel = Cylinder("Tap wheel", tapBody.transform, new Vector3(-0.6f, 0, 0), 0.6f, 0.15f, "Brass", true);
+            var wheel = Cylinder("Tap wheel", tapBody.transform, new Vector3(-0.13f, 0, 0), 0.16f, 0.04f, "Brass", true);
             wheel.transform.localRotation = Quaternion.Euler(0, 0, 90);
             wheel.layer = ProjectSetup.InteractableLayer;
             var valve = wheel.AddComponent<Valve>();
@@ -470,7 +493,7 @@ namespace Verne.EditorTools
             var water = Box("Water surface", cell, new Vector3((x0 + x1) * 0.5f, 0, (z0 + z1) * 0.5f), new Vector3(x1 - x0 - 0.05f, 0.01f, z1 - z0 - 0.05f), "Glass", 1f, false, null, false);
 
             var fc = cell.gameObject.AddComponent<FloodingCell>();
-            fc.innerDoor = inner; fc.outerDoor = outer; fc.floodTap = valve; fc.pumpKnob = knob; fc.pressureGauge = gauge;
+            fc.innerDoor = inner; fc.dogs = dogs; fc.outerDoor = outer; s_Cell = fc; fc.floodTap = valve; fc.pumpKnob = knob; fc.pressureGauge = gauge;
             fc.waterSurface = water.transform; fc.floorY = 0f; fc.ceilingY = h; fc.outsideDepth = 9f;
             fc.volume = new Bounds(new Vector3((x0 + x1) * 0.5f, h * 0.5f, (z0 + z1) * 0.5f), new Vector3(x1 - x0, h, z1 - z0));
 
@@ -479,12 +502,26 @@ namespace Verne.EditorTools
             exit.transform.localPosition = new Vector3(-2.7f, 1.0f, (z0 + z1) * 0.5f);
             var bc = exit.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(0.6f, 2f, 1.6f);
             var se = exit.AddComponent<SceneExit>(); se.scene = SceneFlow.Mission1; se.requiresFlooded = fc;
+            s_SeaDoor = se;
 
-            // the dresses hang on the robing-room partition
-            var suits = Box("A dozen diving apparatuses", robing, new Vector3(3.0f, 1.2f, -13.75f), new Vector3(0.3f, 2.0f, 2.2f), "Leather");
+            // the dresses hang on the robing-room partitions; the visitor's own kit waits on the bench (Blender kit_* objects)
+            GameObject suits;
+            if (s_AftArt != null)
+            {
+                suits = Box("The bench where the visitors are dressed", robing, new Vector3(1.33f, 0.9f, -14.72f), new Vector3(2.95f, 1.8f, 0.5f), "Greybox", 1f, true, null, false);
+                suits.GetComponent<MeshRenderer>().enabled = false;
+            }
+            else suits = Box("A dozen diving apparatuses", robing, new Vector3(3.0f, 1.2f, -13.75f), new Vector3(0.3f, 2.0f, 2.2f), "Leather");
             suits.layer = ProjectSetup.InteractableLayer;
-            suits.AddComponent<SuitStation>();
-            PointLight("Cell lamp", cell, new Vector3(0, h - 0.2f, 0), new Color(1f, 0.92f, 0.8f), 1.2f, 4f);
+            var station = suits.AddComponent<SuitStation>();
+            station.reach = 2.6f;
+            if (s_AftArt != null)
+            {
+                GameObject K(string n) { var t = Markers.Find(s_AftArt, n); if (t == null) Notes.Add("Kit object missing: " + n); return t != null ? t.gameObject : null; }
+                station.kitDress = K("kit_dress"); station.kitReservoir = K("kit_reservoir"); station.kitLamp = K("kit_lamp");
+                station.kitGun = K("kit_gun"); station.kitStick = K("kit_stick"); station.kitHelmet = K("kit_helmet");
+            }
+            PointLight("Cell lamp", cell, new Vector3((x0 + x1) * 0.5f, h - 0.2f, (z0 + z1) * 0.5f), new Color(1f, 0.92f, 0.8f), 1.2f, 4f);
         }
 
         // ------------------------------------------------------------------ sea floor

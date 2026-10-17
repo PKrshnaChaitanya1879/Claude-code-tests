@@ -29,7 +29,25 @@ namespace Verne
         bool m_WasOpen;
         Quaternion m_Rest;
 
+        [Tooltip("Turns back the other way once fully open (and forward again once closed): door dogs, the pump cock.")]
+        public bool bidirectional;
+        [Tooltip("Prompt nouns for the two directions when bidirectional, e.g. \"Dog\" / \"Undog\".")]
+        public string verbOpen = "", verbClose = "";
+
         public override bool CapturesLook => true;
+        public override string Prompt => !bidirectional || string.IsNullOrEmpty(verbOpen) ? base.Prompt : (closing ? verbClose : verbOpen) + (string.IsNullOrEmpty(noun) ? "" : " " + noun);
+
+        protected override void OnBegin(Interactor who)
+        {
+            if (bidirectional) { if (openness >= 0.999f) closing = true; else if (openness <= 0.001f) closing = false; }
+            base.OnBegin(who);
+        }
+
+        protected override void OnEnd(Interactor who)
+        {
+            if (bidirectional) { if (openness >= 0.999f) closing = true; else if (openness <= 0.001f) closing = false; }
+            base.OnEnd(who);
+        }
 
         protected override void Awake()
         {

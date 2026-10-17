@@ -63,7 +63,7 @@ namespace Verne
         {
             m_Heading.text = "Chapter One";
             m_Menu.Clear();
-            m_Menu.Add("Begin aboard the Nautilus", () => SceneFlow.Load(SceneFlow.Nautilus));
+            m_Menu.Add("Begin aboard the Nautilus", SceneFlow.NewGame);
             m_Menu.Add("The forest of Crespo", () => SceneFlow.Load(SceneFlow.Mission1));
             m_Menu.Add("A vanished continent", () => SceneFlow.Load(SceneFlow.Mission2));
             m_Menu.Add("Settings", ShowSettings);
