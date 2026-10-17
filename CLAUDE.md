@@ -3,14 +3,14 @@
 This branch (`twenty-thousand-leagues`) is built by scheduled runs that each start fresh. Follow this protocol every run.
 
 1. **Lock.**
-   - If `.verne/LOCK` exists and its timestamp is less than 5 hours old, another run is working. Write nothing, report that in one line, and stop.
+   - If `.verne/LOCK` exists and its timestamp is less than 4 hours old, another run is working. Write nothing, report that in one line, and stop.
    - Otherwise write `.verne/LOCK` with the current UTC time, commit and push it before doing anything else.
-2. **Read.** Read `BRIEF.md` (the vision and constraints) and `PROGRESS.md` (the checklist and the log). Continue from the first unticked item, or from what the last log entry names as next.
+2. **Read.** Read `PLAN.md` (which of the five parts this run is, and its time budget), then `BRIEF.md` (the vision and constraints) and `PROGRESS.md` (the checklist and the log). Continue from the first unticked item, or from what the last log entry names as next.
 3. **Work in order:** M0 → M9.
    - Don't skip ahead to polish while a foundation is missing.
    - Within a milestone, finish and verify one piece before the next.
 4. **Commit and push.**
-   - Commit and push at least every 45 minutes, with small, descriptive commits.
+   - Commit and push at least every 30 minutes, with small, descriptive commits; credits can run out mid-run.
    - `git fetch origin twenty-thousand-leagues` and rebase before each push.
    - Commit as `Claude <noreply@anthropic.com>`. Never put GUM's email or personal details in any file, commit, header or URL.
    - Keep every file under 50 MB: OGG for audio, JPG/PNG at 1024 px or less unless it truly shows.
