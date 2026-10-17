@@ -221,6 +221,7 @@ namespace Verne.EditorTools
             else Notes.Add("Aft block FBX missing: the aft rooms stay greybox.");
             var chapter = ship.gameObject.AddComponent<ChapterAboard>();
             chapter.note = s_Note; chapter.cell = s_Cell; chapter.seaDoor = s_SeaDoor;
+            BookPlaques(ship);
             Ladder(hall, new Vector3(2.4f, 0, -1.6f), 3.2f);
 
             Spawn(new Vector3(0.8f, 0.05f, 26.2f), 180f, MoveMode.Air, 120f);
@@ -229,6 +230,87 @@ namespace Verne.EditorTools
         }
 
         static bool Art;
+
+        /// <summary>An invisible, readable volume over a thing the book describes: look at it, read Verne's own words.</summary>
+        static Readable Plaque(Transform parent, string name, Vector3 centre, Vector3 size, string verb, string noun, string title, string body, string cite)
+        {
+            var go = Box(name, parent, centre, size, "Greybox", 1f, true, null, false);
+            go.GetComponent<MeshRenderer>().enabled = false;
+            go.GetComponent<BoxCollider>().isTrigger = true;   // never blocks the player; the interactor still finds it
+            go.layer = ProjectSetup.InteractableLayer;
+            var r = go.AddComponent<Readable>();
+            r.verb = verb; r.noun = noun; r.title = title; r.body = body; r.signature = cite;
+            return r;
+        }
+
+        /// <summary>Everything aboard that Aronnax examines in Part I, ch. IX–XI, with the book's words (Mercier translation).</summary>
+        static void BookPlaques(Transform ship)
+        {
+            Plaque(ship, "Plaque: Nemo's instruments", new Vector3(3.05f, 1.85f, 22.5f), new Vector3(0.12f, 1.3f, 2.5f), "Examine", "the instruments",
+                "The instruments of the Nautilus",
+                "“Here are the contrivances required for the navigation of the Nautilus. Some are known to you, such as the thermometer, which gives the internal temperature of the Nautilus; the barometer, which indicates the weight of the air and foretells the changes of the weather; the hygrometer, which marks the dryness of the atmosphere; the storm-glass, the contents of which, by decomposing, announce the approach of tempests; the compass, which guides my course; the sextant, which shows the latitude by the altitude of the sun; chronometers, by which I calculate the longitude.”\n\n“This dial with the movable needle is a manometer, is it not?”\n“It is actually a manometer. But by communication with the water, whose external pressure it indicates, it gives our depth at the same time.”",
+                "Part I, Chapter XI");
+            Plaque(ship, "Plaque: the pearls", new Vector3(-2.65f, 1.1f, 18.05f), new Vector3(0.62f, 0.45f, 1.12f), "Examine", "the pearls",
+                "Chaplets of pearls",
+                "Apart, in separate compartments, were spread out chaplets of pearls of the greatest beauty, which reflected the electric light in little sparks of fire; pink pearls, torn from the pinna-marina of the Red Sea; green pearls of the haliotyde iris; yellow, blue and black pearls, the curious productions of the divers molluscs of every ocean. Some of these pearls were larger than a pigeon’s egg.",
+                "Part I, Chapter XI");
+            Plaque(ship, "Plaque: the shells", new Vector3(2.65f, 1.1f, 18.05f), new Vector3(0.62f, 0.45f, 1.12f), "Examine", "the shells",
+                "The collection",
+                "A somewhat nervous conchyliologist would certainly have fainted before other more numerous cases, in which were classified the specimens of molluscs. Amongst these specimens I will quote from memory only the elegant royal hammer-fish of the Indian Ocean, whose regular white spots stood out brightly on a red and brown ground, an imperial spondyle, bright-coloured, bristling with spines; fragile white bivalve shells, which a breath might shatter like a soap-bubble.",
+                "Part I, Chapter XI");
+            Plaque(ship, "Plaque: the brazier", new Vector3(-1.4f, 1.0f, 8.9f), new Vector3(0.4f, 0.35f, 0.4f), "Take", "a cigar",
+                "A cigar of sea-weed",
+                "“Accept this cigar, M. Aronnax; and, though it does not come from Havannah, you will be pleased with it, if you are a connoisseur.”\n\nI took the cigar which was offered me; its shape recalled the London ones, but it seemed to be made of leaves of gold. I lighted it at a little brazier, which was supported upon an elegant bronze stem.",
+                "Part I, Chapter X");
+            Plaque(ship, "Plaque: the dinner service", new Vector3(0f, 0.85f, 2.5f), new Vector3(1.2f, 0.2f, 2.0f), "Look at", "the dinner service",
+                "MOBILIS IN MOBILI · N.",
+                "As to the dinner service, it was elegant, and in perfect taste. Each utensil, spoon, fork, knife, plate, had a letter engraved on it, with a motto above it: MOBILIS IN MOBILI, and the letter N.",
+                "Part I, Chapter IX");
+            Plaque(ship, "Plaque: the distilling apparatus", new Vector3(2.75f, 0.9f, -4.45f), new Vector3(0.7f, 1.2f, 0.7f), "Examine", "the still",
+                "The kitchen",
+                "Then a door opened into a kitchen nine feet long, situated between the large storerooms. There electricity, better than gas itself, did all the cooking. The streams under the furnaces gave out to the sponges of platina a heat which was regularly kept up and distributed. They also heated a distilling apparatus, which, by evaporation, furnished excellent drinkable water.",
+                "Part I, Chapter XI");
+            Plaque(ship, "Plaque: the bath", new Vector3(2.8f, 0.7f, -7.75f), new Vector3(0.8f, 0.4f, 1.3f), "Look at", "the taps",
+                "The bath-room",
+                "Near this kitchen was a bathroom comfortably furnished, with hot and cold water taps.",
+                "Part I, Chapter XI");
+            Plaque(ship, "Plaque: Ned's harpoon", new Vector3(-0.4f, 1.9f, -2.12f), new Vector3(2.6f, 0.2f, 0.12f), "Look at", "the harpoon",
+                "The prince of harpooners",
+                "Ned Land was a Canadian, with an uncommon quickness of hand, and who knew no equal in his dangerous occupation. Skill, coolness, audacity, and cunning he possessed in a superior degree, and it must be a cunning whale or a singularly “cute” cachalot to escape the stroke of his harpoon.",
+                "Part I, Chapter III");
+            Plaque(ship, "Plaque: the air-guns", new Vector3(-1.4f, 1.9f, -12.7f), new Vector3(1.1f, 0.8f, 0.35f), "Examine", "the air-guns",
+                "The air-gun",
+                "One of the Nautilus men gave me a simple gun, the butt end of which, made of steel, hollow in the centre, was rather large. It served as a reservoir for compressed air, which a valve, worked by a spring, allowed to escape into a metal tube. A box of projectiles contained about twenty of these electric balls. As soon as one shot was fired, another was ready.",
+                "Part I, Chapter XV");
+            Plaque(ship, "Plaque: Bunsen's piles", new Vector3(1.85f, 1.3f, -19.6f), new Vector3(0.25f, 0.6f, 0.6f), "Examine", "the piles",
+                "The engine-room",
+                "This engine-room, clearly lighted, did not measure less than sixty-five feet in length. It was divided into two parts; the first contained the materials for producing electricity, and the second the machinery that connected it with the screw.\n\n“You see,” said the Captain, “I use Bunsen’s contrivances, not Ruhmkorff’s. Bunsen’s are fewer in number, but strong and large, which experience proves to be the best. The electricity produced passes forward, where it works, by electro-magnets of great size, on a system of levers and cog-wheels that transmit the movement to the axle of the screw.”",
+                "Part I, Chapter XI");
+
+            // Nemo's organ: sit and play (Bach, public domain)
+            var organ = Box("Organ keys", ship, new Vector3(0.2f, 0.85f, 19.15f), new Vector3(2.0f, 0.3f, 0.5f), "Greybox", 1f, true, null, false);
+            organ.GetComponent<MeshRenderer>().enabled = false;
+            organ.GetComponent<BoxCollider>().isTrigger = true;
+            organ.layer = ProjectSetup.InteractableLayer;
+            organ.AddComponent<Organ>();
+
+            // the luminous ceiling's switch on the controls plate, beside the panel lever (I.XIV: the ceiling goes dark, then the panels slide)
+            var saloon = ship.Find("Saloon");
+            if (saloon != null)
+            {
+                var rl = saloon.gameObject.AddComponent<RoomLights>();
+                var lights = new List<Light>(); var glow = new List<Renderer>();
+                foreach (var l in saloon.GetComponentsInChildren<Light>(true)) lights.Add(l);
+                foreach (var r in ship.GetComponentsInChildren<Renderer>(true))
+                    if (r.name.StartsWith("saloon_ceiling_light") || r.name == "Saloon ceiling") glow.Add(r);
+                rl.lights = lights.ToArray(); rl.glowing = glow.ToArray();
+                var sw = Box("Ceiling switch", saloon, new Vector3(1.62f, 1.27f, 10.06f), new Vector3(0.07f, 0.07f, 0.05f), "Brass", 1f, true, null, false);
+                sw.layer = ProjectSetup.InteractableLayer;
+                var pb = sw.AddComponent<PushButton>();
+                pb.verb = "Press"; pb.noun = "the ceiling switch";
+                UnityEventTools.AddPersistentListener(pb.onUsed, rl.Toggle);
+            }
+        }
         static Transform s_AftArt;
 
         /// <summary>The axle of the screw, the great wheel and the cog turn ("about a hundred and twenty revolutions", slowed for the eye).</summary>
