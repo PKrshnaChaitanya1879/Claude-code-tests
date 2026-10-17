@@ -32,6 +32,8 @@ namespace Verne
         }
 
         public void SetOpen(float v) { target = Mathf.Clamp01(v); }
+        /// <summary>How far the panels have slid (0 shut, 1 open).</summary>
+        public float Openness => m_T;
 
         void Update()
         {

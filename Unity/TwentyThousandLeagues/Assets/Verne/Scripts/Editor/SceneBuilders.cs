@@ -374,12 +374,10 @@ namespace Verne.EditorTools
                 Box("Crystal " + (sign < 0 ? "port" : "starboard"), room, new Vector3(x + sign * 0.02f, 2.0f, 15f), new Vector3(0.06f, 2.0f, 4.2f), "Glass", 1f, true);
                 var p = Box("Iron panel " + (sign < 0 ? "port" : "starboard"), panels.transform, new Vector3(x + sign * 0.14f, 2.0f, 15f), new Vector3(0.08f, 2.1f, 4.3f), "IronPaint", 1.6f, false, null, false);
                 list.Add(p.transform); offs.Add(new Vector3(0, 2.2f, 0));
-                // the sea beyond: a lit, deep blue-green field until M2's live exterior replaces it
-                Box("Sea beyond " + (sign < 0 ? "port" : "starboard"), room, new Vector3(x + sign * 3.5f, 2.0f, 15f), new Vector3(0.1f, 8f, 14f), "LampWhite", 1f, false, null, false)
-                    .GetComponent<MeshRenderer>().sharedMaterial = SeaGlowMaterial();
             }
             panels.panels = list.ToArray();
             panels.offsets = offs.ToArray();
+            SeaOutside(room, panels);
 
             // on the brass controls plate of the aft wall, starboard of the library door
             var leverRoot = Box("Panel lever boss", room, new Vector3(1.25f, 1.27f, 10.06f), new Vector3(0.08f, 0.08f, 0.06f), "Brass", 1f, false);
@@ -391,6 +389,74 @@ namespace Verne.EditorTools
             var lever = pivot.gameObject.AddComponent<Lever>();
             lever.pivot = pivot; lever.verb = "Throw"; lever.noun = "the panel lever"; lever.notches = 2; lever.minAngle = -30; lever.maxAngle = 30;
             UnityEventTools.AddPersistentListener(lever.onValueChanged, panels.SetOpen);
+        }
+
+        /// <summary>
+        /// The live view through the crystal windows (I.XIII): a backdrop shell of open water round the ship and
+        /// schools of fish and medusae (SeaWindowView), all in the Verne/SeaLit water model.
+        /// </summary>
+        static void SeaOutside(Transform room, SlidingPanels panels)
+        {
+            var sea = Shader.Find("Verne/SeaLit");
+            if (sea == null) { Notes.Add("Verne/SeaLit shader missing: the saloon windows show the flat sea glow."); FallbackSeaGlow(room); return; }
+            Material SeaMat(string name, Color c, Color emission, float sheen, float wiggle, float backdrop, float pulse)
+            {
+                string path = VerneBootstrap.Generated + "/Materials/M_Sea_" + name + ".mat";
+                var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (m == null) { m = new Material(sea); AssetDatabase.CreateAsset(m, path); }
+                m.shader = sea;
+                m.SetColor("_BaseColor", c); m.SetColor("_Emission", emission); m.SetFloat("_Sheen", sheen);
+                m.SetFloat("_Wiggle", wiggle); m.SetFloat("_WiggleSpeed", 1.6f); m.SetFloat("_Backdrop", backdrop); m.SetFloat("_Pulse", pulse);
+                m.enableInstancing = true;
+                EditorUtility.SetDirty(m);
+                return m;
+            }
+            var shell = new GameObject("Sea beyond (backdrop shell)");
+            shell.transform.SetParent(room, false);
+            shell.transform.localPosition = new Vector3(0f, 2f, 15f);
+            shell.AddComponent<MeshFilter>().sharedMesh = InvertedSphere(48f);
+            var mr = shell.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = SeaMat("Backdrop", Color.black, Color.black, 0f, 0f, 1f, 0f);
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; mr.receiveShadows = false;
+
+            var view = room.parent.gameObject.AddComponent<SeaWindowView>();
+            view.panels = panels;
+            view.fishMaterial = SeaMat("Fish", new Color(0.32f, 0.36f, 0.4f), Color.black, 0.35f, 0.06f, 0f, 0f);
+            view.silverMaterial = SeaMat("Silver", new Color(0.62f, 0.7f, 0.74f), Color.black, 1f, 0.05f, 0f, 0f);
+            view.goldMaterial = SeaMat("Gold", new Color(0.95f, 0.28f, 0.06f), Color.black, 0.6f, 0.05f, 0f, 0f);
+            view.medusaMaterial = SeaMat("Medusa", new Color(0.75f, 0.7f, 0.85f), new Color(0.12f, 0.22f, 0.4f), 0.4f, 0f, 0f, 1.7f);
+        }
+
+        static Mesh InvertedSphere(float radius)
+        {
+            string path = VerneBootstrap.Generated + "/Meshes/sea_shell.asset";
+            var existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (existing != null) return existing;
+            const int lat = 12, lon = 24;
+            var v = new List<Vector3>(); var t = new List<int>();
+            for (int i = 0; i <= lat; i++)
+                for (int j = 0; j <= lon; j++)
+                {
+                    float th = Mathf.PI * i / lat, ph = 2f * Mathf.PI * j / lon;
+                    v.Add(new Vector3(Mathf.Sin(th) * Mathf.Cos(ph), Mathf.Cos(th), Mathf.Sin(th) * Mathf.Sin(ph)) * radius);
+                }
+            for (int i = 0; i < lat; i++)
+                for (int j = 0; j < lon; j++)
+                {
+                    int a = i * (lon + 1) + j, b = a + 1, c = a + lon + 1, d = c + 1;
+                    t.AddRange(new[] { a, c, b, b, c, d });   // wound to face inward (cross(e1, e2) points to the centre)
+                }
+            var m = new Mesh { name = "sea_shell" };
+            m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateNormals(); m.RecalculateBounds();
+            AssetDatabase.CreateAsset(m, path);
+            return m;
+        }
+
+        static void FallbackSeaGlow(Transform room)
+        {
+            foreach (float sign in new[] { -1f, 1f })
+                Box("Sea beyond " + (sign < 0 ? "port" : "starboard"), room, new Vector3(sign * 6.7f, 2.0f, 15f), new Vector3(0.1f, 8f, 14f), "LampWhite", 1f, false, null, false)
+                    .GetComponent<MeshRenderer>().sharedMaterial = SeaGlowMaterial();
         }
 
         static Material s_SeaGlow;
