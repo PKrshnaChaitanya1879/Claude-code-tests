@@ -193,6 +193,8 @@ namespace Verne
                 // 3. composite onto the camera colour (through a copy)
                 var colorDesc = renderGraph.GetTextureDesc(res.activeColorTexture);
                 colorDesc.name = "_VerneSceneCopy"; colorDesc.clearBuffer = false;
+                colorDesc.msaaSamples = MSAASamples.None;      // sampled as a plain texture in the composite
+                colorDesc.depthBufferBits = DepthBits.None;
                 var copy = renderGraph.CreateTexture(colorDesc);
                 using (var b = renderGraph.AddRasterRenderPass<PassData>("Verne water: copy", out var d, profilingSampler))
                 {
