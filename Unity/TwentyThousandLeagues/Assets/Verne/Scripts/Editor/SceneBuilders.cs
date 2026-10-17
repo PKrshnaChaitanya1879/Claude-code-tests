@@ -980,6 +980,10 @@ namespace Verne.EditorTools
                 rite.nemo = guide; rite.digger = crew; rite.bearers = bearers.ToArray(); rite.grave = grave;
                 rite.shroud = Divers.Shroud(root, G(0f, 102.6f) + Vector3.up * 1.72f);
                 rite.mound = CrespoFlora.Spawn("grave_mound", grave, 0f);
+                // the sea-spider by the forest path (I.XVI), knocked over when the Captain passes
+                CrespoFlora.ClearAround(new Vector3(2.4f, 0, 62f), 1.5f);
+                var spider = Creatures.Spawn(root, "sea_spider", G(2.4f, 62f), 200f, 1f, true);
+                if (spider != null) spider.AddComponent<SeaSpider>().nemo = nemo.transform;
                 AoBlob(root, grave, 1.1f, 2.0f);   // the dark of the fresh grave
             }
             else Notes.Add("Diver parts FBX missing: no divers in Mission I.");
@@ -1018,6 +1022,14 @@ namespace Verne.EditorTools
                 guide.waypoints = new[] { G2(0.5f, 20f), G2(0f, 45f), G2(0.5f, 70f), G2(0f, 90f), G2(0f, 108f), G2(0f, 118f) };
                 guide.waitDistance = 10f; guide.pace = 0.7f;
                 guide.arrivedLine = "“We had now arrived on the first platform, where other surprises awaited me.”";
+            }
+            // "the eyes of giant crustacea crouched in their holes" (II.IX): first placement, M5 refines it
+            var rndC = new System.Random(77);
+            for (int i = 0; i < 8; i++)
+            {
+                float side = i % 2 == 0 ? -1f : 1f;
+                var cp = new Vector3(side * (4f + (float)rndC.NextDouble() * 5f), 0, 60f + i * 7f);
+                Creatures.Spawn(root, i % 3 == 0 ? "lobster_giant" : "crab_giant", G2(cp.x, cp.z), side > 0 ? -90f + (float)rndC.NextDouble() * 40f : 90f - (float)rndC.NextDouble() * 40f, 0.9f + (float)rndC.NextDouble() * 0.5f);
             }
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
             Water("Mission2", l);
