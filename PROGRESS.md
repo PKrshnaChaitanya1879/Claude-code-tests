@@ -29,7 +29,7 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 - [x] Settings: quality, sensitivity, invert Y, volumes, subtitles, 30/60 cap.
 
 ### M2 · The Nautilus
-- [~] Exterior faithful to the book and the engravings, with LODs. *(Model, LODs, collider, prefab and (run 2) riveted plates (per-plate UVs + generated rivet normal and colour tile, `m2_hull_rivets.png`) done; still missing: a closer pass on the cage domes, an in-Unity check.)*
+- [~] Exterior faithful to the book and the engravings, with LODs. *(Model, LODs, collider, prefab and (run 2) riveted plates (per-plate UVs + generated rivet normal and colour tile, `m2_hull_rivets.png`) done; (run 2) the cages remodelled after im027 as squat octagonal drums with a riveted dome and a big lenticular glass bulging from every face (`m2_pilot_cage_vs_im027.jpg`); still missing: an in-Unity check.)*
 - [~] Interior upgraded from `reference/blender/build_nautilus.py`: *(run 2: both blocks done. Fore: saloon, library with 1,439 books, Nemo's room, Aronnax's room, dining room, 24 Met canvases in the saloon frames (a dense salon hang, as in im022), specimens in the cases, patterned carpet and a gilt-lattice luminous ceiling. Aft (`nautilus_interior_aft.py`): central well and ladder, corridor, Ned and Conseil's cabin, kitchen with still and ranges, bath-room, crew's room, robing-room with twelve dresses and the player's kit, the flooding cell, a passage and the 20 m engine-room after im024 with turning axle and wheel. Still missing: an in-Unity check.)*
   - Saloon: luminous ceiling, organ, paintings, cases, fountain, crystal windows, sliding panels.
   - Library, Nemo's room with its instruments, Aronnax's cabin, corridors, robing-room, flooding cell.

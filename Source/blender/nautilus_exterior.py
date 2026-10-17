@@ -168,6 +168,44 @@ def frustum(bm, c, base, top, h, mi=0, lens_mi=None, lens_r=0.0):
             for k in range(12):
                 f = bm.faces.new([bez[k], bez[(k + 1) % 12], ring[(k + 1) % 12], ring[k]]); f.material_index = mi
 
+def cage(bm, c, rb, rt, h, mi=0, lens_mi=None, n=8):
+    """Run 2, closer to im027: a squat octagonal cage with gently inclined sides, a riveted domed cap and a
+    big lenticular glass bulging from every face (the glasses take most of each face, like eyes)."""
+    z0, z1 = c[2], c[2] + h
+    vb = [bm.verts.new((c[0] + math.cos(2 * math.pi * (k + 0.5) / n) * rb, c[1] + math.sin(2 * math.pi * (k + 0.5) / n) * rb, z0)) for k in range(n)]
+    vt = [bm.verts.new((c[0] + math.cos(2 * math.pi * (k + 0.5) / n) * rt, c[1] + math.sin(2 * math.pi * (k + 0.5) / n) * rt, z1)) for k in range(n)]
+    for i in range(n):
+        f = bm.faces.new([vb[i], vb[(i + 1) % n], vt[(i + 1) % n], vt[i]]); f.material_index = mi
+    f = bm.faces.new(vb[::-1]); f.material_index = mi
+    # the domed cap: a flange, then a shallow riveted dome
+    prof = [(rt + 0.06, z1), (rt + 0.06, z1 + 0.06), (rt * 0.92, z1 + 0.1), (rt * 0.7, z1 + 0.24), (rt * 0.38, z1 + 0.33), (0.0, z1 + 0.36)]
+    rings = [[bm.verts.new((c[0] + math.cos(2 * math.pi * k / 16) * r, c[1] + math.sin(2 * math.pi * k / 16) * r, z)) for k in range(16)] for (r, z) in prof]
+    for j in range(len(rings) - 1):
+        for k in range(16):
+            q = [rings[j][k], rings[j][(k + 1) % 16], rings[j + 1][(k + 1) % 16], rings[j + 1][k]]
+            if len({v.index for v in q}) < 4 and False: continue
+            f = bm.faces.new(q); f.material_index = mi
+    for k in range(16):   # rivet heads round the flange
+        a = 2 * math.pi * (k + 0.5) / 16
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=6, radius1=0.03, radius2=0.015, depth=0.03,
+                              matrix=Matrix.Translation((c[0] + math.cos(a) * (rt + 0.03), c[1] + math.sin(a) * (rt + 0.03), z1 + 0.075)))
+    if lens_mi is None: return
+    for i in range(n):
+        a, b, cc, d = vb[i].co, vb[(i + 1) % n].co, vt[(i + 1) % n].co, vt[i].co
+        ctr = (a + b + cc + d) / 4
+        nrm = (b - a).cross(d - a).normalized()
+        u = (b - a).normalized(); v = nrm.cross(u).normalized()
+        rr = min((b - a).length, (d - a).length) * 0.4
+        ring = [bm.verts.new(ctr + nrm * 0.02 + (u * math.cos(2 * math.pi * k / 12) + v * math.sin(2 * math.pi * k / 12)) * rr) for k in range(12)]
+        mid = [bm.verts.new(ctr + nrm * 0.12 + (u * math.cos(2 * math.pi * k / 12) + v * math.sin(2 * math.pi * k / 12)) * rr * 0.62) for k in range(12)]
+        tip = bm.verts.new(ctr + nrm * 0.17)
+        for k in range(12):
+            f = bm.faces.new([ring[k], ring[(k + 1) % 12], mid[(k + 1) % 12], mid[k]]); f.material_index = lens_mi
+            f = bm.faces.new([mid[k], mid[(k + 1) % 12], tip]); f.material_index = lens_mi
+        bez = [bm.verts.new(ctr + nrm * 0.035 + (u * math.cos(2 * math.pi * k / 12) + v * math.sin(2 * math.pi * k / 12)) * (rr + 0.07)) for k in range(12)]
+        for k in range(12):
+            f = bm.faces.new([bez[k], bez[(k + 1) % 12], ring[(k + 1) % 12], ring[k]]); f.material_index = 3   # dark iron bezel, as engraved
+
 def hull_top(x):
     return AXIS_Z + radius_at(x)
 
@@ -195,8 +233,8 @@ def build_details():
     bmesh.ops.translate(bm, vec=(2.6, -0.25, deck_z), verts=bvs)
     for f in {f for v in bvs for f in v.link_faces}: f.material_index = 0
     # ---- the two cages: pilot fore, lantern aft ("behind the steersman's cage ... a powerful reflector")
-    frustum(bm, (7.6, 0, deck_z), (2.0, 1.7), (1.3, 1.1), 1.15, 0, 4, 0.46)
-    frustum(bm, (-7.4, 0, deck_z), (1.9, 1.6), (1.2, 1.0), 1.05, 0, 5, 0.44)
+    cage(bm, (7.6, 0, deck_z), 1.05, 0.9, 1.0, 0, 4)
+    cage(bm, (-7.4, 0, deck_z), 1.0, 0.86, 0.95, 0, 5)
     # ---- the spur: a long steel beak continuing the bow (Motala, I.XII)
     bmesh.ops.create_cone(bm, cap_ends=True, segments=8, radius1=0.42, radius2=0.0, depth=4.2,
                           matrix=Matrix.Translation((HALF + 1.6, 0, AXIS_Z)) @ Matrix.Rotation(math.pi / 2, 4, 'Y'))

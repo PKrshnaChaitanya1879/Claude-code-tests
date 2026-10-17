@@ -28,7 +28,7 @@ At 30 fps the frame budget is 33 ms, so on Light the water costs about 3% of it.
 |---|---|---|
 | Fore (saloon, library, Nemo, Aronnax, dining) | 37.0 k | 1,439 books, 24 canvases and the specimens included |
 | Aft (well, corridor, cabins, kitchen, bath, crew, robing-room, cell, engine-room) | 23.2 k | three turning machine parts are not static |
-| Exterior hull LOD0 / LOD1 / LOD2 | 5.8 k / 2.9 k / 1.3 k | |
+| Exterior hull LOD0 / LOD1 / LOD2 | 7.3 k / 3.7 k / 1.6 k | |
 
 Everything static is marked for static batching and occlusion. Expected draw calls aboard: roughly 150–250 after batching (under the 500 budget). One unshadowed point light per room; the engine-room has three.
 
