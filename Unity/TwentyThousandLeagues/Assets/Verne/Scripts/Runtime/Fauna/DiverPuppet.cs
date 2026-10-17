@@ -72,7 +72,7 @@ namespace Verne
                     tTorso = Mathf.Lerp(-5f, -28f, sw * 0.5f + 0.5f); tHipL = -10f; tHipR = 10f; tKnL = tKnR = 10f; tDrop = -0.05f; break;
                 }
                 case Gesture.Carry:
-                    tShL = tShR = -150f; tElL = tElR = -40f; tTorso = -3f; break;
+                    tShL = tShR = -100f; tElL = tElR = -75f; tTorso = -3f; break;   // hands at the shoulder, the burden on it
                 case Gesture.Lower:
                     tShL = tShR = -65f; tElL = tElR = -20f; tTorso = -32f; tKnL = tKnR = 35f; tHipL = tHipR = -25f; tDrop = -0.12f; break;
                 case Gesture.Adieu:
