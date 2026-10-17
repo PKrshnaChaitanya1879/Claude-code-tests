@@ -593,9 +593,31 @@ namespace Verne.EditorTools
         }
 
         /// <summary>The M3 water for a scene: its colour script (see Source/INSIDE_NOTES.md).</summary>
+        static Material SnowMaterial()
+        {
+            string path = VerneBootstrap.Generated + "/Materials/M_MarineSnow.mat";
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            var sh = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            if (sh == null) return null;
+            if (m == null) { m = new Material(sh); AssetDatabase.CreateAsset(m, path); }
+            m.shader = sh;
+            m.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(VerneBootstrap.Root + "/Textures/snow_dot.png"));
+            m.SetColor("_BaseColor", Color.white);
+            m.SetFloat("_Surface", 1f); m.SetFloat("_Blend", 2f);   // transparent, additive
+            m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha); m.SetFloat("_DstBlend", (float)BlendMode.One); m.SetFloat("_ZWrite", 0f);
+            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); m.renderQueue = (int)RenderQueue.Transparent;
+            m.SetOverrideTag("RenderType", "Transparent");
+            EditorUtility.SetDirty(m);
+            return m;
+        }
+
         static VerneWater Water(string preset, params Light[] hero)
         {
             var w = new GameObject("Water (" + preset + ")").AddComponent<VerneWater>();
+            var snow = new GameObject("Marine snow").AddComponent<MarineSnow>();
+            snow.transform.SetParent(w.transform, false);
+            snow.material = SnowMaterial();
+            if (snow.material == null) { Object.DestroyImmediate(snow.gameObject); Notes.Add("Particles/Unlit shader missing: no marine snow."); }
             switch (preset)
             {
                 case "Title":       // the Nautilus resting in blue twilight, sun shafts through the swell
