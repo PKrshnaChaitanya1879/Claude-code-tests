@@ -152,7 +152,7 @@ namespace Verne.EditorTools
             // bow end (air reservoir behind it) and the cross partitions with their doors (x = 0)
             Wall("Bow partition", ship, new Vector2(X0, 27.5f), new Vector2(X1, 27.5f), 0, 2.6f, "IronPaint");
             Wall("Aronnax | Nemo", ship, new Vector2(X0, 25f), new Vector2(X1, 25f), 0, 2.8f, "Oak", new Opening(3.2f, 0.9f, 2.1f));
-            Wall("Nemo | Saloon (water-tight)", ship, new Vector2(X0, 20f), new Vector2(X1, 20f), 0, 5f, "IronPaint", new Opening(3.2f, 0.9f, 2.1f));
+            Wall("Nemo | Saloon (water-tight)", ship, new Vector2(X0, 20f), new Vector2(X1, 20f), 0, 5f, "IronPaint", new Opening(0.85f, 0.9f, 2.1f)); // beside the organ
             Wall("Saloon | Library", ship, new Vector2(X0, 10f), new Vector2(X1, 10f), 0, 5f, "Tapestry", new Opening(3.2f, 1.4f, 2.4f));
             Wall("Library | Dining (water-tight)", ship, new Vector2(X0, 5f), new Vector2(X1, 5f), 0, 3.2f, "Ebony", new Opening(3.2f, 1.6f, 2.4f));
             Wall("Dining | Staircase", ship, new Vector2(X0, 0f), new Vector2(X1, 0f), 0, 3.2f, "Oak", new Opening(3.2f, 1.2f, 2.2f));
@@ -193,17 +193,39 @@ namespace Verne.EditorTools
             // the flooding cell, aft of the robing room
             BuildFloodingCell(ship, robing, CX, -17.5f, -15f);
 
-            // ---- furnishing and interactables (greybox stand-ins, M2 replaces with Blender models)
+            // ---- art for the forward block (Blender, Source/blender/nautilus_interior_fore.py) or greybox furniture
+            bool art = NautilusInterior.Place(ship);
+            Art = art;
             FurnishAronnax(aronnax);
             FurnishNemo(nemo);
             FurnishSaloon(saloon, X0, X1);
             FurnishLibrary(library, X0, X1);
             FurnishDining(dining);
+            if (art) HideGreyboxWhereArt(ship, 0f, 27.6f);
             Ladder(hall, new Vector3(2.4f, 0, -1.6f), 3.2f);
 
             Spawn(new Vector3(0.8f, 0.05f, 26.2f), 180f, MoveMode.Air, 120f);
             GlobalVolume("Nautilus");
             Save(s, "Nautilus");
+        }
+
+        static bool Art;
+
+        /// <summary>The greybox boxes stay as exact, invisible colliders where the Blender rooms are shown.</summary>
+        static void HideGreyboxWhereArt(Transform ship, float z0, float z1)
+        {
+            int n = 0;
+            foreach (var r in ship.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (r.GetComponentInParent<NautilusArtMarker>() != null) continue;
+                if (r.GetComponentInParent<Interactable>() != null || r.GetComponentInParent<Gauge>() != null) continue;
+                string nm = r.name;
+                if (nm.StartsWith("Crystal") || nm.StartsWith("Iron panel") || nm.StartsWith("Sea beyond") || nm.Contains("Lever") || nm == "needle") continue;
+                float z = r.bounds.center.z;
+                if (z < z0 - 0.1f || z > z1) continue;
+                r.enabled = false; n++;
+            }
+            Notes.Add($"{n} greybox pieces hidden in the forward block; their colliders remain.");
         }
 
         static Transform Room(Transform ship, string name, float x0, float x1, float z0, float z1, float h, string wallMat, string floorMat, string ceilMat, string surface)
@@ -268,9 +290,15 @@ namespace Verne.EditorTools
 
         static void FurnishAronnax(Transform room)
         {
-            Box("Bed", room, new Vector3(2.4f, 0.3f, 26.2f), new Vector3(1.0f, 0.6f, 2.0f), "Linen");
-            Box("Dressing-table", room, new Vector3(-2.6f, 0.4f, 26.6f), new Vector3(1.0f, 0.8f, 0.5f), "Oak");
-            var note = Box("Captain Nemo's note", room, new Vector3(-2.6f, 0.81f, 26.6f), new Vector3(0.21f, 0.01f, 0.15f), "Linen", 1f, true, null, false);
+            if (!Art)
+            {
+                // greybox matching the Blender room: bed to port against the bow partition, writing table, dressing-table, wardrobe
+                Box("Bed", room, new Vector3(-1.78f, 0.35f, 27.0f), new Vector3(2.75f, 0.7f, 0.9f), "Linen");
+                Box("Writing table", room, new Vector3(-1.25f, 0.38f, 25.4f), new Vector3(1.3f, 0.77f, 0.7f), "Ebony");
+                Box("Dressing-table", room, new Vector3(1.35f, 0.4f, 25.33f), new Vector3(0.9f, 0.8f, 0.55f), "Ebony");
+                Box("Wardrobe", room, new Vector3(1.2f, 1.0f, 27.17f), new Vector3(1.2f, 2.0f, 0.55f), "Ebony");
+            }
+            var note = Box("Captain Nemo's note", room, new Vector3(-1.1f, 0.785f, 25.35f), new Vector3(0.21f, 0.01f, 0.15f), "Linen", 1f, true, null, false);
             note.layer = ProjectSetup.InteractableLayer;
             var r = note.AddComponent<Readable>();
             r.noun = "the note";
@@ -281,30 +309,36 @@ namespace Verne.EditorTools
 
         static void FurnishNemo(Transform room)
         {
-            Box("Iron bedstead", room, new Vector3(2.5f, 0.3f, 22.5f), new Vector3(0.9f, 0.55f, 2.0f), "Iron");
-            Box("Table", room, new Vector3(-0.5f, 0.38f, 23.5f), new Vector3(1.2f, 0.76f, 0.8f), "Oak");
-            // the instrument wall (I.XI): manometer, speed dial, electric clock; real Gauges with needles
-            var wall = new GameObject("Instrument wall").transform;
-            wall.SetParent(room, false);
-            wall.localPosition = new Vector3(-3.1f, 1.5f, 22.5f);
-            wall.localRotation = Quaternion.Euler(0, 90, 0);
-            string[] names = { "Manometer (depth)", "Speed", "Electric clock (24 h)", "Thermometer", "Barometer", "Compass" };
-            for (int i = 0; i < names.Length; i++)
+            if (!Art)
             {
-                var dial = Cylinder(names[i], wall, new Vector3(-1.5f + (i % 3) * 1.2f, (i / 3) * -0.6f + 0.4f, 0.03f), 0.18f, 0.04f, "Brass", false);
-                dial.transform.localRotation = Quaternion.Euler(90, 0, 0);
-                var needle = Box("needle", dial.transform, new Vector3(0, 1.05f, 0), new Vector3(0.08f, 0.05f, 0.9f), "IronPaint", 1f, false, null, false);
-                var pivot = new GameObject("pivot").transform; pivot.SetParent(dial.transform, false); pivot.localPosition = new Vector3(0, 1.05f, 0);
-                needle.transform.SetParent(pivot, true);
-                var g = dial.AddComponent<Gauge>();
-                g.needle = pivot; g.axis = Vector3.up;
-                g.minValue = 0; g.maxValue = 10; g.target = i == 0 ? 1.2f : 3f + i;
+                Box("Iron bedstead", room, new Vector3(-2.7f, 0.3f, 23.6f), new Vector3(0.9f, 0.6f, 2.0f), "Iron");
+                Box("Table", room, new Vector3(2.75f, 0.38f, 22.5f), new Vector3(0.8f, 0.76f, 1.8f), "Oak");
+                Box("Instrument board", room, new Vector3(3.18f, 1.85f, 22.5f), new Vector3(0.03f, 1.3f, 2.5f), "Oak", 1f, false);
+            }
+            // the instruments hang on the starboard wall (I.XI); working needles sit on the Blender dials
+            // Blender dial centre (x = 22.5 - y_b, z), facing +Y_b  ->  Unity (x = 3.2 - 0.07, y = z, z = 22.5 - y_b), facing -X
+            var dials = new (string name, float yb, float z, float r, float target)[]
+            {
+                ("Manometer (depth)", 0.2f, 1.75f, 0.2f, 1.2f), ("Electric clock (24 h)", 0.2f, 2.25f, 0.2f, 5f),
+                ("Speed", -0.45f, 1.85f, 0.13f, 3f), ("Barometer", 0.85f, 1.85f, 0.14f, 6f),
+            };
+            foreach (var d in dials)
+            {
+                var pivot = new GameObject(d.name).transform;
+                pivot.SetParent(room, false);
+                pivot.localPosition = new Vector3(3.2f - 0.075f, d.z, 22.5f - d.yb);
+                pivot.localRotation = Quaternion.Euler(0, -90, 0);              // local +Z points into the room (-X)
+                var hand = new GameObject("hand").transform; hand.SetParent(pivot, false);
+                Box("needle", hand, new Vector3(0, d.r * 0.32f, 0), new Vector3(0.012f, d.r * 0.95f, 0.006f), "IronPaint", 1f, false, null, false);
+                var g = pivot.gameObject.AddComponent<Gauge>();
+                g.needle = hand; g.axis = Vector3.forward; g.minValue = 0; g.maxValue = 10; g.target = d.target;
             }
         }
 
         static void FurnishSaloon(Transform room, float x0, float x1)
         {
             // organ at the forward end (plate im022), tridacna fountain in the middle, cases, divans
+            if (!Art) {
             Box("Organ", room, new Vector3(0f, 1.8f, 19.4f), new Vector3(3.0f, 3.6f, 1.0f), "Ebony");
             Box("Organ pipes", room, new Vector3(0f, 3.0f, 18.95f), new Vector3(2.4f, 2.2f, 0.1f), "Brass", 1f, false);
             Cylinder("Tridacna fountain", room, new Vector3(0f, 0.45f, 15f), 0.8f, 0.9f, "Marble");
@@ -317,6 +351,7 @@ namespace Verne.EditorTools
             }
             Box("Divan port", room, new Vector3(x0 + 0.55f, 0.25f, 15f), new Vector3(0.9f, 0.5f, 3.6f), "Leather");
             Box("Divan starboard", room, new Vector3(x1 - 0.55f, 0.25f, 15f), new Vector3(0.9f, 0.5f, 3.6f), "Leather");
+            }
 
             // the crystal windows and their iron panels, worked by a lever (Iron Lung style)
             var panels = new GameObject("Window panels").AddComponent<SlidingPanels>();
@@ -335,11 +370,12 @@ namespace Verne.EditorTools
             panels.panels = list.ToArray();
             panels.offsets = offs.ToArray();
 
-            var leverRoot = Box("Panel lever housing", room, new Vector3(x0 + 0.25f, 0.6f, 12.2f), new Vector3(0.3f, 1.2f, 0.3f), "Brass");
+            // on the brass controls plate of the aft wall, starboard of the library door
+            var leverRoot = Box("Panel lever boss", room, new Vector3(1.25f, 1.27f, 10.06f), new Vector3(0.08f, 0.08f, 0.06f), "Brass", 1f, false);
             var pivot = new GameObject("Lever pivot").transform;
             pivot.SetParent(leverRoot.transform, false);
-            pivot.localPosition = new Vector3(0, 0.62f, 0);
-            Box("Lever handle", pivot, new Vector3(0, 0.3f, 0), new Vector3(0.05f, 0.6f, 0.05f), "Brass", 1f, true, null, false);
+            pivot.localPosition = new Vector3(0, 0f, 0.03f);
+            Box("Lever handle", pivot, new Vector3(0, 0.12f, 0.02f), new Vector3(0.035f, 0.26f, 0.035f), "Brass", 1f, true, null, false);
             pivot.gameObject.layer = ProjectSetup.InteractableLayer;
             var lever = pivot.gameObject.AddComponent<Lever>();
             lever.pivot = pivot; lever.verb = "Throw"; lever.noun = "the panel lever"; lever.notches = 2; lever.minAngle = -30; lever.maxAngle = 30;
@@ -364,12 +400,14 @@ namespace Verne.EditorTools
         static void FurnishLibrary(Transform room, float x0, float x1)
         {
             // ebony cases inlaid with brass following the walls, divans below, the great table
+            if (!Art) {
             Box("Shelves port", room, new Vector3(x0 + 0.25f, 1.6f, 7.5f), new Vector3(0.45f, 3.0f, 4.6f), "Ebony");
             Box("Shelves starboard", room, new Vector3(x1 - 0.25f, 1.6f, 7.5f), new Vector3(0.45f, 3.0f, 4.6f), "Ebony");
             Box("Divan port", room, new Vector3(x0 + 0.85f, 0.25f, 7.5f), new Vector3(0.7f, 0.5f, 4.2f), "Leather");
             Box("Divan starboard", room, new Vector3(x1 - 0.85f, 0.25f, 7.5f), new Vector3(0.7f, 0.5f, 4.2f), "Leather");
             Box("Great table", room, new Vector3(0, 0.38f, 7.5f), new Vector3(1.6f, 0.76f, 2.4f), "Oak");
-            var book = Box("An open volume", room, new Vector3(0.2f, 0.78f, 7.2f), new Vector3(0.3f, 0.04f, 0.22f), "Leather", 1f, true, null, false);
+            }
+            var book = Box("An open volume", room, new Vector3(0.2f, 0.8f, 7.2f), new Vector3(0.3f, 0.04f, 0.22f), "Leather", 1f, true, null, false);
             book.layer = ProjectSetup.InteractableLayer;
             var r = book.AddComponent<Readable>();
             r.noun = "the volume";
@@ -380,8 +418,11 @@ namespace Verne.EditorTools
 
         static void FurnishDining(Transform room)
         {
-            Box("Sideboard fore", room, new Vector3(0, 1.0f, 4.7f), new Vector3(2.6f, 2.0f, 0.5f), "Oak");
-            Box("Sideboard aft", room, new Vector3(0, 1.0f, 0.3f), new Vector3(1.4f, 2.0f, 0.5f), "Oak");
+            if (Art) return;
+            // sideboards at both extremities, either side of each door (never across a doorway)
+            foreach (float z in new[] { 0.3f, 4.7f })
+                foreach (float x in new[] { -2.05f, 2.05f })
+                    Box("Sideboard", room, new Vector3(x, 1.1f, z), new Vector3(1.9f, 2.2f, 0.5f), "Oak");
             Box("Table", room, new Vector3(0, 0.38f, 2.5f), new Vector3(1.2f, 0.76f, 2.0f), "Linen");
         }
 
