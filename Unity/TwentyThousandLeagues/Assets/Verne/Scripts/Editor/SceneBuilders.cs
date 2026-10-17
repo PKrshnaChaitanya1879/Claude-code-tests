@@ -583,11 +583,13 @@ namespace Verne.EditorTools
             switch (preset)
             {
                 case "Title":       // the Nautilus resting in blue twilight, sun shafts through the swell
-                    w.surfaceY = 24f; w.extinction = new Color(0.28f, 0.072f, 0.062f); w.scatterAlbedo = new Color(0.5f, 0.75f, 0.8f);
-                    w.kd = new Color(0.3f, 0.065f, 0.05f); w.surfaceAmbient = new Color(0.28f, 0.5f, 0.52f); w.sunShafts = 1.3f; w.maxDistance = 60f; break;
+                    w.surfaceY = 24f; w.extinction = new Color(0.2f, 0.07f, 0.065f); w.scatterAlbedo = new Color(0.4f, 0.48f, 0.5f);
+                    w.kd = new Color(0.14f, 0.05f, 0.045f); w.surfaceAmbient = new Color(0.05f, 0.09f, 0.1f); w.sunShafts = 2.2f; w.forwardScatter = 0.65f; w.maxDistance = 60f; break;
                 case "Mission1":    // Crespo: five fathoms, clear and vibrant near the surface, darker down the slope
-                    w.surfaceY = 9f; w.extinction = new Color(0.2f, 0.055f, 0.05f); w.scatterAlbedo = new Color(0.5f, 0.8f, 0.82f);
-                    w.kd = new Color(0.24f, 0.05f, 0.042f); w.surfaceAmbient = new Color(0.36f, 0.62f, 0.62f); w.sunShafts = 1.5f; w.maxDistance = 50f; break;
+                    // tuned with Source/tools/preview_water_mock.py (Source/previews/m3_water_mock_Mission1.png): grey-green luminous fog,
+                    // stems as silhouettes, red kept at five fathoms (Kd red 0.12) so the sand stays warm where the sun lands
+                    w.surfaceY = 9f; w.extinction = new Color(0.16f, 0.06f, 0.056f); w.scatterAlbedo = new Color(0.42f, 0.5f, 0.52f);
+                    w.kd = new Color(0.12f, 0.045f, 0.04f); w.surfaceAmbient = new Color(0.06f, 0.11f, 0.12f); w.sunShafts = 2.5f; w.forwardScatter = 0.65f; w.maxDistance = 50f; break;
                 case "Mission2":    // 150 fathoms at midnight: no daylight; the volcano's red glow is the only light (art-directed so red carries)
                     w.surfaceY = 274f; w.extinction = new Color(0.015f, 0.025f, 0.03f); w.scatterAlbedo = new Color(0.9f, 0.7f, 0.6f);
                     w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 60f; w.heroGain = 1500f; w.forwardScatter = 0.45f; break;
@@ -819,7 +821,7 @@ namespace Verne.EditorTools
             // shallows at ~9 m: bright, green-blue far field (M3 replaces fog with the physical water model)
             Ambient(new Color(0.16f, 0.34f, 0.36f), new Color(0.07f, 0.17f, 0.19f), new Color(0.03f, 0.06f, 0.07f));
             Fog(true, new Color(0.10f, 0.33f, 0.36f), 0.022f);
-            Sun("Sun (refracted)", new Vector3(58, 30, 0), new Color(0.9f, 0.97f, 0.92f), 1.8f);
+            Sun("Sun (refracted)", new Vector3(58, 200, 0), new Color(0.9f, 0.97f, 0.92f), 1.8f);   // from ahead along the route: shafts and silhouettes
             var root = new GameObject("Crespo").transform;
             // the route runs north (+Z): sand plain → weed prairie → forest → coral gallery → glade
             Seabed(root, 240f, 2f, 3.5f, 0.025f, "Sand", 21, (x, z) => -Mathf.Clamp01((z - 40f) / 160f) * 18f);

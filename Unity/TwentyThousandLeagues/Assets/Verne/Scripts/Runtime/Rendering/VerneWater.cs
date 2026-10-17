@@ -38,18 +38,54 @@ namespace Verne
         public float heroGain = 1f;
 
         bool m_SceneFog;
+        Light m_Sun; Color m_SunBase; Color m_AmbSky, m_AmbEq, m_AmbGround; bool m_Captured;
 
         static readonly int ID_Sigma = Shader.PropertyToID("_VerneSigma"), ID_Water = Shader.PropertyToID("_VerneWater"),
             ID_Ambient = Shader.PropertyToID("_VerneAmbient");
 
-        void OnEnable() { Active = this; m_SceneFog = RenderSettings.fog; PushGlobals(); }
-        void OnDisable() { if (Active == this) Active = null; if (Application.isPlaying) RenderSettings.fog = m_SceneFog; }
+        void OnEnable()
+        {
+            Active = this; m_SceneFog = RenderSettings.fog; PushGlobals();
+            if (Application.isPlaying)
+            {
+                m_Sun = RenderSettings.sun; if (m_Sun != null) m_SunBase = m_Sun.color;
+                m_AmbSky = RenderSettings.ambientSkyColor; m_AmbEq = RenderSettings.ambientEquatorColor; m_AmbGround = RenderSettings.ambientGroundColor;
+                m_Captured = true;
+            }
+        }
+        void OnDisable()
+        {
+            if (Active == this) Active = null;
+            if (Application.isPlaying)
+            {
+                RenderSettings.fog = m_SceneFog;
+                if (m_Captured) { if (m_Sun != null) m_Sun.color = m_SunBase; RenderSettings.ambientSkyColor = m_AmbSky; RenderSettings.ambientEquatorColor = m_AmbEq; RenderSettings.ambientGroundColor = m_AmbGround; }
+            }
+        }
+
+        /// <summary>Daylight left at height y, per channel (URP lights surfaces without knowing the depth; we tint its sun and ambient).</summary>
+        public Color DaylightAt(float y)
+        {
+            float d = Mathf.Max(0f, surfaceY - y);
+            return new Color(Mathf.Exp(-kd.r * d), Mathf.Exp(-kd.g * d), Mathf.Exp(-kd.b * d));
+        }
         void Update()
         {
             if (Active == null) Active = this;
             PushGlobals();
             // the built-in fog is only the fallback: off while the water pass runs, back on if it cannot
-            if (Application.isPlaying) RenderSettings.fog = m_SceneFog && !VerneUnderwaterFeature.RanRecently;
+            if (Application.isPlaying)
+            {
+                RenderSettings.fog = m_SceneFog && !VerneUnderwaterFeature.RanRecently;
+                // surfaces get the light that is left at the eye's depth: red first, then green (cheap, and matches the march)
+                var cam = Camera.main;
+                if (m_Captured && cam != null)
+                {
+                    var day = DaylightAt(cam.transform.position.y - 1f);
+                    if (m_Sun != null) m_Sun.color = m_SunBase * day;
+                    RenderSettings.ambientSkyColor = m_AmbSky * day; RenderSettings.ambientEquatorColor = m_AmbEq * day; RenderSettings.ambientGroundColor = m_AmbGround * day;
+                }
+            }
         }
 
         /// <summary>The far-field colour the eye sees at depth y (in-scattered daylight), for SeaLit and the composite.</summary>
