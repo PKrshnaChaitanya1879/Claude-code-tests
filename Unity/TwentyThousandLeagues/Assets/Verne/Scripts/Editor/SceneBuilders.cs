@@ -143,6 +143,14 @@ namespace Verne.EditorTools
             }
             var cam = PreviewCamera(new Vector3(0, 2.2f, -4), new Vector3(-8, 14, 0), new Color(0.05f, 0.16f, 0.19f));
             Water("Title", lantern);
+            // life round the resting ship: a school passing through the shafts, medusae drifting above
+            var life = new GameObject("Life").transform; life.SetParent(root, false);
+            var ts = new GameObject("A school").AddComponent<FishSchool>(); ts.transform.SetParent(life, false);
+            ts.material = LitMat("Fish_Silver", new Color(0.72f, 0.78f, 0.82f), 0.55f, 0.8f); ts.count = 40; ts.size = 0.22f; ts.speed = 1.1f; ts.spread = 3f;
+            ts.waypoints = new[] { new Vector3(-6, 5, 18), new Vector3(8, 7, 30), new Vector3(2, 9, 48), new Vector3(-9, 6, 34) };
+            var tm = new GameObject("Medusae").AddComponent<FishSchool>(); tm.transform.SetParent(life, false);
+            tm.kind = FishSchool.Kind.Medusa; tm.material = LitMat("Medusa", new Color(0.95f, 0.62f, 0.72f), 0f, 0.85f, new Color(0.08f, 0.14f, 0.35f));
+            tm.count = 6; tm.size = 0.7f; tm.speed = 0.2f; tm.spread = 8f; tm.waypoints = new[] { new Vector3(-3, 10, 22), new Vector3(4, 12, 32) };
             var t = new GameObject("Title Screen").AddComponent<TitleScreen>();
             t.driftCamera = cam.transform;
             GlobalVolume("Title");
