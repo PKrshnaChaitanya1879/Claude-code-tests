@@ -55,9 +55,9 @@ M = {
     'lens': mat('M_lens', (0.9, 0.95, 1.0), emit=(1, 1, 1)),
     'lensdark': mat('M_lensdark', (0.2, 0.25, 0.27), rough=0.1),
     'crystal': mat('M_crystal', (0.8, 0.9, 0.95), rough=0.05),
-    'china': mat('M_china', (0.93, 0.91, 0.87), rough=0.2),
+    'china': mat('M_china', (0.9, 0.86, 0.78), rough=0.5),
     'chinablue': mat('M_chinablue', (0.18, 0.28, 0.55), rough=0.2),
-    'silver': mat('M_silver', (0.86, 0.86, 0.88), metal=1.0, rough=0.18),
+    'silver': mat('M_silver', (0.78, 0.76, 0.72), metal=1.0, rough=0.42),
     'wine': mat('M_wine', (0.22, 0.02, 0.03), rough=0.1),
 }
 MAT_LIST = list(M.values())
@@ -502,36 +502,31 @@ def bust(bm, xc, yc, mi):
         box(bm, fx - 0.006, fx + 0.006, fy - 0.006, fy + 0.006, 0.27, 0.83, MI['gilt'])
     box(bm, xc - 0.19, xc + 0.19, yc - 0.19, yc + 0.19, 0.95, 1.0, MI['ebony'])
     box(bm, xc - 0.2, xc + 0.2, yc - 0.2, yc + 0.2, 1.0, 1.015, MI['gilt'])
-    # the socle and the bust
-    lathe(bm, [(0.0, 1.015), (0.09, 1.015), (0.08, 1.04), (0.06, 1.06), (0.07, 1.08), (0.0, 1.08)], 14, (xc, yc, 0), mi)
-    sub = bmesh.new()
-    bmesh.ops.create_uvsphere(sub, u_segments=18, v_segments=10, radius=1.0)
-    for v in sub.verts:   # shoulders and chest: a wide flattened half-ellipsoid, cut flat below, drapery folds
-        x, y, z = v.co
-        z = max(z, -0.05)
-        fold = 0.04 * math.sin(6 * math.atan2(y, x)) * (1 - z)
-        lx, ly = x * (0.14 + fold * 0.5), y * (0.25 + fold)          # deep along the gaze, wide across the shoulders
-        v.co = Vector((xc + lx * F[0] - ly * F[1], yc + lx * F[1] + ly * F[0], 1.08 + (z + 0.05) * 0.25))
-    merge_into(bm, sub, mi_map={0: mi})
-    sub = bmesh.new()   # neck
-    bmesh.ops.create_cone(sub, cap_ends=False, segments=12, radius1=0.068, radius2=0.06, depth=0.09)
-    for v in sub.verts: v.co = Vector((v.co.x + xc, v.co.y + yc, v.co.z + 1.31))
-    merge_into(bm, sub, mi_map={0: mi})
-    sub = bmesh.new()   # the head: brow, nose, chin, hair at the back
-    bmesh.ops.create_uvsphere(sub, u_segments=18, v_segments=12, radius=1.0)
-    for v in sub.verts:
-        x, y, z = v.co
-        r = 1.0
-        if x > 0.55 and abs(y) < 0.25 and -0.35 < z < 0.15: r += 0.18 * (1 - abs(y) / 0.25) * (1 - abs(z + 0.1) / 0.25)   # nose
-        if x > 0.6 and 0.15 < z < 0.4: r += 0.05                                                                     # brow
-        if z < -0.4 and x > 0.2: r -= 0.08                                                                            # jaw narrowing
-        if x < -0.2 and z > -0.2: r += 0.06                                                                           # hair mass behind
-        lx, ly = x * 0.1 * r, y * 0.088 * r
-        v.co = Vector((xc + lx * F[0] - ly * F[1], yc + lx * F[1] + ly * F[0], 1.45 + z * 0.115 * r))
-    merge_into(bm, sub, mi_map={0: mi})
+
 def busts(bm):
     bust(bm, 10.4, -2.75, MI['marble']); bust(bm, 10.4, 2.85, MI['bronze']); bust(bm, 19.3, -2.85, MI['marble'])
 obj_from('saloon_busts', busts, props={'col': 1}, smooth=50)
+# the busts themselves: a real 3D-scanned marble bust (Poly Haven "Marble Bust 01", CC0), one on each pedestal,
+# each looking into the saloon (GUM: "what is that sculpture ... no face?")
+def bust_sculpts():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'reference', 'assets', 'models', 'marble_bust_01', 'marble_bust_01_1k.gltf')
+    if not os.path.exists(path): print('bust scan missing'); return
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    src = [o for o in new if o.type == 'MESH'][0]
+    m = bpy.data.materials.get('M_bust') or mat('M_bust', (0.86, 0.83, 0.77), rough=0.55)
+    src.data.materials.clear(); src.data.materials.append(m)
+    src.parent = None
+    for k, (xc, yc) in enumerate([(10.4, -2.75), (10.4, 2.85), (19.3, -2.85)]):
+        o = src.copy(); o.name = 'saloon_bust_sculpt_%d' % k
+        coll('INT').objects.link(o)
+        o.location = (xc, yc, 1.015)
+        o.rotation_euler = (0, 0, 0 if yc > 0 else math.pi)
+        o.scale = (1.15, 1.15, 1.15)
+        o['keepuv'] = 1
+    for o in new: bpy.data.objects.remove(o, do_unlink=True)
+bust_sculpts()
 
 # controls on the aft wall: ceiling switch, panel lever, and the instruments
 def controls_plate(bm):

@@ -41,7 +41,7 @@ namespace Verne.EditorTools
                 if (m != null) mi.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), "M_pic_" + file.Substring(1)), m);
             }
             mi.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), "M_seadoor"), Materials.Emissive("SeaDoor", new Color(0.02f, 0.12f, 0.14f), new Color(0.05f, 0.32f, 0.36f)));
-            mi.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), "M_bulb"), Materials.Emissive("Bulb", new Color(1f, 0.95f, 0.85f), new Color(4f, 3.6f, 3f)));
+            mi.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), "M_bulb"), Materials.Emissive("Bulb", new Color(1f, 0.85f, 0.6f), new Color(4f, 2.7f, 1.3f)));
             mi.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), "M_coal"), Materials.Emissive("Coal", new Color(0.6f, 0.2f, 0.05f), new Color(3f, 0.9f, 0.2f)));
             mi.SaveAndReimport();
             var src = AssetDatabase.LoadAssetAtPath<GameObject>(FbxPath(block));

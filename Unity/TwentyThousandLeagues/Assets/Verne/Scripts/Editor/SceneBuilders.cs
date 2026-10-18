@@ -254,7 +254,7 @@ namespace Verne.EditorTools
             SideWalls(ship, X0, X1, -37.5f, -17.5f, 4.4f, "Iron");
             Wall("Engine-room aft (the screw's stuffing box)", ship, new Vector2(X0, -37.5f), new Vector2(X1, -37.5f), 0, 4.4f, "Iron");
             foreach (float z in new[] { -21f, -28f, -34f })
-                PointLight("Engine-room light", engine, new Vector3(0f, 3.8f, z), new Color(1f, 0.94f, 0.84f), 1.6f, 9f);
+                PointLight("Engine-room light", engine, new Vector3(0f, 3.8f, z), new Color(1f, 0.76f, 0.5f), 1.6f, 9f);
             var engDoor = HingedDoor(engine, "Engine-room door", new Vector3(2.3f, 0, -15f), 90f, 0.75f, 2.0f, "Iron");
             engDoor.openAngle = 100f;
 
@@ -481,7 +481,7 @@ namespace Verne.EditorTools
             {
                 // one soft, unshadowed fill per room, the electric light "uniform and unintermittent"
                 var area = (x1 - x0) * (z1 - z0);
-                PointLight(name + " light", t, new Vector3((x0 + x1) * 0.5f, h - 0.25f, (z0 + z1) * 0.5f), new Color(1f, 0.93f, 0.82f), ceilMat == "LuminousCeiling" ? 2.2f : 1.4f, Mathf.Sqrt(area) * 1.6f + h);
+                PointLight(name + " light", t, new Vector3((x0 + x1) * 0.5f, h - 0.25f, (z0 + z1) * 0.5f), new Color(1f, 0.74f, 0.46f), ceilMat == "LuminousCeiling" ? 2.2f : 1.4f, Mathf.Sqrt(area) * 1.6f + h);
             }
             return t;
         }
@@ -947,7 +947,7 @@ namespace Verne.EditorTools
                 station.kitDress = K("kit_dress"); station.kitReservoir = K("kit_reservoir"); station.kitLamp = K("kit_lamp");
                 station.kitGun = K("kit_gun"); station.kitStick = K("kit_stick"); station.kitHelmet = K("kit_helmet");
             }
-            PointLight("Cell lamp", cell, new Vector3((x0 + x1) * 0.5f, h - 0.2f, (z0 + z1) * 0.5f), new Color(1f, 0.92f, 0.8f), 1.2f, 4f);
+            PointLight("Cell lamp", cell, new Vector3((x0 + x1) * 0.5f, h - 0.2f, (z0 + z1) * 0.5f), new Color(1f, 0.72f, 0.44f), 1.2f, 4f);
         }
 
         // ------------------------------------------------------------------ sea floor
