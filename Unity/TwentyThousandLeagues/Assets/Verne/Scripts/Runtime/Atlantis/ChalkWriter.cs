@@ -72,7 +72,7 @@ namespace Verne
             yield return new WaitForSeconds(3f);
             Hud.Toast("“The Captain rose, cast one last look on the immense plain, and then bade me follow him.”", 6f);
             yield return new WaitForSeconds(7f);
-            SceneFlow.Load(SceneFlow.Nautilus);
+            SceneFlow.EndCard(SceneFlow.AtlantisEnd, SceneFlow.Nautilus);
         }
     }
 }

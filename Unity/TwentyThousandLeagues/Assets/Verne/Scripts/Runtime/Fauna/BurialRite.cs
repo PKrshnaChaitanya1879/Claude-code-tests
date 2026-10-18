@@ -117,7 +117,7 @@ namespace Verne
             StartCoroutine(Letterbox(false));
             Hud.Toast("“Then the funeral procession returned to the Nautilus, passing under the arches of the forest.”", 7f);
             yield return new WaitForSeconds(8f);
-            SceneFlow.Load(SceneFlow.Nautilus);
+            SceneFlow.EndCard(SceneFlow.BurialEnd, SceneFlow.Nautilus);
         }
 
         System.Collections.Generic.IEnumerable<DiverPuppet> Party()

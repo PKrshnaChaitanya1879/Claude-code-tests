@@ -69,7 +69,7 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 ### M7 · Interface
 - [~] Title: a live in-engine shot. *(Drift shot of the exterior over greybox seabed; still missing: the M3 look.)*
 - [~] Chapter and loading cards with the 1871 engravings and a book quote. *(Loading cards done; chapter cards not yet.)*
-- [ ] Notes, subtitles, pause and settings, end cards.
+- [~] Notes, subtitles, pause and settings, end cards. *(Part 3: end cards for both excursions, `SceneFlow.EndCard`: the engraving (im053, im079), the book's closing words, the score's last bars, then aboard. Notes, subtitles (toasts), pause and settings came in M1; a typography pass remains.)*
 - [ ] Premium typography, one accent colour.
 
 ### M8 · Optimisation and robustness

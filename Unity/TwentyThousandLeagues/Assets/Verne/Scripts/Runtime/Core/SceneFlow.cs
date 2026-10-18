@@ -81,6 +81,40 @@ namespace Verne
 
         public static void Load(string scene) { Chapter.OnSceneLoading(scene); Ensure().StartCoroutine(Ensure().LoadRoutine(scene)); }
 
+        /// <summary>An excursion's end card (M7): its engraving and the book's closing words, the score's last bars, then on to the next scene.</summary>
+        public static void EndCard(Card card, string next, float hold = 9f) { Ensure().StartCoroutine(Ensure().EndRoutine(card, next, hold)); }
+
+        public static readonly Card BurialEnd = new Card { image = "im053", quote = "“Your dead sleep quietly, at least, Captain, out of the reach of sharks.” “Yes, sir, of sharks and men,” gravely replied the Captain.", cite = "Part I, Chapter XXIV" };
+        public static readonly Card AtlantisEnd = new Card { image = "im079", quote = "I saw the lantern of the Nautilus shining like a star ... and we got on board as the first rays of light whitened the surface of the ocean.", cite = "Part II, Chapter IX" };
+
+        IEnumerator EndRoutine(Card card, string next, float hold)
+        {
+            if (m_Busy) yield break;
+            m_Busy = true;
+            Show(card);
+            m_Canvas.enabled = true;
+            VerneInput.GameplayBlocked = true;
+            Music.Play("end", false, 0.8f, 2f);
+            for (float t = 0; t < 1f; t += Time.unscaledDeltaTime / 1.2f) { m_Group.alpha = VerneUI.EaseOut(t); yield return null; }
+            m_Group.alpha = 1f;
+            for (float t = 0; t < hold; t += Time.unscaledDeltaTime) yield return null;
+            for (float t = 0; t < 1f; t += Time.unscaledDeltaTime / 0.6f) { m_Group.alpha = 1f - VerneUI.EaseOut(t); yield return null; }
+            m_Group.alpha = 0f;
+            m_Busy = false;
+            Chapter.OnSceneLoading(next);
+            yield return LoadRoutine(next);
+        }
+
+        void Show(Card card)
+        {
+            var tex = Resources.Load<Texture2D>("VerneCards/" + card.image);
+            m_Image.texture = tex;
+            m_Image.enabled = tex != null;
+            if (tex != null) m_Fit.aspectRatio = (float)tex.width / tex.height;
+            m_Quote.text = card.quote.StartsWith("“") ? card.quote : "“" + card.quote + "”";
+            m_Cite.text = "Jules Verne · " + card.cite;
+        }
+
         /// <summary>A new game from the title: the first excursion.</summary>
         public static void NewGame() { Chapter.Excursion = 1; Load(Nautilus); }
 
@@ -88,13 +122,7 @@ namespace Verne
         {
             if (m_Busy) yield break;
             m_Busy = true;
-            var card = CardFor(scene);
-            var tex = Resources.Load<Texture2D>("VerneCards/" + card.image);
-            m_Image.texture = tex;
-            m_Image.enabled = tex != null;
-            if (tex != null) m_Fit.aspectRatio = (float)tex.width / tex.height;
-            m_Quote.text = "“" + card.quote + "”";
-            m_Cite.text = "Jules Verne · " + card.cite;
+            Show(CardFor(scene));
             m_Canvas.enabled = true;
             VerneInput.GameplayBlocked = true;
 
