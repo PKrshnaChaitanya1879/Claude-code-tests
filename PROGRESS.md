@@ -173,3 +173,56 @@ Each run appends to the log at the bottom and keeps this checklist honest.
     2. M3: in-Unity look pass on the water (tune `VerneWater` presets, shafts, Snell's window), bounce cards and lamp-following shadow decals, quality-tier check.
     3. M4: NavMesh agents for the divers, Ned and Conseil, the sea-spider beat and crustaceans, the forest sway, polyps that retract, terrain art beyond the greybox seabed, burial timing.
   - **Blockers:** none, except that only GUM's machine can run Unity.
+
+- **2026-10-18 (run 3 = Part 3, from 02:11 UTC / 07:41 IST):**
+  - **Access.** `add_repo` wasn't available again; the repo was already cloned and in scope and pushes work, so the run went ahead. Lock taken and pushed first. Toolchain rebuilt from `setup_toolchain.sh`. `shader_check.py` now samples large keyword sets (every keyword alone plus the all-first and all-last combinations).
+  - **M3, the underwater rendering (Part 3's own):**
+    - INSIDE's torch shadows: `LampShadow` decals swing away from the lamps and stretch with the lamp's height.
+    - Playdead's bounce light at each lamp's footprint: `LampBounce`, capped on Balanced and off on Light.
+    - Fallback shaft cards for when the ray-march can't run.
+    - The water pass keeps its depth and shadow globals bound.
+    - Look-dev in Blender with the real assets and the same water coefficients (`m3_lookdev_crespo_v1-3.jpg`). From it: darker wet sand, so the fog stays the brightest thing in frame, and split-toning (cold shadows, warm where the sun or a lamp lands).
+  - **M4, Mission I (Part 3's own):**
+    - `Verne/Flora`: the forest is motionless, as I.XVI says. The weed gives way to a diver and springs back, the anemones move, and the red coral's polyps close as you pass.
+    - Laminaries remodelled as crinkled ribbons after im035.
+    - Faceted Blender rocks with encrustation replace the greybox boxes (`m4_rocks_vs_im034.jpg`). A denser forest and prairie with distance culling.
+    - A NavMesh baked for both excursions. Nemo and the crewman walk it as agents, Ned Land and Conseil follow the Professor, and divers have bodies.
+    - The four bearers carry the body the whole way at the back of the party (I.XXIV), and the rite waits for them.
+    - Porphitae and physalides drift under the surface.
+  - **Ahead of plan, for Part 4 and Part 5:**
+    - **M5:**
+      - The Atlantis kit in Blender (`atlantis.py`, `m5_atlantis_vs_im079.jpg`): temples, the acropolis with a Parthenon outline, the aqueduct, quay, streets and houses under weed; the volcano, its crater on the mountain's flank beside the summit ("the mountain was a volcano"), with lava runs and scoriae; the petrified copse, pines, cromlechs and pennatules; the basalt rock and the chalk letters.
+      - The Mission II terrain (`m5_mission2_terrain.png`): a plain, a climb of 37° or less, the crevice with an 11 m trunk and a NavMeshLink, the first-platform shelf, the summit, and the city 100 m below.
+      - `ChalkWriter` (the word, the long watch, the moon's gleam), `FallRescue`, and the book's lines along the way.
+    - **M6:**
+      - The rain heard from 150 fathoms (`rain_below.ogg`).
+      - Depth darkens what the helmet hears.
+      - **The original score's first pass** (`score.py`): 7 cues, crossfaded by `Music`. The burial and the summit are timed to their scripts, and the music falls silent while Nemo's organ plays.
+    - **M7:** end cards for both excursions.
+    - **M8:** `RouteAudit` writes collision and NavMesh findings into the setup report.
+  - **Three code reviews** (one of the Part 3 code, one of the Atlantis layout, one of first-open risks in the bootstrap). Every finding was fixed:
+    - Bearers keep to the floor.
+    - The crevice is crossable.
+    - FallRescue no longer fires on slopes.
+    - Nothing in the city is buried under the volcano.
+    - The bootstrap never runs inside import workers and shows a progress bar.
+    - A failed build retries on the next open.
+    - Ambient reflection cubemaps, so brass and iron are no longer black.
+    - FBX files are re-imported once URP is active.
+    - NavMesh voxels are coarser, renderer lookups are null-safe, and the Atlantis meshes are readable.
+  - **Verified:**
+    - All C# compiles in the editor and player passes after every change.
+    - The new shaders pass DXC against the URP includes.
+    - Every new model was looked at next to its engraving.
+    - Audio was checked by spectrogram and loudness.
+  - **Not verified:** nothing has run inside Unity yet. The riskiest new parts:
+    - the NavMesh bake inside the bootstrap;
+    - the Flora shader's first look;
+    - the Mission II layout at scale;
+    - how the score sounds. I composed it blind and checked it by spectrogram only.
+  - **Next (Part 4):**
+    1. If GUM sent `verne_setup_report.txt` or screenshots, fix what they show first. Read its Audit lines.
+    2. M5: the Mission II light pass ("just enough to see"), heat shimmer, the summit timing.
+    3. M6: mixer states, the cell and ladder sounds, a pass over the cues once someone can listen.
+    4. Then M7.
+  - **Blockers:** only GUM's machine can run Unity.
