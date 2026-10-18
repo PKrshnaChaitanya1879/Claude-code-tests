@@ -39,10 +39,18 @@ namespace Verne
             var sr = scrim.rectTransform; sr.anchorMin = Vector2.zero; sr.anchorMax = Vector2.one; sr.offsetMin = sr.offsetMax = Vector2.zero;
 
             // the picture, large, on the left; the words beside it (only when there is a picture)
-            m_Frame = VerneUI.Rect("Picture", m_Canvas.transform, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(140, 0), new Vector2(900, 900));
-            var img = VerneUI.Rect("Image", m_Frame, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            // the left half of the screen (whatever its shape): the picture keeps its own proportions inside it,
+            // in a thin gilt frame on a dark mount, like a canvas in the saloon (GUM: "horrible ratio")
+            m_Frame = VerneUI.Rect("Picture area", m_Canvas.transform, new Vector2(0.04f, 0.08f), new Vector2(0.54f, 0.92f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            var fit = VerneUI.Rect("Framed", m_Frame, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(100, 100));
+            m_Fit = fit.gameObject.AddComponent<AspectRatioFitter>(); m_Fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            var gilt = fit.gameObject.AddComponent<Image>(); gilt.color = new Color(0.62f, 0.47f, 0.22f, 1f);
+            var mount = VerneUI.Rect("Mount", fit, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            mount.offsetMin = new Vector2(6, 6); mount.offsetMax = new Vector2(-6, -6);
+            mount.gameObject.AddComponent<Image>().color = new Color(0.05f, 0.04f, 0.035f, 1f);
+            var img = VerneUI.Rect("Image", mount, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            img.offsetMin = new Vector2(10, 10); img.offsetMax = new Vector2(-10, -10);
             m_Image = img.gameObject.AddComponent<RawImage>();
-            m_Fit = img.gameObject.AddComponent<AspectRatioFitter>(); m_Fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
             m_Frame.gameObject.SetActive(false);
             var col = VerneUI.Rect("Column", m_Canvas.transform, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(240, 0), new Vector2(1020, 820));
             m_Col = col;
@@ -77,8 +85,16 @@ namespace Verne
                 c.m_Image.texture = image;
                 c.m_Fit.aspectRatio = image.height > 0 ? (float)image.width / image.height : 1f;   // the canvas' own proportions inside a 900 px box
             }
-            c.m_Col.anchoredPosition = new Vector2(pic ? 1100 : 240, 0);
-            c.m_Col.sizeDelta = new Vector2(pic ? 700 : 1020, 820);
+            if (pic)
+            {   // the words take the right half
+                c.m_Col.anchorMin = new Vector2(0.58f, 0.5f); c.m_Col.anchorMax = new Vector2(0.94f, 0.5f);
+                c.m_Col.anchoredPosition = Vector2.zero; c.m_Col.sizeDelta = new Vector2(0, 820);
+            }
+            else
+            {
+                c.m_Col.anchorMin = c.m_Col.anchorMax = new Vector2(0, 0.5f);
+                c.m_Col.anchoredPosition = new Vector2(240, 0); c.m_Col.sizeDelta = new Vector2(1020, 820);
+            }
             c.m_Title.text = title ?? "";
             c.m_Body.text = body ?? "";
             c.m_Sign.text = string.IsNullOrEmpty(signature) ? "" : "— " + signature;

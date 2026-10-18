@@ -421,9 +421,14 @@ namespace Verne.EditorTools
                 foreach (var r in ship.GetComponentsInChildren<Renderer>(true))
                     if (r.name.StartsWith("saloon_ceiling_light") || r.name == "Saloon ceiling") glow.Add(r);
                 rl.lights = lights.ToArray(); rl.glowing = glow.ToArray();
-                var sw = Box("Ceiling switch", saloon, new Vector3(1.62f, 1.27f, 10.06f), new Vector3(0.07f, 0.07f, 0.05f), "Brass", 1f, true, null, false);
+                // a brass rose with an ivory push, as on an 1860s electric bell-board
+                var sw = new GameObject("Ceiling switch"); sw.transform.SetParent(saloon, false); sw.transform.localPosition = new Vector3(1.62f, 1.27f, 10.05f);
+                Prim(PrimitiveType.Cylinder, "Rose", sw.transform, new Vector3(0, 0, 0.006f), new Vector3(0.09f, 0.006f, 0.09f), new Vector3(90, 0, 0), "Brass");
+                Prim(PrimitiveType.Cylinder, "Collar", sw.transform, new Vector3(0, 0, 0.018f), new Vector3(0.05f, 0.008f, 0.05f), new Vector3(90, 0, 0), "Brass");
+                var cap = Prim(PrimitiveType.Sphere, "Ivory push", sw.transform, new Vector3(0, 0, 0.03f), new Vector3(0.032f, 0.032f, 0.022f), Vector3.zero, "Marble");
+                var swc = sw.AddComponent<BoxCollider>(); swc.size = new Vector3(0.1f, 0.1f, 0.06f); swc.center = new Vector3(0, 0, 0.025f);
                 sw.layer = ProjectSetup.InteractableLayer;
-                var pb = sw.AddComponent<PushButton>();
+                var pb = sw.AddComponent<PushButton>(); pb.cap = cap.transform; pb.travel = 0.009f;
                 pb.verb = "Press"; pb.noun = "the ceiling switch";
                 UnityEventTools.AddPersistentListener(pb.onUsed, rl.Toggle);
             }
@@ -614,14 +619,23 @@ namespace Verne.EditorTools
             SeaOutside(room, panels);
 
             // on the brass controls plate of the aft wall, starboard of the library door
-            var leverRoot = Box("Panel lever boss", room, new Vector3(1.25f, 1.27f, 10.06f), new Vector3(0.08f, 0.08f, 0.06f), "Brass", 1f, false);
+            // GUM: "what are these levers". A turned-brass lever standing out of the plate, its ebony knob riding up and
+            // down a slotted quadrant: the pivot sits in the plate and the handle points into the room.
+            var leverRoot = new GameObject("Panel lever"); leverRoot.transform.SetParent(room, false); leverRoot.transform.localPosition = new Vector3(1.25f, 1.27f, 10.05f);
+            Prim(PrimitiveType.Cylinder, "Boss", leverRoot.transform, new Vector3(0, 0, 0.012f), new Vector3(0.07f, 0.012f, 0.07f), new Vector3(90, 0, 0), "Brass");
+            for (int q = -2; q <= 2; q++)   // the quadrant's notch studs
+                Prim(PrimitiveType.Sphere, "Quadrant stud", leverRoot.transform, new Vector3(0.06f, Mathf.Sin(q * 15f * Mathf.Deg2Rad) * 0.12f, 0.008f), Vector3.one * 0.012f, Vector3.zero, "Brass");
             var pivot = new GameObject("Lever pivot").transform;
             pivot.SetParent(leverRoot.transform, false);
-            pivot.localPosition = new Vector3(0, 0f, 0.03f);
-            Box("Lever handle", pivot, new Vector3(0, 0.12f, 0.02f), new Vector3(0.035f, 0.26f, 0.035f), "Brass", 1f, true, null, false);
+            pivot.localPosition = new Vector3(0, 0f, 0.02f);
+            Prim(PrimitiveType.Sphere, "Pivot ball", pivot, Vector3.zero, Vector3.one * 0.038f, Vector3.zero, "Brass");
+            Prim(PrimitiveType.Cylinder, "Rod", pivot, new Vector3(0, 0, 0.1f), new Vector3(0.016f, 0.1f, 0.016f), new Vector3(90, 0, 0), "Brass");
+            Prim(PrimitiveType.Cylinder, "Ferrule", pivot, new Vector3(0, 0, 0.19f), new Vector3(0.026f, 0.012f, 0.026f), new Vector3(90, 0, 0), "Brass");
+            Prim(PrimitiveType.Sphere, "Ebony knob", pivot, new Vector3(0, 0, 0.225f), new Vector3(0.05f, 0.05f, 0.06f), Vector3.zero, "Ebony");
+            var lc = pivot.gameObject.AddComponent<BoxCollider>(); lc.size = new Vector3(0.09f, 0.09f, 0.28f); lc.center = new Vector3(0, 0, 0.13f);
             pivot.gameObject.layer = ProjectSetup.InteractableLayer;
             var lever = pivot.gameObject.AddComponent<Lever>();
-            lever.pivot = pivot; lever.verb = "Throw"; lever.noun = "the panel lever"; lever.notches = 2; lever.minAngle = -30; lever.maxAngle = 30;
+            lever.pivot = pivot; lever.verb = "Throw"; lever.noun = "the panel lever"; lever.notches = 2; lever.minAngle = 30; lever.maxAngle = -30;   // down = shut, up = open
             UnityEventTools.AddPersistentListener(lever.onValueChanged, panels.SetOpen);
         }
 
@@ -780,7 +794,7 @@ namespace Verne.EditorTools
                     w.kd = new Color(0.12f, 0.045f, 0.04f); w.surfaceAmbient = new Color(0.06f, 0.11f, 0.12f); w.sunShafts = 2.5f; w.forwardScatter = 0.65f; w.maxDistance = 50f; break;
                 case "Mission2":    // 150 fathoms at midnight: no daylight; the volcano's red glow is the only light (art-directed so red carries)
                     w.surfaceY = 274f; w.extinction = new Color(0.012f, 0.014f, 0.016f); w.scatterAlbedo = new Color(0.28f, 0.35f, 0.40f);   // cold scatter: warm albedo made the whole night an orange-brown haze
-                    w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 90f; w.heroGain = 1500f; w.forwardScatter = 0.45f; break;   // the city 100-200 m off must still read from the summit
+                    w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 90f; w.heroGain = 220f; w.forwardScatter = 0.72f;   // GUM: the browser look. The glow lives toward the volcano and dies into black, no orange wash break;   // the city 100-200 m off must still read from the summit
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
             if (w.sunShafts > 0f)
@@ -1256,7 +1270,7 @@ namespace Verne.EditorTools
             glow.transform.SetParent(root, false);
             glow.transform.position = AtlantisKit.CraterGlow;
             var l = glow.AddComponent<Light>();
-            l.type = LightType.Point; l.color = new Color(1f, 0.38f, 0.16f); l.intensity = 30f; l.range = 400f; l.shadows = LightShadows.None;
+            l.type = LightType.Point; l.color = new Color(1f, 0.34f, 0.12f); l.intensity = 12f; l.range = 400f; l.shadows = LightShadows.None;
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);
             // Captain Nemo with his iron-pointed stick, no lamps ("They will be useless"), leading toward the red glow

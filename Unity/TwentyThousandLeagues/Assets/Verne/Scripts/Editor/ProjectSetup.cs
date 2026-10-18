@@ -267,7 +267,7 @@ namespace Verne.EditorTools
             Grade("Nautilus", exposure: 0.0f, contrast: 14f, saturation: 4f, bloom: 0.6f, vignette: 0.22f, tint: new Color(1.04f, 1.0f, 0.95f));
             Grade("Mission1", exposure: 0.0f, contrast: 22f, saturation: -6f, bloom: 0.75f, vignette: 0.34f, tint: new Color(0.92f, 1.0f, 1.04f),
                   splitShadows: new Color(0.16f, 0.34f, 0.40f), splitHighlights: new Color(0.52f, 0.60f, 0.62f));
-            Grade("Mission2", exposure: 0.0f, contrast: 26f, saturation: -10f, bloom: 0.9f, vignette: 0.38f, tint: new Color(0.95f, 0.98f, 1.04f),
+            Grade("Mission2", exposure: -0.35f, contrast: 26f, saturation: -10f, bloom: 0.9f, vignette: 0.38f, tint: new Color(0.95f, 0.98f, 1.04f),
                   splitShadows: new Color(0.14f, 0.18f, 0.30f), splitHighlights: new Color(0.70f, 0.48f, 0.34f));
         }
 

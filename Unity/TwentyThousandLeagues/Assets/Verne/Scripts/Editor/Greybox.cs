@@ -29,6 +29,18 @@ namespace Verne.EditorTools
             return go;
         }
 
+        /// <summary>A smooth primitive part (cylinder, sphere, capsule) with no collider: turned brass, knobs, roses.</summary>
+        public static GameObject Prim(PrimitiveType type, string name, Transform parent, Vector3 pos, Vector3 scale, Vector3 euler, string mat)
+        {
+            var go = GameObject.CreatePrimitive(type);
+            go.name = name;
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = pos; go.transform.localScale = scale; go.transform.localRotation = Quaternion.Euler(euler);
+            go.GetComponent<MeshRenderer>().sharedMaterial = Materials.Get(mat);
+            return go;
+        }
+
         public static Mesh BoxMesh(Vector3 s, float tile)
         {
             string key = $"box_{s.x:0.###}_{s.y:0.###}_{s.z:0.###}_{tile:0.##}";

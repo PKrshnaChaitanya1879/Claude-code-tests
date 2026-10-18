@@ -120,10 +120,16 @@ Shader "Verne/SeaLit"
                 if (_Backdrop > 0.5)
                 {
                     // looking out into open water: brighter toward the lamp and toward the surface, black below
+                    // GUM: "as if an mp4 is playing". Depth instead of a flat colour: near-black water, a faint glow from the
+                    // surface far above, and the Nautilus' own light pouring out of the window as a beam you look along,
+                    // brightest where the eye's ray passes closest to it and dying exponentially with distance (INSIDE).
+                    float3 ro = _WorldSpaceCameraPos;
                     float3 dir = -Vn;
-                    float towardLamp = saturate(dot(dir, normalize(lampPos - _WorldSpaceCameraPos)) * 0.5 + 0.5);
                     float up = saturate(dir.y * 0.5 + 0.5);
-                    float3 col = _VerneWater.rgb * (0.12 + 1.6 * up * up * up + 0.9 * towardLamp * towardLamp * towardLamp * towardLamp);
+                    float t = max(dot(lampPos - ro, dir), 0.0);
+                    float dperp = length(lampPos - (ro + dir * t));
+                    float3 beam = _VerneLampColor.rgb * exp(-sigma * (dperp + t * 0.35)) / (1.0 + dperp * dperp * 0.6) * 0.22;
+                    float3 col = _VerneWater.rgb * (0.04 + 1.4 * pow(up, 5.0)) + beam * _VerneWater.rgb * 18.0;
                     return half4(col, 1);
                 }
 

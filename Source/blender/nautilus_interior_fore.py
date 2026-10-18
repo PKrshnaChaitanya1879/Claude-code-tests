@@ -55,6 +55,10 @@ M = {
     'lens': mat('M_lens', (0.9, 0.95, 1.0), emit=(1, 1, 1)),
     'lensdark': mat('M_lensdark', (0.2, 0.25, 0.27), rough=0.1),
     'crystal': mat('M_crystal', (0.8, 0.9, 0.95), rough=0.05),
+    'china': mat('M_china', (0.93, 0.91, 0.87), rough=0.2),
+    'chinablue': mat('M_chinablue', (0.18, 0.28, 0.55), rough=0.2),
+    'silver': mat('M_silver', (0.86, 0.86, 0.88), metal=1.0, rough=0.18),
+    'wine': mat('M_wine', (0.22, 0.02, 0.03), rough=0.1),
 }
 MAT_LIST = list(M.values())
 MI = {k: MAT_LIST.index(v) for k, v in M.items()}
@@ -220,13 +224,7 @@ def embrasure(bm, side):
             vs = [V((corner[0], yw, corner[1])), V((pts[i][0], yw, pts[i][1])), V((pts[i + 1][0], yw, pts[i + 1][1]))]
             bv = [bm.verts.new(v) for v in vs]
             f = bm.faces.new(bv[::-1] if (sgn > 0) == (side_k == 1) else bv); f.material_index = MI['ebony']
-    # copper bands on the crystal (outer face)
-    yc = 3.72 if sgn > 0 else -3.72
-    for k in range(1, 3):
-        xx = xa + (xb - xa) * k / 3
-        box(bm, xx - 0.03, xx + 0.03, min(yc, yc - 0.06 * sgn), max(yc, yc - 0.06 * sgn), z0, z1, MI['copper'])
-    zz = (z0 + z1) / 2
-    box(bm, xa, xb, min(yc, yc - 0.06 * sgn), max(yc, yc - 0.06 * sgn), zz - 0.03, zz + 0.03, MI['copper'])
+    # no bars across the crystal: "two crystal panes" and nothing between the eye and the sea (I.XIV)
 for sd in ('P', 'S'):
     obj_from('saloon_window_' + sd, lambda bm, sd=sd: embrasure(bm, sd), props={'col': 1})
 
@@ -499,10 +497,26 @@ obj_from('saloon_busts', busts, props={'col': 1}, smooth=50)
 
 # controls on the aft wall: ceiling switch, panel lever, and the instruments
 def controls_plate(bm):
+    # an engraved brass board on an ebony back: a bevelled border, eight rivets, the lever's slotted quadrant
+    # (Unity x 1.25 = Blender y -1.25) and the switch rose's seat (y -1.62), each with an ivory label plate
     x = S['x0'] + 0.02
-    box(bm, x, x + 0.03, -1.6, -0.9, 1.0, 1.6, MI['brass'])
-    for yy in (-1.45, -1.05):
-        box(bm, x + 0.03, x + 0.06, yy - 0.05, yy + 0.05, 1.05, 1.5, MI['ebony'])
+    box(bm, x - 0.01, x + 0.012, -1.9, -0.98, 0.98, 1.56, MI['ebony'])
+    box(bm, x + 0.012, x + 0.024, -1.87, -1.01, 1.01, 1.53, MI['brass'])
+    for (y0, y1, z0, z1) in [(-1.87, -1.01, 1.51, 1.53), (-1.87, -1.01, 1.01, 1.03), (-1.87, -1.85, 1.01, 1.53), (-1.03, -1.01, 1.01, 1.53)]:
+        box(bm, x + 0.024, x + 0.032, y0, y1, z0, z1, MI['brass'])      # raised border
+    for yy in (-1.84, -1.04):
+        for zz in (1.04, 1.5):
+            cylinder(bm, (x + 0.026, yy, zz), 0.008, 0.008, 8, MI['brass'], axis='X')
+    for zz in (1.04, 1.5):
+        for yy in (-1.44,):
+            cylinder(bm, (x + 0.026, yy, zz), 0.008, 0.008, 8, MI['brass'], axis='X')
+    # the quadrant: a dark slot with brass lips the lever's rod travels in
+    box(bm, x + 0.024, x + 0.03, -1.268, -1.232, 1.15, 1.39, MI['black'])
+    box(bm, x + 0.024, x + 0.036, -1.29, -1.268, 1.14, 1.40, MI['brass'])
+    box(bm, x + 0.024, x + 0.036, -1.232, -1.21, 1.14, 1.40, MI['brass'])
+    # label plates (ivory) under each control
+    for yy in (-1.25, -1.62):
+        box(bm, x + 0.024, x + 0.03, yy - 0.06, yy + 0.06, 1.07, 1.1, MI['dial'])
 obj_from('controls_plate', controls_plate)
 def lever(name, yy, ia):
     def b(bm):
@@ -668,7 +682,7 @@ def library(bm):
     for i in range(14):
         px, py = xc + rnd.uniform(-0.9, 0.9), rnd.uniform(-0.6, 0.6)
         w, hh = rnd.uniform(0.2, 0.42), rnd.uniform(0.28, 0.5)
-        z = 0.78 + 0.003 * i
+        z = 0.786 + 0.004 * i   # every sheet clear of the table top and of the one below (no flicker)
         a = rnd.uniform(-0.6, 0.6)
         vs = [Vector((px + math.cos(a) * u - math.sin(a) * v, py + math.sin(a) * u + math.cos(a) * v, z)) for (u, v) in [(-w / 2, -hh / 2), (w / 2, -hh / 2), (w / 2, hh / 2), (-w / 2, hh / 2)]]
         f = bm.faces.new([bm.verts.new(v) for v in vs]); f.material_index = MI['paper']
@@ -689,8 +703,11 @@ o['lights'] = json.dumps([[gx, gy, L['h'] - 0.25] for gx in (L['x0'] + 1.2, L['x
 o2 = bpy.data.objects['library']
 o2['shelves'] = json.dumps(SHELVES)
 # Run 2: "twelve thousand volumes" (I.XI) on every shelf, in runs of bindings, with gaps, leaning volumes and the odd stack
-BOOKM = [mat('M_book_' + k, c, rough=0.6) for k, c in [('red', (0.33, 0.06, 0.05)), ('green', (0.07, 0.17, 0.09)), ('brown', (0.3, 0.16, 0.07)),
-                                                         ('navy', (0.05, 0.07, 0.13)), ('tan', (0.48, 0.36, 0.2)), ('black', (0.04, 0.035, 0.03))]]
+BOOKM = [mat('M_book_' + k, c, rough=r) for k, c, r in [('red', (0.33, 0.06, 0.05), 0.55), ('green', (0.07, 0.17, 0.09), 0.55), ('brown', (0.3, 0.16, 0.07), 0.5),
+                                                         ('navy', (0.05, 0.07, 0.13), 0.55), ('tan', (0.48, 0.36, 0.2), 0.6), ('black', (0.04, 0.035, 0.03), 0.45),
+                                                         ('oxblood', (0.2, 0.03, 0.03), 0.45), ('olive', (0.17, 0.17, 0.07), 0.6), ('vellum', (0.7, 0.62, 0.48), 0.7),
+                                                         ('morocco', (0.42, 0.12, 0.06), 0.4), ('gilt', (0.62, 0.46, 0.18), 0.3)]]
+GILT = len(BOOKM) - 1   # gilt bands and title panels tooled on the spines
 def books():
     bm = bmesh.new()
     rnd = random.Random(12)
@@ -717,6 +734,19 @@ def books():
             else:
                 xlo, xhi = sorted([c + 0.02 * d, c + (0.02 + dd) * d])
                 box(bm, xlo, xhi, a, a + t, z, z + hh, len(MI) + run_mi, skip=('z0', 'x1' if d < 0 else 'x0'))
+            # the spine: raised bands near head and tail, and a gilt title panel (most volumes); a leather label on some
+            sp = c + (0.02 + dd) * d
+            bands = [z + 0.035, z + hh - 0.045] + ([z + hh * 0.5] if hh > 0.3 else [])
+            lab = (z + hh * 0.62, z + hh * 0.78)
+            lab_mi = len(MI) + (GILT if rnd.random() < 0.7 else (6 if run_mi != 6 else 5))
+            if s['ax'] == 'y':
+                for zb in bands: box(bm, a + 0.002, a + t - 0.002, min(sp, sp + 0.004 * d), max(sp, sp + 0.004 * d), zb, zb + 0.008, len(MI) + GILT)
+                box(bm, a + 0.004, a + t - 0.004, min(sp, sp + 0.003 * d), max(sp, sp + 0.003 * d), lab[0], lab[1], lab_mi)
+            else:
+                for zb in bands: box(bm, min(sp, sp + 0.004 * d), max(sp, sp + 0.004 * d), a + 0.002, a + t - 0.002, zb, zb + 0.008, len(MI) + GILT)
+                box(bm, min(sp, sp + 0.003 * d), max(sp, sp + 0.003 * d), a + 0.004, a + t - 0.004, lab[0], lab[1], lab_mi)
+            # now and then a volume leans on its neighbour
+
             a += t + 0.002; run_left -= 1; nb += 1
     print('books', nb)
     return new_obj('library_books', bm, MAT_LIST + BOOKM)
@@ -812,38 +842,110 @@ room('dining_shell', DN['x0'], DN['x1'], DN['y0'], DN['y1'], DN['h'], ops={
     'x1': [(*a_x1(*D_LIB_DIN, DN['y1']), 0, DOOR_H)],
     'x0': [(*a_x0(*D_DIN_HALL, DN['y0']), 0, DOOR_H)],
 }, floor='oak', walls='tapestry', ceil='plaster', ceiling=False)
+def goblet(bm, x, y, z, s=1.0, mi=None):
+    mi = MI['crystal'] if mi is None else mi
+    lathe(bm, [(0.0, 0), (0.035 * s, 0), (0.03 * s, 0.006 * s), (0.006 * s, 0.012 * s), (0.005 * s, 0.07 * s), (0.012 * s, 0.08 * s),
+               (0.035 * s, 0.1 * s), (0.04 * s, 0.13 * s), (0.038 * s, 0.16 * s)], 10, (x, y, z), mi)
+def carafe(bm, x, y, z):
+    lathe(bm, [(0.0, 0), (0.06, 0), (0.075, 0.06), (0.07, 0.14), (0.03, 0.2), (0.022, 0.27), (0.03, 0.3)], 12, (x, y, z), MI['crystal'])
+def tureen(bm, x, y, z, mi=None):
+    mi = MI['china'] if mi is None else mi
+    lathe(bm, [(0.0, 0), (0.07, 0), (0.06, 0.02), (0.14, 0.06), (0.15, 0.12), (0.13, 0.15), (0.12, 0.17), (0.04, 0.2), (0.03, 0.23), (0.0, 0.24)], 14, (x, y, z), mi)
+def dome(bm, x, y, z, r=0.12):
+    box(bm, x - r * 1.15, x + r * 1.15, y - r * 0.8, y + r * 0.8, z, z + 0.008, MI['silver'])
+    lathe(bm, [(r, 0.008), (r * 0.95, 0.05), (r * 0.7, 0.1), (r * 0.25, 0.125), (0.015, 0.13), (0.02, 0.15), (0.0, 0.155)], 14, (x, y, z), MI['silver'])
+def cup(bm, x, y, z):
+    lathe(bm, [(0.0, 0), (0.025, 0), (0.04, 0.03), (0.045, 0.06), (0.0, 0.06)], 10, (x, y, z), MI['china'])
+    cylinder(bm, (x, y, z), 0.06, 0.006, 12, MI['china'])
+
 def dining(bm):
-    # sideboards at both extremities, either side of each door
+    """I.X: "High oaken sideboards, inlaid with ebony, stood at the two extremities of the room, and upon their
+    shelves glittered china, porcelain, and glass of inestimable value. The plate on the table sparkled ...
+    In the centre of the room was a table richly laid out." Open sideboards (the china is SEEN), a laid table."""
+    rnd = random.Random(31)
     for (xw, d, door) in [(DN['x0'], 1, D_DIN_HALL), (DN['x1'], -1, D_LIB_DIN)]:
         for (ya, yb) in [(DN['y0'] + 0.2, door[0] - 0.25), (door[1] + 0.25, DN['y1'] - 0.2)]:
-            xa, xb = sorted([xw + 0.02 * d, xw + 0.55 * d])
-            box(bm, xa, xb, ya, yb, 0.0, 0.95, MI['oak'], step=0.5)                     # base
-            box(bm, xa - 0.02, xb + 0.02, ya - 0.03, yb + 0.03, 0.95, 1.0, MI['ebony'])    # inlaid top
-            xc_, xd_ = sorted([xw + 0.02 * d, xw + 0.38 * d])
-            box(bm, xc_, xd_, ya + 0.05, yb - 0.05, 1.0, 2.15, MI['oak'], step=0.5)           # upper case
-            box(bm, xc_, xd_, ya, yb, 2.15, 2.25, MI['ebony'])                                # cornice
-            for k in range(3):                                                                 # china on the shelves
-                for q in range(int((yb - ya) / 0.28)):
-                    yy = ya + 0.18 + q * 0.28
-                    xx = xw + 0.3 * d
-                    cylinder(bm, (xx, yy, 1.05 + k * 0.38), 0.07 + 0.02 * ((q + k) % 2), 0.2, 8, MI['marble'], r2=0.05)
-    # the table with its white cloth, and six chairs
-    box(bm, 1.5, 3.5, -0.6, 0.6, 0.72, 0.77, MI['linen'], step=0.5)
-    box(bm, 1.45, 3.55, -0.65, 0.65, 0.5, 0.72, MI['linen'])
-    for (xx, yy) in [(1.6, -0.5), (3.4, -0.5), (1.6, 0.5), (3.4, 0.5)]:
-        box(bm, xx - 0.04, xx + 0.04, yy - 0.04, yy + 0.04, 0, 0.72, MI['oak'])
-    for (xx, side) in [(1.9, -1), (2.5, -1), (3.1, -1), (1.9, 1), (2.5, 1), (3.1, 1)]:
-        yy = side * 0.95
-        box(bm, xx - 0.22, xx + 0.22, yy - 0.22, yy + 0.22, 0.44, 0.49, MI['leather'])
+            X = lambda u: xw + u * d                       # u: metres out from the wall
+            def bx(u0, u1, y0, y1, z0, z1, mi, step=None):
+                a, b = sorted([X(u0), X(u1)]); box(bm, a, b, y0, y1, z0, z1, mi, step=step)
+            # the base: a cabinet with panelled doors, ebony inlay and brass knobs
+            bx(0.02, 0.52, ya, yb, 0.06, 0.88, MI['oak'], 0.5)
+            bx(0.0, 0.54, ya - 0.01, yb + 0.01, 0.0, 0.06, MI['ebony'])                       # plinth
+            nd = max(2, int((yb - ya) / 0.55))
+            for k in range(nd):
+                y0 = ya + (yb - ya) * k / nd + 0.05; y1 = ya + (yb - ya) * (k + 1) / nd - 0.05
+                bx(0.52, 0.535, y0, y1, 0.14, 0.8, MI['oak'])                                  # door
+                bx(0.535, 0.545, y0 + 0.05, y1 - 0.05, 0.2, 0.74, MI['ebony'])                 # inlaid field
+                cylinder(bm, (X(0.545), (y0 + y1) / 2 + (0.08 if k % 2 == 0 else -0.08), 0.5), 0.014, 0.025, 8, MI['brass'], axis='X')
+            bx(-0.0, 0.58, ya - 0.03, yb + 0.03, 0.88, 0.93, MI['ebony'])                      # inlaid top
+            bx(0.0, 0.59, ya - 0.035, yb + 0.035, 0.925, 0.935, MI['brass'])                   # brass edge
+            # the open upper stage: back, posts, three shelves with plate rails, a moulded cornice
+            bx(0.0, 0.03, ya, yb, 0.93, 2.35, MI['oak'], 0.5)
+            for yy in (ya, yb - 0.05):
+                bx(0.0, 0.36, yy, yy + 0.05, 0.93, 2.35, MI['oak'])
+            for zsh in (1.32, 1.72, 2.08):
+                bx(0.03, 0.34, ya + 0.05, yb - 0.05, zsh - 0.025, zsh, MI['oak'])
+                bx(0.32, 0.34, ya + 0.05, yb - 0.05, zsh, zsh + 0.035, MI['brass'])           # plate rail
+            bx(0.0, 0.42, ya - 0.04, yb + 0.04, 2.35, 2.42, MI['ebony'])
+            bx(0.0, 0.44, ya - 0.05, yb + 0.05, 2.42, 2.45, MI['gilt'])
+            # china, porcelain and glass on show: plates standing against the back, cups and goblets before them
+            for zsh in (0.93, 1.32, 1.72, 2.08):
+                n = int((yb - ya - 0.14) / 0.24)
+                for q in range(n):
+                    yy = ya + 0.12 + q * 0.24 + 0.12
+                    if zsh > 1.0:
+                        mi = MI['chinablue'] if (q + int(zsh * 10)) % 3 == 0 else MI['china']
+                        r = 0.1 if zsh < 2.0 else 0.085
+                        cylinder(bm, (X(0.06 if d > 0 else 0.07), yy, zsh + r + 0.005), r, 0.012, 16, mi, axis='X')
+                        if q % 2 == 0: goblet(bm, X(0.22), yy, zsh, 0.8)
+                        else: cup(bm, X(0.22), yy, zsh)
+                    else:   # on the sideboard top: tureens, carafes and a silver salver
+                        if q % 3 == 0: tureen(bm, X(0.3), yy, zsh, MI['china'] if q % 2 else MI['silver'])
+                        elif q % 3 == 1: carafe(bm, X(0.3), yy, zsh)
+                        else: cylinder(bm, (X(0.3), yy, zsh), 0.13, 0.012, 16, MI['silver'])
+    # the table, "richly laid": a white damask cloth falling over oak, turned legs
+    tx0, tx1, ty = 1.0, 4.0, 0.62
+    box(bm, tx0, tx1, -ty, ty, 0.70, 0.74, MI['oak'], step=0.5)
+    box(bm, tx0 - 0.04, tx1 + 0.04, -ty - 0.04, ty + 0.04, 0.74, 0.748, MI['linen'], step=0.5)
+    for (yy, dy) in ((-ty - 0.04, -0.005), (ty + 0.04, 0.005)):
+        box(bm, tx0 - 0.04, tx1 + 0.04, min(yy, yy + dy), max(yy, yy + dy), 0.5, 0.748, MI['linen'])
+    for xx in (tx0 - 0.04, tx1 + 0.04):
+        box(bm, min(xx, xx + (0.005 if xx > 2 else -0.005)), max(xx, xx + (0.005 if xx > 2 else -0.005)), -ty - 0.04, ty + 0.04, 0.5, 0.748, MI['linen'])
+    for (xx, yy) in [(tx0 + 0.12, -ty + 0.12), (tx1 - 0.12, -ty + 0.12), (tx0 + 0.12, ty - 0.12), (tx1 - 0.12, ty - 0.12)]:
+        lathe(bm, [(0.05, 0), (0.035, 0.05), (0.045, 0.12), (0.03, 0.3), (0.045, 0.5), (0.04, 0.7)], 10, (xx, yy, 0), MI['oak'])
+    zt = 0.748
+    # six places: charger, plate, napkin, knife, fork and spoon of silver, water goblet and wine glass
+    for (xx, side) in [(1.6, -1), (2.5, -1), (3.4, -1), (1.6, 1), (2.5, 1), (3.4, 1)]:
+        yp = side * 0.4
+        cylinder(bm, (xx, yp, zt), 0.15, 0.006, 20, MI['silver'])
+        lathe(bm, [(0.0, 0.006), (0.12, 0.006), (0.13, 0.02), (0.0, 0.012)], 20, (xx, yp, zt), MI['china'])
+        lathe(bm, [(0.05, 0.02), (0.0, 0.11)], 4, (xx, yp, zt), MI['linen'])                     # folded napkin
+        for (dx, w, l) in [(-0.2, 0.012, 0.2), (0.19, 0.01, 0.2), (0.23, 0.012, 0.17)]:
+            box(bm, xx + dx - w, xx + dx + w, yp - l / 2, yp + l / 2, zt, zt + 0.006, MI['silver'])
+        goblet(bm, xx + 0.12, yp - side * 0.2, zt, 1.0)
+        goblet(bm, xx + 0.2, yp - side * 0.17, zt, 0.85, MI['crystal'])
+    # down the middle: covered dishes of the Nautilus' own fare (I.X), carafes, a silver epergne
+    dome(bm, 1.75, 0.0, zt, 0.12); dome(bm, 3.25, 0.0, zt, 0.12)
+    tureen(bm, 2.5, 0.0, zt, MI['silver'])
+    carafe(bm, 2.05, 0.08, zt); carafe(bm, 2.95, -0.08, zt)
+    for xx in (2.05, 2.95):
+        cylinder(bm, (xx, -0.12 if xx < 2.5 else 0.12, zt), 0.09, 0.01, 16, MI['china'])
+        lathe(bm, [(0.0, 0.01), (0.07, 0.01), (0.05, 0.05), (0.0, 0.06)], 10, (xx, -0.12 if xx < 2.5 else 0.12, zt), MI['wine'])
+    # six chairs, carved high backs, brown leather seats
+    for (xx, side) in [(1.6, -1), (2.5, -1), (3.4, -1), (1.6, 1), (2.5, 1), (3.4, 1)]:
+        yy = side * 0.92
+        box(bm, xx - 0.23, xx + 0.23, yy - 0.22, yy + 0.22, 0.43, 0.47, MI['oak'])
+        box(bm, xx - 0.21, xx + 0.21, yy - 0.2, yy + 0.2, 0.47, 0.5, MI['leather'])
         yb_ = yy + side * 0.2
-        box(bm, xx - 0.22, xx + 0.22, min(yb_, yb_ + 0.04 * side), max(yb_, yb_ + 0.04 * side), 0.49, 1.0, MI['oak'])
+        for dx in (-0.2, 0.2):
+            box(bm, xx + dx - 0.025, xx + dx + 0.025, min(yb_, yb_ + 0.05 * side), max(yb_, yb_ + 0.05 * side), 0.47, 1.12, MI['oak'])
+        for dx in (-0.08, 0.0, 0.08):
+            box(bm, xx + dx - 0.012, xx + dx + 0.012, min(yb_, yb_ + 0.03 * side), max(yb_, yb_ + 0.03 * side), 0.55, 0.98, MI['ebony'])
+        box(bm, xx - 0.24, xx + 0.24, min(yb_, yb_ + 0.06 * side), max(yb_, yb_ + 0.06 * side), 0.98, 1.1, MI['oak'])
+        lathe(bm, [(0.04, 0), (0.0, 0.05)], 8, (xx, yb_ + 0.03 * side, 1.1), MI['ebony'])        # finial
         for (dx, dy) in [(-0.19, -0.19), (0.19, -0.19), (-0.19, 0.19), (0.19, 0.19)]:
-            box(bm, xx + dx - 0.02, xx + dx + 0.02, yy + dy - 0.02, yy + dy + 0.02, 0, 0.44, MI['oak'])
-    # bell-metal dishes and the engraved N
-    for xx in (1.9, 2.5, 3.1):
-        for side in (-1, 1):
-            cylinder(bm, (xx, side * 0.42, 0.77), 0.12, 0.012, 12, MI['bronze'])
-    # coffered ceiling around the luminous painted panel
+            lathe(bm, [(0.025, 0), (0.02, 0.2), (0.03, 0.3), (0.022, 0.43)], 8, (xx + dx, yy + dy, 0), MI['oak'])
+    # coffered ceiling around the luminous painted panel ("the light was tempered and softened by exquisite paintings")
     h = DN['h']
     for (a, b2, c0, c1) in [(DN['x0'], DN['x1'], DN['y0'], DN['y0'] + 0.7), (DN['x0'], DN['x1'], DN['y1'] - 0.7, DN['y1']),
                             (DN['x0'], DN['x0'] + 0.7, DN['y0'], DN['y1']), (DN['x1'] - 0.7, DN['x1'], DN['y0'], DN['y1'])]:

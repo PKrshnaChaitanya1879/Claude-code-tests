@@ -16,7 +16,7 @@ namespace Verne
         [Header("Water (per metre extinction; red dies first)")]
         // tuned with Source/tools/preview_sea_window.py (Source/previews/m2_saloon_window_mock.png)
         public Color sigma = new Color(0.11f, 0.045f, 0.04f);
-        public Color water = new Color(0.004f, 0.032f, 0.040f);
+        public Color water = new Color(0.003f, 0.018f, 0.026f);   // darker, colder: INSIDE, not a lit aquarium
         public Color ambient = new Color(0.004f, 0.010f, 0.013f);
         [Tooltip("The light pouring out of the crystal windows: a strip along each side (xyz in this object's space; x mirrored).")]
         public Vector3 lampLocal = new Vector3(3.8f, 2f, 15f);

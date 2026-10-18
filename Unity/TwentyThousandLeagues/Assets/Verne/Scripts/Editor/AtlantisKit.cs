@@ -58,29 +58,39 @@ namespace Verne.EditorTools
             int n0 = s_Root.childCount;
 
             // 1. the stony plain (z 5–50): pennatules glimmering on the weed, a few cromlechs
-            for (int i = 0; i < 160; i++) { var p = Rnd(-30, 30, 5, 55, 1.2f); Put("pennatule", p, Yaw(), Rf(0.8f, 1.6f), false); }
+            for (int i = 0; i < 50; i++) { var p = Rnd(-30, 30, 5, 55, 1.2f); Put("pennatule", p, Yaw(), Rf(0.7f, 1.1f), false); }   // fewer, and only a faint glow (GUM: "what are those blue things")
             for (int i = 0; i < 6; i++) Put("cromlech", Rnd(-28, 28, 15, 50, 4f), Yaw(), Rf(0.9f, 1.4f));
             // 2. the petrified copse (z 50–96), a lane kept clear; gigantic pines here and there
             for (int i = 0; i < 110; i++) { var p = Rnd(-34, 34, 50, 97, 2.4f); if (p.z > CrevZ0 - 4f) continue; Put("deadtree_" + s_R.Next(4), p, Yaw(), Rf(0.9f, 1.4f)); }
             for (int i = 0; i < 9; i++) { var p = Rnd(-30, 30, 56, 92, 4f); Put("dead_pine", p, Yaw(), Rf(0.9f, 1.2f)); }
             // 3. the crevice and the trunk thrown across it (II.IX: "the unsteady trunk of a tree thrown across from one abyss to the other")
-            float lip = Mathf.Min(groundAt(new Vector3(0, 0, CrevZ0 - 1f)), groundAt(new Vector3(0, 0, CrevZ1 + 1f)));
-            float zc = (CrevZ0 + CrevZ1) * 0.5f;
-            var log = PutAt("log_bridge", new Vector3(0f, lip - 0.2f, zc), 0f, 1.4f, false);    // 11 m over an 8 m gap, its ends bedded in the lips
+            // GUM: "you can't cross the trunk at all". The walk is now one straight plank-like collider from ground to
+            // ground, 3 m back from each lip, so it starts flush with the sand on both sides (no step up onto a round log),
+            // and the trunk is laid along that same line with its top flush with the walk.
+            var A = new Vector3(0f, 0f, CrevZ0 - 3f); A.y = groundAt(A) + 0.02f;
+            var B = new Vector3(0f, 0f, CrevZ1 + 3f); B.y = groundAt(B) + 0.02f;
+            var mid = (A + B) * 0.5f; var dirAB = (B - A); float len = dirAB.magnitude;
+            var rot = Quaternion.LookRotation(dirAB.normalized, Vector3.up);
+            var walk = new GameObject("Log walkway"); walk.transform.SetParent(s_Root, false);
+            walk.transform.position = mid; walk.transform.rotation = rot;
+            var bc = walk.AddComponent<BoxCollider>(); bc.size = new Vector3(1.4f, 0.2f, len + 0.6f); bc.center = new Vector3(0f, -0.1f, 0f);
+            walk.AddComponent<Surface>().kind = "wood";
+            var link = walk.AddComponent<Unity.AI.Navigation.NavMeshLink>();
+            link.startPoint = new Vector3(0f, 0f, -len * 0.5f - 1f); link.endPoint = new Vector3(0f, 0f, len * 0.5f + 1f);
+            link.width = 1.0f; link.bidirectional = true;
+            var log = PutAt("log_bridge", mid, 0f, 1.4f, false);
             if (log != null)
             {
                 var lr = log.GetComponentInChildren<Renderer>();
                 var b = lr != null ? lr.bounds : new Bounds(log.transform.position, new Vector3(0.8f, 0.8f, 11f));
-                if (b.size.x > b.size.z) log.transform.rotation = Quaternion.Euler(0f, 90f, 0f) * log.transform.rotation;   // lay it along the way
-                var top = lr != null ? lr.bounds.max.y : log.transform.position.y + 0.4f;
-                // the walkable top of the trunk: a 1.2 m box (the round trunk alone would roll the visitor off), and the link the divers' agents take
-                var walk = new GameObject("Log walkway"); walk.transform.SetParent(s_Root, false);
-                walk.transform.position = new Vector3(0f, top - 0.05f, zc);
-                var bc = walk.AddComponent<BoxCollider>(); bc.size = new Vector3(1.2f, 0.1f, 12f);
-                walk.AddComponent<Surface>().kind = "wood";
-                var link = walk.AddComponent<Unity.AI.Navigation.NavMeshLink>();
-                link.startPoint = new Vector3(0f, lip - (top - 0.05f), CrevZ0 - 4f - zc); link.endPoint = new Vector3(0f, lip - (top - 0.05f), CrevZ1 + 4f - zc);
-                link.width = 1.0f; link.bidirectional = true;
+                if (b.size.x > b.size.z) log.transform.rotation = Quaternion.Euler(0f, 90f, 0f) * log.transform.rotation;   // its length along local z
+                log.transform.rotation = rot * log.transform.rotation;                                                       // then pitched to the walk
+                Physics.SyncTransforms();
+                // sink it so its top meets the walk's surface along the line
+                float halfThick = lr != null ? Mathf.Min(lr.bounds.extents.x, lr.bounds.extents.y) : 0.4f;
+                log.transform.position = mid - rot * Vector3.up * Mathf.Max(0.05f, halfThick - 0.06f);
+                float stretch = (len + 0.4f) / Mathf.Max(1f, lr != null ? Mathf.Max(lr.bounds.size.x, lr.bounds.size.z) : len);
+                log.transform.localScale = new Vector3(log.transform.localScale.x, log.transform.localScale.y, log.transform.localScale.z * Mathf.Clamp(stretch, 1f, 1.8f));
             }
             // 4. the crustaceans' rocks, the cromlechs "leaning on their regularly-cut bases" (z 104–132)
             for (int i = 0; i < 14; i++) Put("cromlech", Rnd(-24, 24, 110, 132, 3f), Yaw(), Rf(1.0f, 1.8f));
@@ -194,7 +204,7 @@ namespace Verne.EditorTools
                     string m = mats[i].name;
                     if (m.StartsWith("M_lava_crust")) mats[i] = Materials.Emissive("LavaCrust", new Color(0.18f, 0.06f, 0.03f), new Color(0.9f, 0.18f, 0.03f));
                     else if (m.StartsWith("M_lava")) mats[i] = Materials.Emissive("LavaRun", new Color(1f, 0.4f, 0.1f), new Color(6f, 1.7f, 0.35f));
-                    else if (m.StartsWith("M_pennatule")) mats[i] = Materials.Emissive("Pennatule", new Color(0.4f, 0.6f, 0.7f), new Color(0.25f, 0.9f, 1.3f));
+                    else if (m.StartsWith("M_pennatule")) mats[i] = Materials.Emissive("Pennatule", new Color(0.32f, 0.3f, 0.28f), new Color(0.03f, 0.07f, 0.06f));
                 }
                 mr.sharedMaterials = mats;
                 if (name == "pennatule" || name == "scoria") mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
