@@ -52,7 +52,10 @@ namespace Verne
             if (hold) { if (m_Agent != null) m_Agent.isStopped = true; return; }
             if (m_Done) { if (m_Agent != null) m_Agent.isStopped = true; }
             if (m_Done) { m_Puppet.gesture = DiverPuppet.Gesture.Idle; m_Puppet.speed = 0f; Face(p != null ? p.transform.position : transform.position + transform.forward); return; }
-            if (!m_Waiting && d > waitDistance) m_Waiting = true;
+            // wait (and beckon) only for a visitor who has fallen behind, never for one who has gone on ahead
+            bool behind = p == null || m_I >= waypoints.Length || Vector3.Dot(p.transform.position - transform.position, waypoints[m_I] - transform.position) < 0f;
+            if (!m_Waiting && d > waitDistance && behind) m_Waiting = true;
+            if (m_Waiting && !behind) m_Waiting = false;
             if (m_Waiting && d < resumeDistance) m_Waiting = false;
             if (m_Agent != null) m_Agent.isStopped = m_Waiting;
             if (m_Waiting)

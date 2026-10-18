@@ -16,7 +16,7 @@ namespace Verne
         public DiverGuide nemo;
         public Light moon;
         public float startRadius = 9f;
-        bool m_Started;
+        bool m_Started; float m_Near;
 
         void Start() { if (letters != null) foreach (var l in letters) if (l != null) l.SetActive(false); }
 
@@ -25,8 +25,9 @@ namespace Verne
             if (m_Started) return;
             var p = PlayerMotor.Instance;
             if (p == null) return;
-            if (nemo != null && !nemo.Arrived) return;
-            if (Vector3.Distance(p.transform.position, transform.position) > startRadius) return;
+            if (Vector3.Distance(p.transform.position, transform.position) > startRadius) { m_Near = 0f; return; }
+            m_Near += Time.deltaTime;
+            if (nemo != null && !nemo.Arrived && m_Near < 25f) return;    // the visitor got there first: Nemo catches up, or the rite begins anyway
             m_Started = true;
             StartCoroutine(Rite());
         }

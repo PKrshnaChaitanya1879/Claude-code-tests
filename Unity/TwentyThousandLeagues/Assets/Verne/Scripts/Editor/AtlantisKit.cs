@@ -15,9 +15,12 @@ namespace Verne.EditorTools
     public static class AtlantisKit
     {
         const string Fbx = VerneBootstrap.Root + "/Models/Atlantis/Atlantis.fbx";
-        public const float SummitZ = 150f, SummitH = 60f, CityY = -60f, CrevZ0 = 100f, CrevZ1 = 103.2f;
-        public static readonly Vector3 VolcanoBase = new Vector3(70f, CityY, 215f);
-        public static Vector3 CraterGlow => VolcanoBase + new Vector3(0f, 128f, 0f);
+        // the summit 50 m up; the far side falls twice that to the city. The crevice's lips sit on the sea floor's 2 m grid
+        // (z = 98 and 106, the trench between), on a level shelf (z 90-114); a second shelf is the first platform (z 122-134).
+        public const float SummitZ = 150f, SummitH = 50f, CityY = -50f, CrevZ0 = 98f, CrevZ1 = 106f;
+        public const float VolcanoScaleY = 1.6f;
+        public static readonly Vector3 VolcanoBase = new Vector3(130f, CityY, 300f);   // beyond the city: nothing of it is buried under the cone
+        public static Vector3 CraterGlow => VolcanoBase + new Vector3(0f, 70f * VolcanoScaleY - 2f, 0f);   // some fifty feet above the peak (II.IX)
         static readonly Dictionary<string, GameObject> s_Src = new Dictionary<string, GameObject>();
         static System.Func<Vector3, float> s_Ground;
         static System.Random s_R;
@@ -27,15 +30,14 @@ namespace Verne.EditorTools
         public static float Height(float x, float z)
         {
             float side = Mathf.Exp(-(x / 75f) * (x / 75f));
-            float up = z <= SummitZ ? SummitH * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(25f, SummitZ, z))   // ≤ 35° before noise: under the 42° the visitor can climb
+            // the climb measured along the way with the two shelves taken out (under 38 degrees before noise: the visitor manages 42)
+            float ze = z < 90f ? z : z < 114f ? 90f : z < 122f ? z - 24f : z < 134f ? 98f : z - 36f;
+            float up = z <= SummitZ ? SummitH * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(15f, SummitZ - 36f, ze))
                                     : SummitH * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SummitZ, SummitZ + 26f, z)));
             float h = up * side + (z > SummitZ ? CityY * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SummitZ, SummitZ + 34f, z)) : 0f);
-            // the crevice: a narrow trench across the way, 14 m deep
-            if (z > CrevZ0 - 1.5f && z < CrevZ1 + 1.5f && Mathf.Abs(x) < 120f)
-            {
-                float t = Mathf.Min(Mathf.InverseLerp(CrevZ0 - 1.5f, CrevZ0, z), Mathf.InverseLerp(CrevZ1 + 1.5f, CrevZ1, z));
-                h -= 14f * Mathf.Clamp01(t) * Mathf.Clamp01((120f - Mathf.Abs(x)) / 6f);
-            }
+            // the crevice: 14 m deep between the lips (the grid points z = 100, 102, 104 drop)
+            if (z > CrevZ0 + 0.5f && z < CrevZ1 - 0.5f && Mathf.Abs(x) < 120f)
+                h -= 14f * Mathf.Clamp01((120f - Mathf.Abs(x)) / 6f);
             // the summit: a small flat platform ("a circle of ten yards")
             float r = new Vector2(x, z - SummitZ).magnitude;
             if (r < 6f) h = Mathf.Max(h, SummitH * side - 0.3f);
@@ -56,22 +58,36 @@ namespace Verne.EditorTools
             for (int i = 0; i < 160; i++) { var p = Rnd(-30, 30, 5, 55, 1.2f); Put("pennatule", p, Yaw(), Rf(0.8f, 1.6f), false); }
             for (int i = 0; i < 6; i++) Put("cromlech", Rnd(-28, 28, 15, 50, 4f), Yaw(), Rf(0.9f, 1.4f));
             // 2. the petrified copse (z 50–96), a lane kept clear; gigantic pines here and there
-            for (int i = 0; i < 110; i++) { var p = Rnd(-34, 34, 50, 97, 2.4f); if (p.z > CrevZ0 - 3f) continue; Put("deadtree_" + s_R.Next(4), p, Yaw(), Rf(0.9f, 1.4f)); }
-            for (int i = 0; i < 9; i++) { var p = Rnd(-30, 30, 56, 94, 4f); Put("dead_pine", p, Yaw(), Rf(0.9f, 1.2f)); }
+            for (int i = 0; i < 110; i++) { var p = Rnd(-34, 34, 50, 97, 2.4f); if (p.z > CrevZ0 - 4f) continue; Put("deadtree_" + s_R.Next(4), p, Yaw(), Rf(0.9f, 1.4f)); }
+            for (int i = 0; i < 9; i++) { var p = Rnd(-30, 30, 56, 92, 4f); Put("dead_pine", p, Yaw(), Rf(0.9f, 1.2f)); }
             // 3. the crevice and the trunk thrown across it (II.IX: "the unsteady trunk of a tree thrown across from one abyss to the other")
-            float lip = Mathf.Max(groundAt(new Vector3(0, 0, CrevZ0 - 1.6f)), groundAt(new Vector3(0, 0, CrevZ1 + 1.6f)));
-            var log = PutAt("log_bridge", new Vector3(0f, lip + 0.15f, (CrevZ0 + CrevZ1) * 0.5f), 90f, 1f, true);
-            if (log != null) log.AddComponent<Surface>().kind = "wood";
+            float lip = Mathf.Min(groundAt(new Vector3(0, 0, CrevZ0 - 1f)), groundAt(new Vector3(0, 0, CrevZ1 + 1f)));
+            float zc = (CrevZ0 + CrevZ1) * 0.5f;
+            var log = PutAt("log_bridge", new Vector3(0f, lip - 0.2f, zc), 0f, 1.4f, false);    // 11 m over an 8 m gap, its ends bedded in the lips
+            if (log != null)
+            {
+                var b = log.GetComponent<MeshRenderer>().bounds;
+                if (b.size.x > b.size.z) log.transform.rotation = Quaternion.Euler(0f, 90f, 0f) * log.transform.rotation;   // lay it along the way
+                var top = log.GetComponent<MeshRenderer>().bounds.max.y;
+                // the walkable top of the trunk: a 1.2 m box (the round trunk alone would roll the visitor off), and the link the divers' agents take
+                var walk = new GameObject("Log walkway"); walk.transform.SetParent(s_Root, false);
+                walk.transform.position = new Vector3(0f, top - 0.05f, zc);
+                var bc = walk.AddComponent<BoxCollider>(); bc.size = new Vector3(1.2f, 0.1f, 12f);
+                walk.AddComponent<Surface>().kind = "wood";
+                var link = walk.AddComponent<Unity.AI.Navigation.NavMeshLink>();
+                link.startPoint = new Vector3(0f, lip - (top - 0.05f), CrevZ0 - 4f - zc); link.endPoint = new Vector3(0f, lip - (top - 0.05f), CrevZ1 + 4f - zc);
+                link.width = 1.0f; link.bidirectional = true;
+            }
             // 4. the crustaceans' rocks, the cromlechs "leaning on their regularly-cut bases" (z 104–132)
-            for (int i = 0; i < 14; i++) Put("cromlech", Rnd(-24, 24, 105, 132, 3f), Yaw(), Rf(1.0f, 1.8f));
+            for (int i = 0; i < 14; i++) Put("cromlech", Rnd(-24, 24, 110, 132, 3f), Yaw(), Rf(1.0f, 1.8f));
             // 5. the first platform: castles and temples under the vegetable mantle (z 120–138)
-            foreach (var (x, z, nm, yaw) in new[] { (-14f, 124f, "house_ruin_a", 20f), (12f, 128f, "house_ruin_c", -15f), (-9f, 134f, "temple_ruin_small", 8f), (16f, 136f, "house_ruin_b", 40f) })
+            foreach (var (x, z, nm, yaw) in new[] { (-14f, 125f, "house_ruin_a", 20f), (12f, 127f, "house_ruin_c", -15f), (-10f, 130.5f, "temple_ruin_small", 8f), (15f, 131.5f, "house_ruin_b", 40f) })   // on the shelf
                 Put(nm, new Vector3(x, 0, z), yaw, 1f);
-            for (int i = 0; i < 10; i++) Put(i % 3 == 0 ? "col_drum" : (i % 2 == 0 ? "col_broken_a" : "col_broken_b"), Rnd(-18, 18, 118, 140, 3f), Yaw(), 1f);
+            for (int i = 0; i < 10; i++) Put(i % 3 == 0 ? "col_drum" : (i % 2 == 0 ? "col_broken_a" : "col_broken_b"), Rnd(-18, 18, 122, 134, 3f), Yaw(), 1f);
             // 6. the summit and the rock of black basalt
             // two crags of black basalt flank the platform, as in im079 (the platform itself stays open ground to stand on)
-            Put("summit", new Vector3(9.5f, 0, SummitZ + 5f), 160f, 1f).transform.localScale = new Vector3(0.45f, 0.4f, 0.45f);
-            Put("summit", new Vector3(-10f, 0, SummitZ + 2f), 20f, 1f).transform.localScale = new Vector3(0.38f, 0.3f, 0.38f);
+            var c1 = Put("summit", new Vector3(11f, 0, SummitZ - 3f), 160f, 1f); if (c1 != null) c1.transform.localScale = new Vector3(0.45f, 0.4f, 0.45f);
+            var c2 = Put("summit", new Vector3(-11f, 0, SummitZ - 1f), 20f, 1f); if (c2 != null) c2.transform.localScale = new Vector3(0.38f, 0.3f, 0.38f);
             // 7. the city below, lit only by the volcano
             float y = CityY;
             PutAt("acropolis", new Vector3(-70f, y, 255f), 12f, 1f, true);
@@ -79,7 +95,7 @@ namespace Verne.EditorTools
             PutAt("aqueduct", new Vector3(-150f, y, 240f), 64f, 1.4f, true);
             PutAt("quay", new Vector3(-10f, y, 300f), 4f, 1.6f, true);
             PutAt("temple_ruin", new Vector3(-28f, y, 205f), -8f, 1.2f, true);
-            PutAt("temple_ruin", new Vector3(14f, y, 232f), 14f, 1.2f, true);
+            PutAt("temple_ruin", new Vector3(0f, y, 240f), 14f, 1.2f, true);
             PutAt("temple_ruin_small", new Vector3(-48f, y, 222f), 4f, 1.2f, true);
             for (int s = 0; s < 4; s++)                      // "long lines of sunken walls and broad, deserted streets"
             {
@@ -93,10 +109,12 @@ namespace Verne.EditorTools
             }
             for (int i = 0; i < 16; i++) PutAt(i % 4 == 0 ? "col_drum" : "col_tuscan", new Vector3(-36f + i * 3.6f, y, 186f + Rf(-1f, 1f)), Yaw(), 1.2f, false);   // a colonnade, as in im079
             // 8. the volcano: crater, lava runs, scoriae in the water
-            PutAt("volcano", VolcanoBase, 0f, 1.85f, false).transform.localScale = new Vector3(1.4f, 1.85f, 1.4f);
-            PutAt("lava_runs", VolcanoBase, 200f, 1f, false).transform.localScale = new Vector3(1.4f, 1.85f, 1.4f);
+            var vol = PutAt("volcano", VolcanoBase, 0f, 1f, false); if (vol != null) vol.transform.localScale = new Vector3(1.4f, VolcanoScaleY, 1.4f);
+            // the runs pour down the face toward the summit and the city ("fell in a cascade of fire into the bosom of the liquid mass")
+            var runs = PutAt("lava_runs", VolcanoBase, -16f, 1f, false); if (runs != null) runs.transform.localScale = new Vector3(1.4f, VolcanoScaleY, 1.4f);
+            Scoria.AtlantisCrater = CraterGlow;
             for (int i = 0; i < 40; i++)
-                PutAt("scoria", VolcanoBase + new Vector3(Rf(-120f, 80f), Rf(5f, 60f), Rf(-90f, 70f)), Yaw(), Rf(2f, 6f), false);
+                PutAt("scoria", CraterGlow + new Vector3(Rf(-20f, 20f), Rf(2f, 30f), Rf(-20f, 20f)), Yaw(), Rf(2f, 6f), false);
             Glow();
             VerneBootstrap.Note($"Mission II: {s_Root.childCount - n0} pieces of the Atlantis kit placed (plain, copse, crevice, platform, summit, city, volcano).");
             return true;
@@ -157,7 +175,7 @@ namespace Verne.EditorTools
 
         static GameObject PutAt(string name, Vector3 pos, float yaw, float scale, bool collide)
         {
-            if (!s_Src.TryGetValue(name, out var src)) return new GameObject("(missing " + name + ")");
+            if (!s_Src.TryGetValue(name, out var src)) { VerneBootstrap.Note("Atlantis kit: missing piece " + name); return null; }
             var go = Object.Instantiate(src, s_Root);
             go.name = name;
             go.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, yaw, 0f) * src.transform.rotation);
@@ -178,8 +196,18 @@ namespace Verne.EditorTools
                 if (name == "pennatule" || name == "scoria") mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             }
             bool big = name == "summit" || name == "volcano" || name == "acropolis";
-            GameObjectUtility.SetStaticEditorFlags(go, (name == "scoria" ? 0 : StaticEditorFlags.BatchingStatic) | StaticEditorFlags.OccludeeStatic | (big ? StaticEditorFlags.OccluderStatic : 0));
-            if (collide && mr != null && name != "pennatule")
+            if (name != "scoria") GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic | (big ? StaticEditorFlags.OccluderStatic : 0));
+            if (collide && mr != null && (name.StartsWith("deadtree") || name == "dead_pine"))
+            {
+                // a trunk is a capsule: the twigs never stop anyone
+                var b = mr.bounds;
+                var host = new GameObject("trunk collider"); host.transform.SetParent(go.transform, false);
+                host.transform.position = new Vector3(go.transform.position.x, b.min.y, go.transform.position.z);
+                host.transform.rotation = Quaternion.identity;
+                var ls = go.transform.lossyScale; host.transform.localScale = new Vector3(1f / ls.x, 1f / ls.y, 1f / ls.z);   // sized in world metres, upright whatever the import axes
+                var cc = host.AddComponent<CapsuleCollider>(); cc.direction = 1; cc.radius = 0.35f; cc.height = b.size.y; cc.center = new Vector3(0f, b.size.y * 0.5f, 0f);
+            }
+            else if (collide && mr != null && name != "pennatule")
             {
                 var mc = go.AddComponent<MeshCollider>(); mc.sharedMesh = go.GetComponent<MeshFilter>().sharedMesh;   // low-poly kit: exact and cheap
                 go.AddComponent<Surface>().kind = "rock";

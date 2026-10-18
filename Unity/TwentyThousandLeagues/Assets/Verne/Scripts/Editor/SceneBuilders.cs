@@ -686,8 +686,8 @@ namespace Verne.EditorTools
                     w.surfaceY = 9f; w.extinction = new Color(0.16f, 0.06f, 0.056f); w.scatterAlbedo = new Color(0.42f, 0.5f, 0.52f);
                     w.kd = new Color(0.12f, 0.045f, 0.04f); w.surfaceAmbient = new Color(0.06f, 0.11f, 0.12f); w.sunShafts = 2.5f; w.forwardScatter = 0.65f; w.maxDistance = 50f; break;
                 case "Mission2":    // 150 fathoms at midnight: no daylight; the volcano's red glow is the only light (art-directed so red carries)
-                    w.surfaceY = 274f; w.extinction = new Color(0.015f, 0.025f, 0.03f); w.scatterAlbedo = new Color(0.9f, 0.7f, 0.6f);
-                    w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 60f; w.heroGain = 1500f; w.forwardScatter = 0.45f; break;
+                    w.surfaceY = 274f; w.extinction = new Color(0.010f, 0.018f, 0.024f); w.scatterAlbedo = new Color(0.9f, 0.7f, 0.6f);
+                    w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 90f; w.heroGain = 1500f; w.forwardScatter = 0.45f; break;   // the city 100-200 m off must still read from the summit
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
             if (w.sunShafts > 0f)
@@ -971,7 +971,7 @@ namespace Verne.EditorTools
             d.drawDistance = 60f;
         }
 
-        static void Rocks(Transform parent, int count, float radius, int seed, string mat, float scale = 1f)
+        static void Rocks(Transform parent, int count, float radius, int seed, string mat, float scale = 1f, System.Func<Vector3, bool> skip = null)
         {
             var rnd = new System.Random(seed);
             var root = new GameObject("Rocks").transform; root.SetParent(parent, false);
@@ -979,7 +979,7 @@ namespace Verne.EditorTools
             {
                 float a = (float)rnd.NextDouble() * Mathf.PI * 2f, r = Mathf.Sqrt((float)rnd.NextDouble()) * radius;
                 var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r);
-                if (p.magnitude < 4f) continue;
+                if (p.magnitude < 4f || (skip != null && skip(p))) continue;
                 var s = new Vector3(0.6f + (float)rnd.NextDouble() * 2.2f, 0.4f + (float)rnd.NextDouble() * 1.6f, 0.6f + (float)rnd.NextDouble() * 2.2f) * scale;
                 s = new Vector3(Mathf.Round(s.x * 2f) / 2f, Mathf.Round(s.y * 2f) / 2f, Mathf.Round(s.z * 2f) / 2f); // shared meshes
                 var art = RockArt(root, rnd, mat == "Rock" ? null : mat, scale);
@@ -1149,12 +1149,12 @@ namespace Verne.EditorTools
             var s = NewScene("Mission2");
             // midnight at 150 fathoms; the only light is the volcano's red glow, two miles off
             Ambient(new Color(0.02f, 0.02f, 0.03f), new Color(0.015f, 0.01f, 0.012f), new Color(0.005f, 0.004f, 0.004f));
-            Fog(true, new Color(0.035f, 0.015f, 0.015f), 0.03f);
+            Fog(true, new Color(0.035f, 0.015f, 0.015f), 0.012f);   // fallback only; thin enough that the glow and the city still show from the summit
             var root = new GameObject("Atlantis approach").transform;
             // (M5, started in Part 3) the stony plain → the climb through the petrified copse → the crevice → the first platform →
             // the summit (z 150, 60 m up) → the far side falling sheer, twice the height, to the drowned city (II.IX)
-            Seabed(root, 520f, 2f, 3f, 0.03f, "Rock2", 31, AtlantisKit.Height, "Mission2", 140f);
-            Rocks(root, 90, 120f, 32, "Basalt", 1.4f);
+            Seabed(root, 520f, 2f, 2f, 0.03f, "Rock2", 31, AtlantisKit.Height, "Mission2", 140f);
+            Rocks(root, 90, 120f, 32, "Basalt", 1.4f, p => Mathf.Abs(p.x) < 4f && p.z > 0f && p.z < 160f);   // the way and the crevice's approach kept clear
             bool kit = AtlantisKit.Place(root, GroundAt);
             if (!kit) KelpStand(root, new Vector3(0, 0, 70), 90, 22f, 33, "Basalt", 3f, 9f);   // greybox copse if the FBX is missing
             var glow = new GameObject("Volcano glow (beyond the summit)");
@@ -1171,7 +1171,7 @@ namespace Verne.EditorTools
             if (nemo2 != null)
             {
                 var guide = nemo2.gameObject.AddComponent<DiverGuide>();
-                guide.waypoints = new[] { G2(0.5f, 20f), G2(0f, 45f), G2(0.5f, 70f), G2(0f, 92f), G2(0f, 98.5f), G2(0f, 104.5f), G2(0f, 118f), G2(0.4f, 132f), G2(-1.2f, 146f) };
+                guide.waypoints = new[] { G2(0.5f, 20f), G2(0f, 45f), G2(0.5f, 70f), G2(0f, 93f), G2(0f, 111f), G2(0f, 118f), G2(0.4f, 128f), G2(-1.8f, 150.2f) };   // over the trunk by its NavMeshLink
                 guide.waitDistance = 10f; guide.pace = 0.7f;
                 guide.arrivedLine = "“We had now arrived on the first platform, where other surprises awaited me.”";
             }
