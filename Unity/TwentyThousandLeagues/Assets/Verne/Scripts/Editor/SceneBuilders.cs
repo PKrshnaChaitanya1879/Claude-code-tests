@@ -844,7 +844,7 @@ namespace Verne.EditorTools
         }
 
         // ------------------------------------------------------------------ sea floor
-        static Mesh SeabedMesh(string key, float size, float step, float amp, float freq, int seed, System.Func<float, float, float> extra = null)
+        static Mesh SeabedMesh(string key, float size, float step, float amp, float freq, int seed, System.Func<float, float, float> extra = null, float centreZ = 0f)
         {
             string path = VerneBootstrap.Generated + "/Meshes/seabed_" + key + ".asset";
             var old = AssetDatabase.LoadAssetAtPath<Mesh>(path);
@@ -855,7 +855,7 @@ namespace Verne.EditorTools
             for (int j = 0; j < n; j++)
                 for (int i = 0; i < n; i++)
                 {
-                    float x = -size * 0.5f + i * step, z = -size * 0.5f + j * step;
+                    float x = -size * 0.5f + i * step, z = centreZ - size * 0.5f + j * step;
                     float y = (Mathf.PerlinNoise(ox + x * freq, oz + z * freq) - 0.5f) * amp
                             + (Mathf.PerlinNoise(ox + x * freq * 4f, oz + z * freq * 4f) - 0.5f) * amp * 0.2f;
                     if (extra != null) y += extra(x, z);
@@ -877,11 +877,11 @@ namespace Verne.EditorTools
             return m;
         }
 
-        static GameObject Seabed(Transform parent, float size, float step, float amp, float freq, string mat, int seed, System.Func<float, float, float> extra = null, string key = null)
+        static GameObject Seabed(Transform parent, float size, float step, float amp, float freq, string mat, int seed, System.Func<float, float, float> extra = null, string key = null, float centreZ = 0f)
         {
             var go = new GameObject("Sea floor");
             go.transform.SetParent(parent, false);
-            var mesh = SeabedMesh(key ?? (mat + seed), size, step, amp, freq, seed, extra);
+            var mesh = SeabedMesh(key ?? (mat + seed), size, step, amp, freq, seed, extra, centreZ);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>().sharedMaterial = Materials.Get(mat);
             go.AddComponent<MeshCollider>().sharedMesh = mesh;
@@ -1151,13 +1151,15 @@ namespace Verne.EditorTools
             Ambient(new Color(0.02f, 0.02f, 0.03f), new Color(0.015f, 0.01f, 0.012f), new Color(0.005f, 0.004f, 0.004f));
             Fog(true, new Color(0.035f, 0.015f, 0.015f), 0.03f);
             var root = new GameObject("Atlantis approach").transform;
-            Seabed(root, 240f, 2f, 5f, 0.03f, "Rock2", 31, (x, z) => Mathf.Max(0f, 1f - Mathf.Abs(z - 120f) / 70f) * 60f * Mathf.Max(0f, 1f - Mathf.Abs(x) / 90f));
-            Rocks(root, 80, 110f, 32, "Basalt", 1.4f);
-            // petrified copse: black stems, the "paper cuttings" (II.IX)
-            KelpStand(root, new Vector3(0, 0, 70), 90, 22f, 33, "Basalt", 3f, 9f);
+            // (M5, started in Part 3) the stony plain → the climb through the petrified copse → the crevice → the first platform →
+            // the summit (z 150, 60 m up) → the far side falling sheer, twice the height, to the drowned city (II.IX)
+            Seabed(root, 520f, 2f, 3f, 0.03f, "Rock2", 31, AtlantisKit.Height, "Mission2", 140f);
+            Rocks(root, 90, 120f, 32, "Basalt", 1.4f);
+            bool kit = AtlantisKit.Place(root, GroundAt);
+            if (!kit) KelpStand(root, new Vector3(0, 0, 70), 90, 22f, 33, "Basalt", 3f, 9f);   // greybox copse if the FBX is missing
             var glow = new GameObject("Volcano glow (beyond the summit)");
             glow.transform.SetParent(root, false);
-            glow.transform.position = new Vector3(0, 70, 170);
+            glow.transform.position = AtlantisKit.CraterGlow;
             var l = glow.AddComponent<Light>();
             l.type = LightType.Point; l.color = new Color(1f, 0.38f, 0.16f); l.intensity = 30f; l.range = 400f; l.shadows = LightShadows.None;
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
@@ -1169,7 +1171,7 @@ namespace Verne.EditorTools
             if (nemo2 != null)
             {
                 var guide = nemo2.gameObject.AddComponent<DiverGuide>();
-                guide.waypoints = new[] { G2(0.5f, 20f), G2(0f, 45f), G2(0.5f, 70f), G2(0f, 90f), G2(0f, 108f), G2(0f, 118f) };
+                guide.waypoints = new[] { G2(0.5f, 20f), G2(0f, 45f), G2(0.5f, 70f), G2(0f, 92f), G2(0f, 98.5f), G2(0f, 104.5f), G2(0f, 118f), G2(0.4f, 132f), G2(-1.2f, 146f) };
                 guide.waitDistance = 10f; guide.pace = 0.7f;
                 guide.arrivedLine = "“We had now arrived on the first platform, where other surprises awaited me.”";
             }
@@ -1178,10 +1180,14 @@ namespace Verne.EditorTools
             for (int i = 0; i < 8; i++)
             {
                 float side = i % 2 == 0 ? -1f : 1f;
-                var cp = new Vector3(side * (4f + (float)rndC.NextDouble() * 5f), 0, 60f + i * 7f);
+                var cp = new Vector3(side * (4f + (float)rndC.NextDouble() * 5f), 0, 106f + i * 3f);   // past the crevice, below the first platform
                 Creatures.Spawn(root, i % 3 == 0 ? "lobster_giant" : "crab_giant", G2(cp.x, cp.z), side > 0 ? -90f + (float)rndC.NextDouble() * 40f : 90f - (float)rndC.NextDouble() * 40f, 0.9f + (float)rndC.NextDouble() * 0.5f);
             }
-            Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
+            Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 400f);
+            // "Captain Nemo's strong hand hauled me back": a fall into the crevice or off the far side puts the visitor back on the path
+            var fall = new GameObject("Falls (Nemo's hand)").AddComponent<FallRescue>();
+            fall.transform.SetParent(root, false);
+            if (kit) AtlantisKit.Summit(root, nemo2 != null ? nemo2.GetComponent<DiverGuide>() : null);
             LampShadows();
             Water("Mission2", l);
             GlobalVolume("Mission2");
