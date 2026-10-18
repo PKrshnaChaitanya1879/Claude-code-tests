@@ -12,7 +12,7 @@ namespace Verne
     /// </summary>
     public class RuhmkorffLamp : MonoBehaviour
     {
-        public float intensity = 9f, range = 18f, angle = 38f;
+        public float intensity = 16f, range = 26f, angle = 40f;   // tour 4: colour must come alive where the lamp lands (GUM: "vibrant")
         Light m_Light;
         bool m_On;
         AudioClip m_Click;
