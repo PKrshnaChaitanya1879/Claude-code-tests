@@ -1185,6 +1185,20 @@ namespace Verne.EditorTools
             }
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 400f);
             // "Captain Nemo's strong hand hauled me back": a fall into the crevice or off the far side puts the visitor back on the path
+            // II.IX in Aronnax's words, as the way unfolds
+            var lines = new GameObject("The way, in the book's words (II.IX)").AddComponent<RouteLines>();
+            lines.transform.SetParent(root, false);
+            lines.lines = new[]
+            {
+                new RouteLines.Line { z = 6f, seconds = 7f, text = "“I heard a kind of pattering above my head. The noise redoubling, sometimes producing a continual shower ... It was rain falling violently, and crisping the surface of the waves.”" },
+                new RouteLines.Line { z = 22f, seconds = 7f, text = "“A reddish spot, a sort of large light shining brilliantly about two miles from the Nautilus ... it did light our way, vaguely.”" },
+                new RouteLines.Line { z = 52f, seconds = 8f, text = "“A copse of dead trees, without leaves, without sap, trees petrified by the action of the water and here and there overtopped by gigantic pines.”" },
+                new RouteLines.Line { z = 92f, seconds = 7f, text = "“Now I jumped a crevice ... now I ventured on the unsteady trunk of a tree thrown across from one abyss to the other.”" },
+                new RouteLines.Line { z = 108f, seconds = 8f, text = "“Millions of luminous spots shone brightly in the midst of the darkness. They were the eyes of giant crustacea crouched in their holes.”" },
+                new RouteLines.Line { z = 122f, seconds = 8f, text = "“Vast heaps of stone, amongst which might be traced the vague and shadowy forms of castles and temples, clothed with a world of blossoming zoophytes.”" },
+                new RouteLines.Line { z = 141f, seconds = 8f, text = "“My eyes ranged far over a large space lit by a violent fulguration. In fact, the mountain was a volcano.”" },
+                new RouteLines.Line { z = 147f, seconds = 9f, text = "“There, indeed, under my eyes, ruined, destroyed, lay a town—its roofs open to the sky, its temples fallen, its arches dislocated, its columns lying on the ground.”" },
+            };
             var fall = new GameObject("Falls (Nemo's hand)").AddComponent<FallRescue>();
             fall.transform.SetParent(root, false);
             if (kit) AtlantisKit.Summit(root, nemo2 != null ? nemo2.GetComponent<DiverGuide>() : null);

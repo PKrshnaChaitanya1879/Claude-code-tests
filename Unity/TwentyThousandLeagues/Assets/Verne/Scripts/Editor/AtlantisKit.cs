@@ -19,7 +19,10 @@ namespace Verne.EditorTools
         // (z = 98 and 106, the trench between), on a level shelf (z 90-114); a second shelf is the first platform (z 122-134).
         public const float SummitZ = 150f, SummitH = 50f, CityY = -50f, CrevZ0 = 98f, CrevZ1 = 106f;
         public const float VolcanoScaleY = 1.6f;
-        public static readonly Vector3 VolcanoBase = new Vector3(130f, CityY, 300f);   // beyond the city: nothing of it is buried under the cone
+        // "In fact, the mountain was a volcano": its crater opens on the far flank beside the summit, "fifty feet above the peak",
+        // as in im079, where the fire stands right behind the two men; the city spreads below and beyond it, lit "like an immense torch"
+        public static readonly Vector3 VolcanoBase = new Vector3(40f, CityY + 2f, 178f);
+        public const float VolcanoScaleXZ = 0.45f;
         public static Vector3 CraterGlow => VolcanoBase + new Vector3(0f, 70f * VolcanoScaleY - 2f, 0f);   // some fifty feet above the peak (II.IX)
         static readonly Dictionary<string, GameObject> s_Src = new Dictionary<string, GameObject>();
         static System.Func<Vector3, float> s_Ground;
@@ -107,11 +110,11 @@ namespace Verne.EditorTools
                     PutAt(s_R.Next(3) switch { 0 => "house_ruin_a", 1 => "house_ruin_b", _ => "house_ruin_c" }, new Vector3(sx, y, sz + 9f), Rf(-6f, 6f) + (k % 2) * 90f, Rf(1.1f, 1.5f), false);
                 }
             }
-            for (int i = 0; i < 16; i++) PutAt(i % 4 == 0 ? "col_drum" : "col_tuscan", new Vector3(-36f + i * 3.6f, y, 186f + Rf(-1f, 1f)), Yaw(), 1.2f, false);   // a colonnade, as in im079
+            for (int i = 0; i < 16; i++) PutAt(i % 4 == 0 ? "col_drum" : "col_tuscan", new Vector3(-62f + i * 3.6f, y, 202f + Rf(-1f, 1f)), Yaw(), 1.2f, false);   // a colonnade, as in im079
             // 8. the volcano: crater, lava runs, scoriae in the water
-            var vol = PutAt("volcano", VolcanoBase, 0f, 1f, false); if (vol != null) vol.transform.localScale = new Vector3(1.4f, VolcanoScaleY, 1.4f);
+            var vol = PutAt("volcano", VolcanoBase, 0f, 1f, true); if (vol != null) vol.transform.localScale = new Vector3(VolcanoScaleXZ, VolcanoScaleY, VolcanoScaleXZ);
             // the runs pour down the face toward the summit and the city ("fell in a cascade of fire into the bosom of the liquid mass")
-            var runs = PutAt("lava_runs", VolcanoBase, -16f, 1f, false); if (runs != null) runs.transform.localScale = new Vector3(1.4f, VolcanoScaleY, 1.4f);
+            var runs = PutAt("lava_runs", VolcanoBase, 39f, 1f, false); if (runs != null) runs.transform.localScale = new Vector3(VolcanoScaleXZ, VolcanoScaleY, VolcanoScaleXZ);
             Scoria.AtlantisCrater = CraterGlow;
             for (int i = 0; i < 40; i++)
                 PutAt("scoria", CraterGlow + new Vector3(Rf(-20f, 20f), Rf(2f, 30f), Rf(-20f, 20f)), Yaw(), Rf(2f, 6f), false);
@@ -154,7 +157,7 @@ namespace Verne.EditorTools
         {
             // the lava's own light on the city (the crater light is built by the scene, at CraterGlow)
             var go = new GameObject("Lava light on the city"); go.transform.SetParent(s_Root, false);
-            go.transform.position = VolcanoBase + new Vector3(-40f, 40f, -30f);
+            go.transform.position = VolcanoBase + new Vector3(-50f, 30f, 40f);   // above the city, clear of the mountain
             var l = go.AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(1f, 0.32f, 0.1f); l.intensity = 8f; l.range = 260f; l.shadows = LightShadows.None;
         }
 
