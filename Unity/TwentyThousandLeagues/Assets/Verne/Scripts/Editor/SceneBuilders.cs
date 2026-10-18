@@ -640,6 +640,13 @@ namespace Verne.EditorTools
             School("Lepisacanthi (forest)", FishSchool.Kind.Fish, gold, 18, 0.26f, 1.0f, 2.0f, W(0, 2.5f, 50), W(9, 3, 62), W(-8, 3.5f, 74), W(3, 2.5f, 88));
             School("Red fish (gallery)", FishSchool.Kind.Fish, red, 16, 0.22f, 0.9f, 1.6f, W(-3, 1.4f, 96), W(4, 1.6f, 100), W(-2, 1.2f, 104), W(5, 1.8f, 98));
             School("Medusae", FishSchool.Kind.Medusa, medusa, 9, 0.7f, 0.25f, 9f, W(0, 5.5f, 12), W(6, 6f, 26), W(-5, 5f, 40));
+            // "porphitae ... with their collarettes of blue tentacles" and the physalides, floating just under the surface (I.XV):
+            // seen looking up, dark discs against Snell's window
+            var porpita = LitMat("Porpita", new Color(0.12f, 0.32f, 0.85f), 0f, 0.7f, new Color(0.02f, 0.10f, 0.45f));
+            var physalia = LitMat("Physalia", new Color(0.55f, 0.45f, 0.95f), 0f, 0.9f, new Color(0.10f, 0.06f, 0.35f));
+            float top = 9f - 0.6f;   // just under Mission I's surface (VerneWater surfaceY = 9)
+            School("Porphitae (at the surface)", FishSchool.Kind.Floater, porpita, 14, 0.22f, 0.12f, 10f, new Vector3(-4, top, 8), new Vector3(6, top, 20), new Vector3(-6, top, 34));
+            School("Physalides (at the surface)", FishSchool.Kind.Floater, physalia, 6, 0.45f, 0.1f, 12f, new Vector3(5, top, 14), new Vector3(-7, top, 28), new Vector3(4, top, 42));
             School("Tintoreas (sharks in the dark)", FishSchool.Kind.BigFish, shark, 2, 2.4f, 1.6f, 6f, W(-18, 2.5f, 82), W(16, 3.5f, 96), W(-14, 3f, 112), W(12, 2.5f, 74));
         }
 

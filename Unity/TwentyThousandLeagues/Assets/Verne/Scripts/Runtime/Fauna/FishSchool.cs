@@ -11,7 +11,7 @@ namespace Verne
     /// </summary>
     public class FishSchool : MonoBehaviour
     {
-        public enum Kind { Fish, Medusa, BigFish }
+        public enum Kind { Fish, Medusa, BigFish, Floater }   // Floater: porphitae and physalides drifting just under the surface (I.XV)
         public Kind kind = Kind.Fish;
         public Material material;
         public int count = 30;
@@ -29,7 +29,7 @@ namespace Verne
 
         void Start()
         {
-            var mesh = kind == Kind.Medusa ? SeaWindowView.MedusaMesh : SeaWindowView.FishMesh;
+            var mesh = kind == Kind.Medusa || kind == Kind.Floater ? SeaWindowView.MedusaMesh : SeaWindowView.FishMesh;
             var rnd = new System.Random(GetInstanceID());
             m_Fish = new Transform[count]; m_Offset = new Vector3[count]; m_Vel = new Vector3[count]; m_Flee = new Vector3[count]; m_Phase = new float[count];
             m_Centre = waypoints != null && waypoints.Length > 0 ? waypoints[0] : transform.position;
@@ -45,7 +45,7 @@ namespace Verne
                 m_Offset[i] = new Vector3((float)(rnd.NextDouble() - 0.5), (float)(rnd.NextDouble() - 0.5) * 0.5f, (float)(rnd.NextDouble() - 0.5)) * spread;
                 m_Phase[i] = (float)rnd.NextDouble() * 6.28f;
                 float s = size * (0.8f + 0.4f * (float)rnd.NextDouble());
-                go.transform.localScale = Vector3.one * s;
+                go.transform.localScale = kind == Kind.Floater ? new Vector3(s, s * 0.35f, s) : Vector3.one * s;   // a flat float, a blue disc
                 go.transform.position = m_Centre + m_Offset[i];
                 m_Fish[i] = go.transform;
             }
@@ -73,11 +73,13 @@ namespace Verne
                 Vector3 want = m_Centre + m_Offset[i] + new Vector3(Mathf.Sin(t * 0.7f + ph), Mathf.Sin(t * 0.5f + ph * 1.7f) * 0.4f, Mathf.Cos(t * 0.6f + ph)) * 0.4f;
                 // the visitor comes close: a dart away, then the school's pull brings it back
                 Vector3 away = f.position - p;
-                if (kind != Kind.Medusa && away.magnitude < fleeRadius) m_Flee[i] = away.normalized * (fleeRadius - away.magnitude) * 3f;
+                if (kind != Kind.Medusa && kind != Kind.Floater && away.magnitude < fleeRadius) m_Flee[i] = away.normalized * (fleeRadius - away.magnitude) * 3f;
                 m_Flee[i] = Vector3.MoveTowards(m_Flee[i], Vector3.zero, dt * 2f);
-                Vector3 acc = (want - f.position) * (kind == Kind.Medusa ? 0.3f : 2.2f) + m_Flee[i] * 4f - m_Vel[i] * 1.8f;
+                if (kind == Kind.Floater) want.y = m_Centre.y + Mathf.Sin(t * 0.4f + ph) * 0.08f;   // riding the swell's underside
+                Vector3 acc = (want - f.position) * (kind == Kind.Medusa || kind == Kind.Floater ? 0.3f : 2.2f) + m_Flee[i] * 4f - m_Vel[i] * 1.8f;
                 m_Vel[i] += acc * dt;
                 f.position += m_Vel[i] * dt;
+                if (kind == Kind.Floater) { f.Rotate(0f, dt * 6f, 0f, Space.World); continue; }
                 if (kind == Kind.Medusa)
                 {
                     float pulse = 0.5f + 0.5f * Mathf.Sin(t * 1.6f + ph);
