@@ -66,10 +66,10 @@ namespace Verne
             }
             float len = radius * 2f + stretch * strength;
             Vector3 dir3 = new Vector3(away.x, 0f, away.y);
-            Vector3 centre = feet + dir3 * (len * 0.5f - radius) + Vector3.up * 0.2f;
+            Vector3 centre = feet + dir3 * (len * 0.5f - radius) + Vector3.up * 0.05f;   // a thin box: the ground, not the diver's own boots
             float yaw = away.sqrMagnitude > 1e-4f ? Mathf.Atan2(away.x, away.y) * Mathf.Rad2Deg : transform.eulerAngles.y;
             m_Decal.transform.SetPositionAndRotation(centre, Quaternion.Euler(90f, yaw, 0f));   // projects along its +Z: straight down
-            m_Decal.size = new Vector3(radius * 2f, len, 1.6f);
+            m_Decal.size = new Vector3(radius * 2f, len, 0.7f);
             m_Decal.fadeFactor = Mathf.Lerp(0.75f, 0.95f, strength) / (1f + stretch * strength * 0.25f);   // a long shadow is a fainter one
         }
     }

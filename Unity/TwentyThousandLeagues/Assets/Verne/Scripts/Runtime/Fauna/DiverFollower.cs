@@ -36,7 +36,7 @@ namespace Verne
             Vector3 right = Vector3.Cross(Vector3.up, fwd);
             Vector3 goal = pt.position + right * slot.x + fwd * slot.y;
             float far = (goal - transform.position).magnitude;
-            if (!m_Spoke && !string.IsNullOrEmpty(firstLine) && Vector3.Distance(pt.position, transform.position) < 4f) { m_Spoke = true; Hud.Toast(firstLine, 5f); }
+            if (!m_Spoke && !string.IsNullOrEmpty(firstLine) && Time.timeSinceLevelLoad > 20f && Vector3.Distance(pt.position, transform.position) < 4f) { m_Spoke = true; Hud.Toast(firstLine, 5f); }
 
             if (m_Agent != null)
             {

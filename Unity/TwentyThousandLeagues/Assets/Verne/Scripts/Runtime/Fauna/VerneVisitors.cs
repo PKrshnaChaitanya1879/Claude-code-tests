@@ -25,6 +25,12 @@ namespace Verne
             Shader.SetGlobalVectorArray(ID, m_Slots);
         }
 
+        void OnDisable()
+        {
+            for (int i = 0; i < 8; i++) m_Slots[i] = new Vector4(0, -9999, 0, 1);
+            Shader.SetGlobalVectorArray(ID, m_Slots);
+        }
+
         void Start() { m_Divers = FindObjectsByType<DiverPuppet>(FindObjectsSortMode.None); }
 
         void Update()

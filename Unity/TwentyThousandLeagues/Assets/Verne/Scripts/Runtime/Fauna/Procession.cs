@@ -46,7 +46,7 @@ namespace Verne
                 if (lead > keepBehind) target = lead > keepBehind * 3f ? pace * 1.5f : pace;
                 // once the visitor is in the glade, they come on to their places whatever the distance
                 var end = waypoints[waypoints.Length - 1]; end.y = p.transform.position.y;
-                if (Vector3.Distance(p.transform.position, end) < 12f) target = pace;
+                if (Vector3.Distance(p.transform.position, end) < 12f) target = Mathf.Max(target, pace);
             }
             else target = pace;
             m_Speed = Mathf.MoveTowards(m_Speed, target, Time.deltaTime * 0.5f);    // heavy: slow to start, slow to stop
@@ -87,11 +87,10 @@ namespace Verne
         Quaternion m_ShroudRot = Quaternion.identity;
         void Awake() { if (shroud != null) m_ShroudRot = shroud.rotation; }   // the bundle's own lie (built along the bier)
 
-        static Vector3 s_Up = Vector3.up * 3f;
         static float Ground(Vector3 at, float fallback)
         {
             // the sea floor only (props and divers are skipped by name and layer)
-            var hits = Physics.RaycastAll(at + s_Up, Vector3.down, 8f, ~(1 << 2), QueryTriggerInteraction.Ignore);
+            var hits = Physics.RaycastAll(new Vector3(at.x, 400f, at.z), Vector3.down, 800f, ~(1 << 2), QueryTriggerInteraction.Ignore);
             float best = float.NegativeInfinity;
             foreach (var h in hits) if (h.collider != null && h.collider.name == "Sea floor") best = Mathf.Max(best, h.point.y);
             return float.IsNegativeInfinity(best) ? fallback : best;

@@ -14,6 +14,8 @@ namespace Verne
         public float gain = 0.10f;
         public float radius = 3.0f;
         Light m_Lamp, m_Bounce;
+        static int s_Lit;          // at most two bounce lights at once on Balanced (URP's per-object light budget)
+        bool m_Counted;
         static readonly Color Sand = new Color(0.95f, 0.85f, 0.65f), Coral = new Color(0.95f, 0.45f, 0.38f), Stone = new Color(0.6f, 0.58f, 0.55f);
 
         void Start()
@@ -30,7 +32,10 @@ namespace Verne
         void LateUpdate()
         {
             if (m_Bounce == null) return;
-            bool on = m_Lamp != null && m_Lamp.isActiveAndEnabled && QualitySettings.GetQualityLevel() > 0;
+            int q = QualitySettings.GetQualityLevel();
+            bool on = m_Lamp != null && m_Lamp.isActiveAndEnabled && q > 0;
+            if (on && !m_Counted) { if (q >= 2 || s_Lit < 2) { s_Lit++; m_Counted = true; } else on = false; }
+            if (!on && m_Counted) { s_Lit--; m_Counted = false; }
             if (on && Physics.Raycast(transform.position, transform.forward, out var hit, m_Lamp.range * 0.8f, ~((1 << 2) | (1 << 8)), QueryTriggerInteraction.Ignore))
             {
                 Color tint = Stone;
@@ -46,5 +51,6 @@ namespace Verne
             }
             else m_Bounce.enabled = false;
         }
+        void OnDisable() { if (m_Counted) { s_Lit--; m_Counted = false; } }
     }
 }

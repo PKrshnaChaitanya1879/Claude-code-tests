@@ -70,6 +70,11 @@ namespace Verne
             {
                 if (m_SetFor != m_I) { m_Agent.SetDestination(target); m_SetFor = m_I; return; }
                 m_Agent.speed = pace;
+                if (!m_Agent.pathPending && m_Agent.pathStatus != NavMeshPathStatus.PathComplete)
+                {
+                    // no full path to this point (a slope too steep for the bake): walk the straight legs instead
+                    Destroy(m_Agent); m_Agent = null; return;
+                }
                 bool there = !m_Agent.pathPending && (m_Agent.remainingDistance < 0.5f || to.magnitude < 0.5f);
                 if (there)
                 {

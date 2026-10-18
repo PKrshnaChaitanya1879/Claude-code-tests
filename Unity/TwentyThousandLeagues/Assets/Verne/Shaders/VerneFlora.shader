@@ -120,6 +120,8 @@ Shader "Verne/Flora"
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DBuffer.hlsl"
 
             struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; float2 uv : TEXCOORD0; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct Varyings
@@ -178,6 +180,9 @@ Shader "Verne/Flora"
                 sd.alpha = 1;
                 sd.emission = _EmissionColor.rgb;
 
+            #if defined(_DBUFFER)
+                ApplyDecalToSurfaceData(i.positionCS, sd, id);           // the AO and lamp-shadow decals land on the weed too
+            #endif
                 half4 col = UniversalFragmentPBR(id, sd);
                 // a little light through thin fronds from behind (the sun above the forest roof)
                 Light sun = GetMainLight(id.shadowCoord, i.positionWS, id.shadowMask);
