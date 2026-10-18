@@ -56,7 +56,9 @@ for loc, e in LIGHTS:
     pl(loc, e)
 cd = bpy.data.cameras.new('cam'); cam = bpy.data.objects.new('cam', cd); sc.collection.objects.link(cam); sc.camera = cam
 cd.clip_start = 0.05
+SHOTS = [x for x in os.environ.get('SHOTS', '').split(',') if x]
 def shot(name, loc, target, lens=18):
+    if SHOTS and name not in SHOTS: return
     cam.location = loc
     cam.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
     cd.lens = lens
@@ -71,6 +73,7 @@ elif AFT:
     shot('robing_fore', (-14.6, 1.0, 1.6), (-12.5, -1.2, 1.0), 16)
     shot('cell', (-15.2, -0.9, 1.6), (-17.4, 1.5, 0.9), 16)
     shot('kitchen', (-4.3, 1.6, 1.6), (-6.6, -3.0, 0.8), 16)
+    shot('bathroom', (-7.1, 1.7, 1.6), (-8.2, -2.6, 0.7), 14)
     shot('corridor', (-2.3, 2.6, 1.6), (-15, 2.6, 1.2), 22)
     shot('hall', (-0.3, 1.0, 1.6), (-1.8, -2.6, 1.6), 16)
     shot('ned', (-2.3, 1.6, 1.6), (-3.9, -2.6, 0.8), 16)

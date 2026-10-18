@@ -794,7 +794,7 @@ namespace Verne.EditorTools
                     w.kd = new Color(0.12f, 0.045f, 0.04f); w.surfaceAmbient = new Color(0.06f, 0.11f, 0.12f); w.sunShafts = 2.5f; w.forwardScatter = 0.65f; w.maxDistance = 50f; break;
                 case "Mission2":    // 150 fathoms at midnight: no daylight; the volcano's red glow is the only light (art-directed so red carries)
                     w.surfaceY = 274f; w.extinction = new Color(0.012f, 0.014f, 0.016f); w.scatterAlbedo = new Color(0.28f, 0.35f, 0.40f);   // cold scatter: warm albedo made the whole night an orange-brown haze
-                    w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 90f; w.heroGain = 220f; w.forwardScatter = 0.72f;   // GUM: the browser look. The glow lives toward the volcano and dies into black, no orange wash break;   // the city 100-200 m off must still read from the summit
+                    w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 90f; w.heroGain = 220f; w.forwardScatter = 0.72f; break;   // GUM: the browser look: the glow lives toward the volcano and dies into black
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
             if (w.sunShafts > 0f)

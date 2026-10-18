@@ -42,6 +42,15 @@ M = {
     'dial': mat('M_dial', (0.88, 0.85, 0.76), rough=0.6),
     'black': mat('M_black', (0.02, 0.02, 0.02), rough=0.6),
     'wool': mat('M_wool', (0.36, 0.33, 0.28), rough=1.0),
+    'china': mat('M_china', (0.93, 0.91, 0.87), rough=0.2),
+    'chinablue': mat('M_chinablue', (0.18, 0.28, 0.55), rough=0.2),
+    'tilew': mat('M_tile_white', (0.86, 0.85, 0.8), rough=0.15),
+    'tileb': mat('M_tile_black', (0.05, 0.05, 0.06), rough=0.15),
+    'mahogany': mat('M_mahogany', (0.22, 0.07, 0.04), rough=0.35),
+    'stoneware': mat('M_stoneware', (0.55, 0.45, 0.32), rough=0.6),
+    'silver': mat('M_silver', (0.86, 0.86, 0.88), metal=1.0, rough=0.18),
+    'enamelred': mat('M_enamel_red', (0.6, 0.05, 0.04), rough=0.15),
+    'enamelblue': mat('M_enamel_blue', (0.05, 0.12, 0.5), rough=0.15),
 }
 MAT_LIST = list(M.values())
 MI = {k: MAT_LIST.index(v) for k, v in M.items()}
@@ -182,56 +191,139 @@ def ned(bm):
     ceiling_lamp(bm, -3.0, -0.5)
 obj_from('ned_conseil', ned, props={'col': 1}, smooth=40)
 
-# The kitchen: "all the cooking was done by electricity ... I also noticed a distilling apparatus,
-# which by means of evaporation supplied excellent drinkable water" (I.XI)
+def checker(bm, x0, x1, y0, y1, z=0.002, n=0.3):
+    """A black-and-white marble-tile floor laid over the iron deck."""
+    i = 0
+    xs = [x0 + k * n for k in range(int((x1 - x0) / n) + 1)] + [x1]
+    ys = [y0 + k * n for k in range(int((y1 - y0) / n) + 1)] + [y1]
+    for a in range(len(xs) - 1):
+        for b in range(len(ys) - 1):
+            if xs[a + 1] - xs[a] < 0.01 or ys[b + 1] - ys[b] < 0.01: continue
+            grid_quad(bm, Vector((xs[a], ys[b], z)), Vector((xs[a + 1] - xs[a], 0, 0)), Vector((0, ys[b + 1] - ys[b], 0)), 1, 1, MI['tilew'] if (a + b) % 2 == 0 else MI['tileb'])
+def jar(bm, x, y, z, h=0.22, r=0.08, mi=None):
+    mi = MI['stoneware'] if mi is None else mi
+    lathe(bm, [(0.0, 0), (r * 0.8, 0), (r, h * 0.2), (r, h * 0.75), (r * 0.7, h * 0.88), (r * 0.72, h), (0.0, h)], 12, (x, y, z), mi)
+
+# The kitchen (I.XI): "There electricity, better than gas itself, did all the cooking. The streams under the
+# furnaces gave out to the sponges of platina a heat which was regularly kept up and distributed. They also
+# heated a distilling apparatus, which, by evaporation, furnished excellent drinkable water."
 def kitchen(bm):
-    # the electric ranges along the starboard hull: iron bodies with platinum grids (glowing)
-    box(bm, -6.9, -5.0, YS + 0.02, YS + 0.72, 0, 0.88, MI['iron'])
-    box(bm, -6.95, -4.95, YS, YS + 0.76, 0.88, 0.94, MI['ironpaint'])
+    checker(bm, -7.0, -4.0, YS, YC)
+    # the electric range: a long cast-iron body with brass rails, oven doors with cast panels, three platina hobs
+    box(bm, -6.95, -4.95, YS + 0.02, YS + 0.72, 0.06, 0.86, MI['iron'])
+    box(bm, -6.97, -4.93, YS, YS + 0.74, 0.0, 0.06, MI['black'])
+    box(bm, -6.97, -4.93, YS, YS + 0.76, 0.86, 0.92, MI['ironpaint'])
+    cylinder(bm, (-6.97, YS + 0.84, 0.82), 0.016, 2.04, 8, MI['brass'], axis='X')           # towel rail along the front
     for x in (-6.5, -5.9, -5.3):
-        box(bm, x - 0.25, x + 0.25, YS + 0.72, YS + 0.74, 0.25, 0.65, MI['black'])           # oven doors
-        box(bm, x - 0.06, x + 0.06, YS + 0.74, YS + 0.78, 0.6, 0.63, MI['brass'])
-    # the distilling apparatus: copper boiler, dome, swan-neck and a cooling coil into a tank
-    lathe(bm, [(0.0, 0.0), (0.3, 0.0), (0.32, 0.6), (0.3, 0.9), (0.18, 1.05), (0.06, 1.12), (0.0, 1.14)], 12, (-4.45, YS + 0.45, 0), MI['copper'], cap0=True)
-    cylinder(bm, (-4.45, YS + 0.45, 1.12), 0.035, 0.45, 6, MI['copper'])
-    cylinder(bm, (-4.45, YS + 0.45, 1.55), 0.035, 0.9, 6, MI['copper'], axis='Y')
-    for k in range(5):
-        lathe(bm, [(0.17, 1.35 - k * 0.12), (0.2, 1.33 - k * 0.12), (0.17, 1.31 - k * 0.12)], 10, (-4.45, YS + 1.35, 0), MI['copper'])
-    cylinder(bm, (-4.45, YS + 1.35, 0), 0.22, 0.75, 10, MI['ironpaint'])
-    box(bm, -4.5, -4.4, YS + 1.3, YS + 1.4, 0.75, 1.6, MI['copper'])
-    # shelves with copper pans on the aft partition
-    for z in (1.35, 1.75):
-        box(bm, -6.98, -6.7, -2.8, -0.3, z, z + 0.03, MI['oak'])
-        for k in range(5):
-            cylinder(bm, (-6.84, -2.55 + k * 0.5, z + 0.03), 0.11 - 0.01 * (k % 2), 0.12 + 0.03 * (k % 3), 10, MI['copper'])
-    # the work table in the middle
-    box(bm, -6.2, -5.0, -1.0, 0.2, 0.84, 0.9, MI['oak'])
-    for (x, y) in [(-6.15, -0.95), (-5.05, -0.95), (-6.15, 0.15), (-5.05, 0.15)]:
-        box(bm, x - 0.03, x + 0.03, y - 0.03, y + 0.03, 0, 0.84, MI['oak'])
-    cylinder(bm, (-5.4, -0.4, 0.9), 0.14, 0.02, 12, MI['pipe'])
+        box(bm, x - 0.25, x + 0.25, YS + 0.72, YS + 0.735, 0.2, 0.68, MI['black'])           # oven door
+        box(bm, x - 0.2, x + 0.2, YS + 0.735, YS + 0.745, 0.26, 0.62, MI['iron'])           # cast panel
+        lathe(bm, [(0.0, 0), (0.05, 0), (0.05, 0.004), (0.0, 0.004)], 12, (x, YS + 0.745, 0.44), MI['brass'], axis='Y')
+        cylinder(bm, (x - 0.08, YS + 0.745, 0.6), 0.012, 0.16, 8, MI['brass'], axis='X')   # handle
+    # the hood over it, copper, on brass brackets (the vapour is carried off along the hull)
+    box(bm, -6.98, -4.92, YS, YS + 0.6, 1.75, 1.78, MI['copper'])
+    for k in range(6):
+        z = 1.78 + k * 0.08
+        box(bm, -6.98 + k * 0.06, -4.92 - k * 0.06, YS, YS + 0.6 - k * 0.07, z, z + 0.08, MI['copper'])
+    # pans on the hobs: a stock-pot and a sauté pan
+    lathe(bm, [(0.0, 0.92), (0.16, 0.92), (0.17, 1.2), (0.18, 1.22), (0.0, 1.22)], 14, (-6.5, YS + 0.38, 0), MI['copper'])
+    lathe(bm, [(0.0, 0.92), (0.14, 0.92), (0.15, 0.98), (0.0, 0.97)], 14, (-5.3, YS + 0.38, 0), MI['iron'])
+    cylinder(bm, (-5.3, YS + 0.52, 0.96), 0.012, 0.3, 6, MI['iron'], axis='Y')
+    # the distilling apparatus: copper boiler, dome, swan-neck, a glass condenser into a tank with a brass tap
+    lathe(bm, [(0.0, 0.0), (0.3, 0.0), (0.32, 0.6), (0.3, 0.9), (0.18, 1.05), (0.06, 1.12), (0.0, 1.14)], 16, (-4.45, YS + 0.45, 0), MI['copper'], cap0=True)
+    for zb in (0.15, 0.45, 0.75):
+        lathe(bm, [(0.325, zb), (0.335, zb + 0.01), (0.325, zb + 0.03)], 16, (-4.45, YS + 0.45, 0), MI['brass'])
+    cylinder(bm, (-4.45, YS + 0.45, 1.12), 0.035, 0.45, 8, MI['copper'])
+    cylinder(bm, (-4.45, YS + 0.45, 1.55), 0.035, 0.9, 8, MI['copper'], axis='Y')
+    cylinder(bm, (-4.45, YS + 1.35, 0.8), 0.13, 0.75, 14, MI['glass'])                   # condenser glass
+    for k in range(7):
+        lathe(bm, [(0.09, 1.5 - k * 0.1), (0.11, 1.48 - k * 0.1), (0.09, 1.46 - k * 0.1)], 10, (-4.45, YS + 1.35, 0), MI['copper'])
+    cylinder(bm, (-4.45, YS + 1.35, 0), 0.24, 0.8, 14, MI['ironpaint'])                   # the tank of drinking water
+    cylinder(bm, (-4.45, YS + 1.62, 0.25), 0.02, 0.08, 6, MI['brass'], axis='Y')
+    lathe(bm, [(0.0, 0.8), (0.25, 0.8), (0.25, 0.82), (0.0, 0.82)], 14, (-4.45, YS + 1.35, 0), MI['brass'])
+    # a dresser on the aft partition: plate rack with china, hooks with copper pans and ladles
+    box(bm, -6.98, -6.6, -2.9, -0.4, 0.0, 0.85, MI['oak'])
+    box(bm, -7.0, -6.55, -2.95, -0.35, 0.85, 0.9, MI['oak'])
+    box(bm, -6.98, -6.95, -2.9, -0.4, 0.9, 2.0, MI['oak'])
+    for z in (1.25, 1.62):
+        box(bm, -6.95, -6.75, -2.9, -0.4, z, z + 0.025, MI['oak'])
+        box(bm, -6.77, -6.75, -2.9, -0.4, z + 0.025, z + 0.06, MI['oak'])
+        for q in range(9):
+            yy = -2.75 + q * 0.27
+            cylinder(bm, (-6.93, yy, z + 0.025 + 0.1), 0.095, 0.012, 14, MI['chinablue'] if q % 3 == 1 else MI['china'], axis='X')
+    cylinder(bm, (-6.96, -2.9, 2.08), 0.012, 2.5, 6, MI['brass'], axis='Y')                # pan rail
+    for q in range(6):
+        yy = -2.75 + q * 0.42; r = 0.07 + 0.015 * q
+        cylinder(bm, (-6.93, yy, 2.0), 0.006, 0.08, 4, MI['iron'])
+        lathe(bm, [(0.0, 0), (r, 0.005), (r, 0.03 + 0.01 * q), (0.0, 0.02)], 12, (-6.9, yy, 1.98 - r * 2.2), MI['copper'], axis='X')
+    for (x0, y0, z0) in [(-6.6, -2.6, 0.9), (-6.6, -2.2, 0.9), (-6.6, -1.8, 0.9)]:
+        jar(bm, x0, y0, z0, 0.24, 0.08)                                                       # preserved sea-anemones, fucus sugar
+    # the work table: marble top on oak, a board with a fish from the morning's net, bowls
+    box(bm, -6.1, -4.9, -1.1, 0.1, 0.84, 0.9, MI['marble'])
+    box(bm, -6.08, -4.92, -1.08, 0.08, 0.74, 0.84, MI['oak'])
+    for (x, y) in [(-6.04, -1.04), (-4.96, -1.04), (-6.04, 0.04), (-4.96, 0.04)]:
+        lathe(bm, [(0.04, 0), (0.03, 0.3), (0.04, 0.5), (0.03, 0.74)], 8, (x, y, 0), MI['oak'])
+    box(bm, -5.8, -5.35, -0.7, -0.35, 0.9, 0.925, MI['oak'])
+    lathe(bm, [(0.0, 0), (0.02, 0.03), (0.05, 0.12), (0.045, 0.22), (0.02, 0.3), (0.0, 0.32)], 8, (-5.58, -0.52, 0.925), MI['pipe'], axis='Y')  # a silver fish
+    for (x, y) in ((-5.2, -0.2), (-5.05, -0.85)):
+        lathe(bm, [(0.0, 0.9), (0.06, 0.9), (0.12, 0.98), (0.125, 1.0)], 12, (x, y, 0), MI['china'])
     ceiling_lamp(bm, -5.5, -0.5)
 obj_from('kitchen', kitchen, props={'col': 1}, smooth=40)
 def kitchen_glow(bm):
-    for x in (-6.5, -5.9, -5.3):
-        box(bm, x - 0.2, x + 0.2, YS + 0.2, YS + 0.6, 0.941, 0.945, MI['coal'])    # glowing platinum sponges on the range
+    for x in (-5.9,):
+        box(bm, x - 0.18, x + 0.18, YS + 0.2, YS + 0.58, 0.921, 0.925, MI['coal'])    # a free hob: the platina sponge glows
 obj_from('kitchen_glow', kitchen_glow)
 
-# The bath-room: "comfortably furnished, with hot and cold water taps"
+# The bath-room (I.XI): "comfortably furnished, with hot and cold water taps"
 def bathroom(bm):
-    box(bm, -8.45, -7.05, YS + 0.02, YS + 0.82, 0, 0.12, MI['marble'])
-    # the bath: marble sides round a sunk basin
-    for (a, b2, c, d) in [(-8.45, -7.05, YS + 0.02, YS + 0.12), (-8.45, -7.05, YS + 0.72, YS + 0.82), (-8.45, -8.35, YS + 0.02, YS + 0.82), (-7.15, -7.05, YS + 0.02, YS + 0.82)]:
-        box(bm, a, b2, c, d, 0.12, 0.62, MI['marble'])
-    box(bm, -8.35, -7.15, YS + 0.12, YS + 0.72, 0.12, 0.16, MI['iron'])
-    # the two taps, hot (red) and cold (blue enamel faces), with their pipes up the hull
-    for (x, mk) in ((-7.6, 'copper'), (-7.9, 'pipe')):
-        cylinder(bm, (x, YS + 0.05, 0.7), 0.02, 0.15, 6, MI[mk], axis='Y')
-        cylinder(bm, (x, YS + 0.05, 0.7), 0.025, 1.6, 6, MI[mk])
-        lathe(bm, [(0.0, 0.0), (0.06, 0.0), (0.06, 0.02), (0.0, 0.02)], 8, (x, YS + 0.18, 0.78), MI['brass'], axis='Z')
-    # wash-stand and glass, by the corridor door
-    box(bm, -7.6, -7.05, -1.0, -0.35, 0.0, 0.8, MI['marble'])
-    lathe(bm, [(0.0, 0.8), (0.18, 0.82), (0.2, 0.9), (0.0, 0.86)], 10, (-7.33, -0.68, 0), MI['marble'])
-    box(bm, -7.1, -7.05, -0.95, -0.4, 1.05, 1.65, MI['glass'])
+    checker(bm, -8.5, -7.0, YS, YC, n=0.25)
+    # white tiles to dado height, a black border, painted above
+    for (x0, x1, y0, y1) in [(-8.5, -8.49, YS, YC), (-7.01, -7.0, YS, YC - 0.0)]:
+        box(bm, x0, x1, y0, y1, 0.0, 1.2, MI['tilew'])
+        box(bm, x0 - 0.002, x1 + 0.002, y0, y1, 1.2, 1.25, MI['tileb'])
+    box(bm, -8.5, -7.0, YS, YS + 0.01, 0.0, 1.2, MI['tilew'])
+    box(bm, -8.5, -7.0, YS, YS + 0.012, 1.2, 1.25, MI['tileb'])
+    # the bath: an enamelled roll-top on four lion's-paw feet, across the hull end
+    bx0, bx1, by0, by1 = -8.42, -7.08, YS + 0.08, YS + 0.78
+    yc = (by0 + by1) / 2; xc = (bx0 + bx1) / 2
+    lathe(bm, [(0.0, 0.18), (0.25, 0.18), (0.31, 0.3), (0.33, 0.55), (0.35, 0.62), (0.33, 0.64), (0.28, 0.6), (0.0, 0.3)], 24, (0, 0, 0), MI['china'])
+    o_bath = None
+    # (the lathe made a round tub at the origin; stretch it into an oval and move it into place)
+    vs = [v for v in bm.verts if abs(v.co.x) < 0.4 and abs(v.co.y) < 0.4 and 0.17 < v.co.z < 0.66 and v.index >= 0]
+    for v in bm.verts[-len(vs):] if False else []: pass
+    bm.verts.ensure_lookup_table()
+    n_new = 24 * 8
+    for v in bm.verts[len(bm.verts) - n_new:]:
+        v.co.x = xc + v.co.x * 1.95; v.co.y = yc + v.co.y * 1.05
+    for (fx, fy) in [(bx0 + 0.15, by0 + 0.12), (bx1 - 0.15, by0 + 0.12), (bx0 + 0.15, by1 - 0.12), (bx1 - 0.15, by1 - 0.12)]:
+        lathe(bm, [(0.0, 0.0), (0.05, 0.0), (0.04, 0.06), (0.03, 0.12), (0.045, 0.2), (0.0, 0.2)], 8, (fx, fy, 0), MI['brass'])
+    # the hot and cold taps (red and blue enamel discs), a brass spout, pipes up the hull
+    for (y, disc) in ((yc - 0.12, 'enamelred'), (yc + 0.12, 'enamelblue')):
+        cylinder(bm, (-8.49, y, 0.75), 0.018, 1.6, 8, MI['copper'])
+        cylinder(bm, (-8.49, y, 0.75), 0.02, 0.1, 8, MI['brass'], axis='X')
+        lathe(bm, [(0.0, 0), (0.035, 0), (0.035, 0.012), (0.0, 0.012)], 12, (-8.39, y, 0.75), MI[disc], axis='X')
+    cylinder(bm, (-8.49, yc, 0.68), 0.02, 0.22, 8, MI['brass'], axis='X')
+    cylinder(bm, (-8.28, yc, 0.6), 0.02, 0.08, 8, MI['brass'])
+    # a duckboard mat before it
+    for k in range(6):
+        box(bm, -8.2 + k * 0.17, -8.08 + k * 0.17, YS + 0.85, YS + 1.45, 0.0, 0.03, MI['oak'])
+    # the wash-stand: mahogany with a marble top, a porcelain basin and ewer, a gilt-framed glass above
+    box(bm, -8.48, -7.95, -1.6, -0.55, 0.0, 0.78, MI['mahogany'])
+    box(bm, -8.5, -7.92, -1.63, -0.52, 0.78, 0.81, MI['marble'])
+    lathe(bm, [(0.0, 0.81), (0.06, 0.81), (0.17, 0.88), (0.19, 0.92), (0.0, 0.86)], 16, (-8.2, -1.08, 0), MI['china'])
+    lathe(bm, [(0.0, 0.81), (0.06, 0.81), (0.08, 0.9), (0.05, 1.02), (0.06, 1.1), (0.0, 1.1)], 12, (-8.35, -0.72, 0), MI['china'])
+    for (y, disc) in ((-1.2, 'enamelred'), (-0.96, 'enamelblue')):
+        cylinder(bm, (-8.49, y, 0.95), 0.016, 0.12, 8, MI['brass'], axis='X')
+        lathe(bm, [(0.0, 0), (0.025, 0), (0.025, 0.01), (0.0, 0.01)], 10, (-8.37, y, 0.95), MI[disc], axis='X')
+    box(bm, -8.49, -8.47, -1.5, -0.65, 1.25, 1.95, MI['glass'])                               # the looking-glass
+    for (y0, y1, z0, z1) in [(-1.54, -0.61, 1.95, 1.99), (-1.54, -0.61, 1.21, 1.25), (-1.54, -1.5, 1.21, 1.99), (-0.65, -0.61, 1.21, 1.99)]:
+        box(bm, -8.49, -8.45, y0, y1, z0, z1, MI['brass'])
+    # towel rail with linen, soap dish, a shelf of bottles
+    for z in (0.9, 1.15):
+        cylinder(bm, (-8.45, 0.0, z), 0.012, 0.9, 8, MI['brass'], axis='Y')
+    box(bm, -8.46, -8.38, 0.08, 0.8, 0.55, 1.16, MI['linen'])
+    box(bm, -8.48, -8.3, -0.3, -0.1, 1.35, 1.37, MI['marble'])
+    for k in range(4):
+        lathe(bm, [(0.0, 1.37), (0.025, 1.37), (0.025, 1.47), (0.01, 1.5), (0.0, 1.5)], 8, (-8.39, -0.27 + k * 0.05, 0), MI['glass'])
     ceiling_lamp(bm, -7.75, -0.5)
 obj_from('bathroom', bathroom, props={'col': 1}, smooth=40)
 

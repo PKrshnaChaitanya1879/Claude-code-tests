@@ -57,15 +57,24 @@ namespace Verne
             PlayOneShot(o ? openClip : closeClip, 0.8f);
         }
 
+        // GUM: "the door is working on binary principles". A heavy leaf on its hinges: a push accelerates it, it swings
+        // with its own inertia, the hinge's friction slows it and it settles against the stop with a small rebound.
+        float m_V;
+        public float stiffness = 14f, damping = 5.2f;
         void Update()
         {
             float target = open ? 1f : 0f;
-            if (Mathf.Approximately(m_T, target)) return;
-            float next = Mathf.MoveTowards(m_T, target, Time.deltaTime * speed);
-            if (!open && BlockedByPlayer()) return; // wait, don't crush
+            if (Mathf.Abs(m_T - target) < 0.0005f && Mathf.Abs(m_V) < 0.0005f) { if (m_T != target) { m_T = target; m_V = 0f; Pose(); } return; }
+            float dt = Mathf.Min(Time.deltaTime, 0.05f);
+            m_V += ((target - m_T) * stiffness * speed - m_V * damping) * dt;
+            float next = m_T + m_V * dt;
+            if (!open && next < m_T && BlockedByPlayer()) { m_V = 0f; return; }   // wait, don't crush
+            if (next > 1.04f) { next = 1.04f; m_V = -m_V * 0.25f; }                // the stop: a soft knock back
+            if (next < 0f) { next = 0f; m_V = -m_V * 0.15f; }                       // the frame: it thuds shut
+            bool wasAway = Mathf.Abs(m_T - target) > 0.02f;
             m_T = next;
             Pose();
-            if (Mathf.Approximately(m_T, target)) { if (open) onOpened.Invoke(); else onClosed.Invoke(); }
+            if (wasAway && Mathf.Abs(m_T - target) <= 0.02f) { if (open) onOpened.Invoke(); else onClosed.Invoke(); }
         }
 
         bool BlockedByPlayer()
@@ -80,7 +89,7 @@ namespace Verne
 
         void Pose()
         {
-            float e = m_T * m_T * (3f - 2f * m_T);
+            float e = m_T;   // the spring already gives the motion its ease
             if (kind == Kind.Hinge) leaf.localRotation = m_RestRot * Quaternion.Euler(0f, openAngle * e, 0f);
             else leaf.localPosition = m_RestPos + slideOffset * e;
         }
