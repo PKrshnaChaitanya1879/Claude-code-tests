@@ -74,7 +74,7 @@ namespace Verne
             BreathPhase = phase;
             // exhale over the last 40% of the cycle: the fog blooms quickly and clears slowly
             float fog = phase > 0.6f ? Mathf.SmoothStep(0f, 1f, (phase - 0.6f) / 0.15f) : Mathf.Clamp01(1f - phase / 0.55f) * 0.9f;
-            var c = m_Fog.color; c.a = fog * Mathf.Lerp(0.55f, 0.9f, exertion); m_Fog.color = c;
+            var c = m_Fog.color; c.a = fog * Mathf.Lerp(0.08f, 0.2f, exertion); m_Fog.color = c;   // a faint mist on the glass, not a smear (tour frames)
         }
     }
 }

@@ -265,9 +265,9 @@ namespace Verne.EditorTools
             Grade("Title", exposure: 0.0f, contrast: 22f, saturation: -12f, bloom: 0.8f, vignette: 0.34f, tint: new Color(0.92f, 1.0f, 1.04f),
                   splitShadows: new Color(0.16f, 0.32f, 0.40f), splitHighlights: new Color(0.55f, 0.60f, 0.62f));
             // aboard: a hand-coloured 1870s engraving: umber shadows, ivory lights, oxblood and verdigris, nothing pure white
-            Grade("Nautilus", exposure: -0.15f, contrast: 18f, saturation: -10f, bloom: 0.45f, vignette: 0.3f, tint: new Color(1.04f, 0.98f, 0.88f),
+            Grade("Nautilus", exposure: 0.25f, contrast: 18f, saturation: -10f, bloom: 0.45f, vignette: 0.3f, tint: new Color(1.04f, 0.98f, 0.88f),
                   splitShadows: new Color(0.32f, 0.26f, 0.2f), splitHighlights: new Color(0.62f, 0.55f, 0.42f));
-            Grade("Mission1", exposure: 0.0f, contrast: 22f, saturation: -6f, bloom: 0.75f, vignette: 0.34f, tint: new Color(0.92f, 1.0f, 1.04f),
+            Grade("Mission1", exposure: -0.15f, contrast: 26f, saturation: 6f, bloom: 0.75f, vignette: 0.34f, tint: new Color(0.92f, 1.0f, 1.04f),
                   splitShadows: new Color(0.16f, 0.34f, 0.40f), splitHighlights: new Color(0.52f, 0.60f, 0.62f));
             Grade("Mission2", exposure: -0.35f, contrast: 26f, saturation: -10f, bloom: 0.9f, vignette: 0.38f, tint: new Color(0.95f, 0.98f, 1.04f),
                   splitShadows: new Color(0.14f, 0.18f, 0.30f), splitHighlights: new Color(0.70f, 0.48f, 0.34f));

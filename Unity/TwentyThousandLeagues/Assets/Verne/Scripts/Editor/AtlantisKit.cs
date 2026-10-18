@@ -169,7 +169,7 @@ namespace Verne.EditorTools
             // the lava's own light on the city (the crater light is built by the scene, at CraterGlow)
             var go = new GameObject("Lava light on the city"); go.transform.SetParent(s_Root, false);
             go.transform.position = VolcanoBase + new Vector3(-50f, 30f, 40f);   // above the city, clear of the mountain
-            var l = go.AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(1f, 0.32f, 0.1f); l.intensity = 8f; l.range = 260f; l.shadows = LightShadows.None;
+            var l = go.AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(1f, 0.32f, 0.1f); l.intensity = 2.5f; l.range = 260f; l.shadows = LightShadows.None;
         }
 
         static float Rf(float a, float b) => Mathf.Lerp(a, b, (float)s_R.NextDouble());
@@ -202,8 +202,9 @@ namespace Verne.EditorTools
                 {
                     if (mats[i] == null) continue;
                     string m = mats[i].name;
-                    if (m.StartsWith("M_lava_crust")) mats[i] = Materials.Emissive("LavaCrust", new Color(0.18f, 0.06f, 0.03f), new Color(0.9f, 0.18f, 0.03f));
+                    if (m.StartsWith("M_lava_crust")) mats[i] = Materials.Emissive("LavaCrust", new Color(0.12f, 0.05f, 0.03f), new Color(0.32f, 0.06f, 0.012f));
                     else if (m.StartsWith("M_lava")) mats[i] = Materials.Emissive("LavaRun", new Color(1f, 0.4f, 0.1f), new Color(6f, 1.7f, 0.35f));
+                    else if (name == "summit" || name == "volcano") mats[i] = Materials.Get("Basalt");   // tour 3: "a rock of black basalt": a silhouette rimmed red, not a flat orange slab
                     else if (m.StartsWith("M_pennatule")) mats[i] = Materials.Emissive("Pennatule", new Color(0.32f, 0.3f, 0.28f), new Color(0.03f, 0.07f, 0.06f));
                 }
                 mr.sharedMaterials = mats;

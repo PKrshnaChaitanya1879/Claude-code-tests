@@ -35,7 +35,7 @@ namespace Verne.EditorTools
             // wet sand under water reads darker than the fog behind it (look-dev, m3_lookdev_crespo_*.png): INSIDE keeps the
             // backdrop the brightest thing in frame and the ground below it
             new Spec { name = "Sand",        tex = "sand",      tint = new Color(0.60f, 0.56f, 0.47f), metal = 0f,   smooth = 0.15f, tile = 1f },
-            new Spec { name = "Basalt",      tex = "rock2",     tint = new Color(0.16f, 0.16f, 0.18f), metal = 0f,   smooth = 0.3f,  tile = 1f },
+            new Spec { name = "Basalt",      tex = "rock2",     tint = new Color(0.07f, 0.065f, 0.07f), metal = 0f,   smooth = 0.3f,  tile = 1f },
             new Spec { name = "Lava",        tex = "lava",      tint = new Color(0.25f, 0.2f, 0.18f),  metal = 0f,   smooth = 0.2f,  tile = 1f, emission = new Color(4f, 1.1f, 0.25f) },
             new Spec { name = "Glass",       tex = null,        tint = new Color(0.62f, 0.72f, 0.7f, 0.2f), metal = 0f, smooth = 0.85f, tile = 1f, transparent = true },
             new Spec { name = "LuminousCeiling", tex = "ceiling", tint = new Color(1f, 0.9f, 0.72f), metal = 0f, smooth = 0.1f, tile = 1f, emission = new Color(1.25f, 0.92f, 0.55f) },

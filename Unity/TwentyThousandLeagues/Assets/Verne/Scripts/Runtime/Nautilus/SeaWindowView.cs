@@ -22,7 +22,7 @@ namespace Verne
         public Vector3 lampLocal = new Vector3(3.8f, 2f, 15f);
         public Vector2 windowZ = new Vector2(12.9f, 17.1f);
         public Color lampColor = new Color(2.0f, 1.95f, 1.8f);
-        public float lampRange = 7f;
+        public float lampRange = 10f;
         [Header("Life")]
         public Material fishMaterial, silverMaterial, goldMaterial, medusaMaterial;
         public SlidingPanels panels;
@@ -92,9 +92,9 @@ namespace Verne
         void Respawn(School s, System.Random rnd, bool anywhere)
         {
             s.side = rnd.NextDouble() < 0.5 ? -1f : 1f;
-            float dist = s.medusa ? Mathf.Lerp(4.6f, 9f, (float)rnd.NextDouble()) : Mathf.Lerp(5.2f, 13f, (float)rnd.NextDouble());
+            float dist = s.medusa ? Mathf.Lerp(4.6f, 9f, (float)rnd.NextDouble()) : Mathf.Lerp(4.4f, 9.5f, (float)rnd.NextDouble());   // close enough to the glass to catch the saloon's light
             float y = s.medusa ? Mathf.Lerp(-1f, 5f, (float)rnd.NextDouble()) : Mathf.Lerp(-0.5f, 4.5f, (float)rnd.NextDouble());
-            float z = anywhere ? Mathf.Lerp(-25f, 55f, (float)rnd.NextDouble()) : 55f + (float)rnd.NextDouble() * 20f;
+            float z = anywhere ? Mathf.Lerp(0f, 32f, (float)rnd.NextDouble()) : 34f + (float)rnd.NextDouble() * 10f;   // they pass the windows, not 40 m away
             s.centre = new Vector3(s.side * dist, y, z);
         }
 
@@ -108,7 +108,7 @@ namespace Verne
                 // relative to the ship the water streams aft; the fish swim forward against it, slower
                 s.centre.z -= (flow - s.speed * 2.5f) * dt;
                 s.centre.x += Mathf.Sin(t * 0.13f + s.centre.z * 0.05f) * 0.15f * dt;
-                if (s.centre.z < -30f) Respawn(s, s_Rnd, false);
+                if (s.centre.z < -4f) Respawn(s, s_Rnd, false);
                 if (!visible) continue;
                 for (int i = 0; i < s.count; i++)
                 {

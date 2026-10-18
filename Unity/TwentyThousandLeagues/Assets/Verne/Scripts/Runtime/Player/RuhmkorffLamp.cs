@@ -29,7 +29,7 @@ namespace Verne
             go.transform.localRotation = Quaternion.Euler(8f, 0f, 0f);
             m_Light = go.AddComponent<Light>();
             m_Light.type = LightType.Spot; m_Light.range = range; m_Light.spotAngle = angle; m_Light.innerSpotAngle = angle * 0.72f;
-            m_Light.color = new Color(0.86f, 0.94f, 1f); m_Light.intensity = intensity;
+            m_Light.color = new Color(1f, 0.93f, 0.8f);   // "white and continuous", but a carbon-arc white, never LED blue m_Light.intensity = intensity;
             m_Light.shadows = LightShadows.None;    // one shadowed light per area: the sun keeps it
             m_Light.enabled = false;
             go.AddComponent<LampBounce>();          // the sand throws a little of the beam back (Playdead's bounce)
@@ -42,6 +42,8 @@ namespace Verne
             if (!Carried) { if (m_On) Set(false); return; }
             if (VerneInput.LampDown) { Set(!m_On); if (m_Click != null) VerneAudio.PlayAt(m_Click, transform.position, 0.35f); }
         }
+
+        public void SetOn(bool on) { if (m_Light != null) Set(on); }
 
         void Set(bool on)
         {

@@ -189,7 +189,7 @@ namespace Verne.EditorTools
         {
             var s = NewScene("Nautilus");
             Greybox.Doorways.Clear(); Greybox.Structure.Clear();
-            Ambient(new Color(0.28f, 0.25f, 0.21f), new Color(0.16f, 0.14f, 0.12f), new Color(0.06f, 0.05f, 0.05f));
+            Ambient(new Color(0.46f, 0.38f, 0.29f), new Color(0.3f, 0.24f, 0.18f), new Color(0.12f, 0.09f, 0.07f));   // tour 1: rooms were caves; this is the light bouncing off carpet and panelling
             Fog(false, Color.black, 0f);
             var ship = new GameObject("Nautilus (greybox, true dimensions)").transform;
 
@@ -481,7 +481,7 @@ namespace Verne.EditorTools
             {
                 // one soft, unshadowed fill per room, the electric light "uniform and unintermittent"
                 var area = (x1 - x0) * (z1 - z0);
-                PointLight(name + " light", t, new Vector3((x0 + x1) * 0.5f, h - 0.25f, (z0 + z1) * 0.5f), new Color(1f, 0.74f, 0.46f), ceilMat == "LuminousCeiling" ? 2.2f : 1.4f, Mathf.Sqrt(area) * 1.6f + h);
+                PointLight(name + " light", t, new Vector3((x0 + x1) * 0.5f, h - 0.25f, (z0 + z1) * 0.5f), new Color(1f, 0.74f, 0.46f), ceilMat == "LuminousCeiling" ? 2.8f : 1.9f, Mathf.Sqrt(area) * 1.6f + h);
             }
             return t;
         }
@@ -790,11 +790,11 @@ namespace Verne.EditorTools
                 case "Mission1":    // Crespo: five fathoms, clear and vibrant near the surface, darker down the slope
                     // tuned with Source/tools/preview_water_mock.py (Source/previews/m3_water_mock_Mission1.png): grey-green luminous fog,
                     // stems as silhouettes, red kept at five fathoms (Kd red 0.12) so the sand stays warm where the sun lands
-                    w.surfaceY = 9f; w.extinction = new Color(0.106f, 0.067f, 0.061f); w.scatterAlbedo = new Color(0.25f, 0.46f, 0.57f);   // the browser build's σa+σs, σs/σt (GUM: "INSIDE, not Subnautica")
-                    w.kd = new Color(0.12f, 0.045f, 0.04f); w.surfaceAmbient = new Color(0.06f, 0.11f, 0.12f); w.sunShafts = 2.5f; w.forwardScatter = 0.65f; w.maxDistance = 50f; break;
+                    w.surfaceY = 9f; w.extinction = new Color(0.15f, 0.088f, 0.078f); w.scatterAlbedo = new Color(0.2f, 0.4f, 0.5f);   // tour 1: was a flat teal haze; now it falls into dark like INSIDE   // the browser build's σa+σs, σs/σt (GUM: "INSIDE, not Subnautica")
+                    w.kd = new Color(0.12f, 0.045f, 0.04f); w.surfaceAmbient = new Color(0.02f, 0.042f, 0.05f); w.sunShafts = 3.4f; w.heroGain = 3f; w.forwardScatter = 0.65f; w.maxDistance = 50f; break;
                 case "Mission2":    // 150 fathoms at midnight: no daylight; the volcano's red glow is the only light (art-directed so red carries)
                     w.surfaceY = 274f; w.extinction = new Color(0.012f, 0.014f, 0.016f); w.scatterAlbedo = new Color(0.28f, 0.35f, 0.40f);   // cold scatter: warm albedo made the whole night an orange-brown haze
-                    w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 90f; w.heroGain = 220f; w.forwardScatter = 0.72f; break;   // GUM: the browser look: the glow lives toward the volcano and dies into black
+                    w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 90f; w.heroGain = 130f; w.forwardScatter = 0.72f; break;   // GUM: the browser look: the glow lives toward the volcano and dies into black
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
             if (w.sunShafts > 0f)
@@ -1270,7 +1270,7 @@ namespace Verne.EditorTools
             glow.transform.SetParent(root, false);
             glow.transform.position = AtlantisKit.CraterGlow;
             var l = glow.AddComponent<Light>();
-            l.type = LightType.Point; l.color = new Color(1f, 0.34f, 0.12f); l.intensity = 12f; l.range = 400f; l.shadows = LightShadows.None;
+            l.type = LightType.Point; l.color = new Color(1f, 0.34f, 0.12f); l.intensity = 4f; l.range = 400f;   // tour 1: 12 painted the crags flat orange l.shadows = LightShadows.None;
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);
             // Captain Nemo with his iron-pointed stick, no lamps ("They will be useless"), leading toward the red glow

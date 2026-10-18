@@ -126,10 +126,13 @@ Shader "Verne/SeaLit"
                     float3 ro = _WorldSpaceCameraPos;
                     float3 dir = -Vn;
                     float up = saturate(dir.y * 0.5 + 0.5);
-                    float t = max(dot(lampPos - ro, dir), 0.0);
-                    float dperp = length(lampPos - (ro + dir * t));
-                    float3 beam = _VerneLampColor.rgb * exp(-sigma * (dperp + t * 0.35)) / (1.0 + dperp * dperp * 0.6) * 0.22;
-                    float3 col = _VerneWater.rgb * (0.04 + 1.4 * pow(up, 5.0)) + beam * _VerneWater.rgb * 18.0;
+                    // a soft cone of the saloon's own light spilling out through the glass: brightest looking straight out,
+                    // dying with angle and with distance into the water (no line artefact from the lamp strip)
+                    float3 toL = normalize(float3(lampPos.x, ro.y, ro.z) - ro + float3(0, -0.15, 0));
+                    float c = saturate(dot(dir, toL));
+                    float cone = pow(c, 6.0) * 0.8 + pow(c, 40.0) * 0.6;
+                    float3 beam = _VerneLampColor.rgb * cone * 0.06;
+                    float3 col = _VerneWater.rgb * (0.05 + 1.3 * pow(up, 5.0)) + beam * _VerneWater.rgb * 12.0;
                     return half4(col, 1);
                 }
 
