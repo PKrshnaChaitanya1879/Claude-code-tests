@@ -1,6 +1,6 @@
 # How to open the game
 
-The Unity project builds itself the first time you open it. The **Nautilus is modelled inside and out** (Blender, at the book's dimensions); the two excursions are still greybox ground with the **first version of the underwater look**. Creatures, divers, the excursions' art and the music arrive milestone by milestone (see `PROGRESS.md`).
+The Unity project builds itself the first time you open it. The **Nautilus is modelled inside and out** (Blender, at the book's dimensions). The **first excursion** has its flora, rocks, fish, divers and the burial, in the INSIDE-style water. The **second excursion** has its first layout: the climb, the crevice, the summit and the drowned city with its volcano. Its light, the score and the menus arrive in the next parts (see `PROGRESS.md`).
 
 If you opened an earlier download, open this one fresh: the build re-runs by itself once (or use **Verne → Build Everything**).
 
@@ -47,8 +47,12 @@ If you opened an earlier download, open this one fresh: the build re-runs by its
    1. Close the inner door, then **turn the stopper-plate wheel** on it until the plates are home.
    2. Hold the sea tap: hiss, the cold rising, the gauge climbing to the outside pressure.
    3. When the cell is full, open the outer door and step out onto the sea floor.
-9. **The first excursion** now has its flora: sea-stars and shells on the sand, a prairie of red algae, the forest of Crespo's tall laminaries, a gallery of coral arches, and the coral cemetery's glade. Press **L** for the Ruhmkorff lamp in the darker parts.
-10. After the first excursion, the Nautilus prepares the second: midnight, no lamps, an iron-pointed stick, and the door opens 150 fathoms down.
+9. **The first excursion** (I.XV–XXIV):
+   - Captain Nemo leads, a crewman follows him, and **Ned Land and Conseil** walk with you.
+   - The forest of Crespo stands **motionless**, as Verne wrote ("the region of perpendicularity"). Walk through the weed and it gives way, then springs straight again.
+   - In the coral gallery the lamps come on (**L** for yours). The red coral's white polyps close as you pass.
+   - Turn round now and then: four men are carrying something long and white at the back of the party. In the glade, the **burial** follows the book. **K** kneels with them.
+10. **The second excursion** (II.IX): midnight, no lamps, an iron-pointed stick. Cross the stony plain and the petrified copse, take the dead trunk over the crevice, and climb toward the red glow. At the summit, Nemo writes the word on the black basalt. If you fall, Nemo's hand hauls you back. This is a first layout, so expect rough light here.
 11. The title menu can also jump straight to either excursion.
 
 **Settings:** Esc → Settings has quality (Light / Balanced / Full), 30/60 fps cap, field of view, sensitivity, invert look, head movement, subtitles and volumes. On your laptop the game starts on **Light** automatically.
