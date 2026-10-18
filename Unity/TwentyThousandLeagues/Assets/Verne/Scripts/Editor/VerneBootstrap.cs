@@ -32,6 +32,7 @@ namespace Verne.EditorTools
 
         static void AutoRunOnce()
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;      // background import workers must never build
             if (Application.isBatchMode && Environment.GetEnvironmentVariable("VERNE_NO_AUTORUN") == "1") return;
             if (File.Exists(DoneMarker))
             {
@@ -81,7 +82,9 @@ namespace Verne.EditorTools
             Step("Scene: Mission I (Crespo forest, coral kingdom)", SceneBuilders.Mission1);
             Step("Scene: Mission II (Atlantis)", SceneBuilders.Mission2);
             Step("Build settings", SceneBuilders.BuildSettings);
+            int realFailures = s_Fail;      // the validation pass only reports; it never forces a rebuild on every open
             Step("Validate scenes (missing scripts, references, budgets)", SceneBuilders.Validate);
+            EditorUtility.ClearProgressBar();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -92,7 +95,7 @@ namespace Verne.EditorTools
             if (s_Fail == 0) Line("Open Assets/Verne/Generated/Scenes/Title.unity and press Play.");
             else Line("Some steps failed. The details are above; the rest of the project is still usable. Running Verne → Build Everything again is safe.");
             WriteReport();
-            File.WriteAllText(DoneMarker, Version.ToString());
+            if (realFailures == 0) File.WriteAllText(DoneMarker, Version.ToString());   // a failed first build tries again on the next open
             Debug.Log($"[Verne] Build Everything: {s_Ok} OK, {s_Fail} failed. Report: {ReportPath}");
         }
 
@@ -106,6 +109,7 @@ namespace Verne.EditorTools
         static void Step(string name, Action a)
         {
             var t = DateTime.Now;
+            EditorUtility.DisplayProgressBar("Twenty Thousand Leagues: building everything", name, Mathf.Clamp01((s_Ok + s_Fail) / 20f));
             try
             {
                 SceneBuilders.Notes.Clear();

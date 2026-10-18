@@ -69,9 +69,10 @@ namespace Verne.EditorTools
             var log = PutAt("log_bridge", new Vector3(0f, lip - 0.2f, zc), 0f, 1.4f, false);    // 11 m over an 8 m gap, its ends bedded in the lips
             if (log != null)
             {
-                var b = log.GetComponent<MeshRenderer>().bounds;
+                var lr = log.GetComponentInChildren<Renderer>();
+                var b = lr != null ? lr.bounds : new Bounds(log.transform.position, new Vector3(0.8f, 0.8f, 11f));
                 if (b.size.x > b.size.z) log.transform.rotation = Quaternion.Euler(0f, 90f, 0f) * log.transform.rotation;   // lay it along the way
-                var top = log.GetComponent<MeshRenderer>().bounds.max.y;
+                var top = lr != null ? lr.bounds.max.y : log.transform.position.y + 0.4f;
                 // the walkable top of the trunk: a 1.2 m box (the round trunk alone would roll the visitor off), and the link the divers' agents take
                 var walk = new GameObject("Log walkway"); walk.transform.SetParent(s_Root, false);
                 walk.transform.position = new Vector3(0f, top - 0.05f, zc);

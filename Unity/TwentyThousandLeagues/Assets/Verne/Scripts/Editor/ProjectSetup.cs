@@ -205,6 +205,9 @@ namespace Verne.EditorTools
             }
 
             GraphicsSettings.defaultRenderPipeline = PipelineAssets[1];
+            // URP's FBX material preprocessor only acts when URP is active at import time: re-import the models now that it is
+            foreach (var guid in AssetDatabase.FindAssets("t:Model", new[] { VerneBootstrap.Root + "/Models" }))
+                AssetDatabase.ImportAsset(AssetDatabase.GUIDToAssetPath(guid), ImportAssetOptions.ForceUpdate);
 
             // quality levels: exactly Light, Balanced, Full
             var qs = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/QualitySettings.asset")[0];

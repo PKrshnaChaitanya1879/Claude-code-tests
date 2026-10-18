@@ -28,7 +28,8 @@ namespace Verne.EditorTools
                 if (mi.importCameras || mi.importLights) { mi.importCameras = false; mi.importLights = false; changed = true; }
                 if (mi.importNormals != ModelImporterNormals.Import) { mi.importNormals = ModelImporterNormals.Import; changed = true; }
                 if (mi.meshCompression != ModelImporterMeshCompression.Medium) { mi.meshCompression = ModelImporterMeshCompression.Medium; changed = true; }
-                if (mi.isReadable != path.EndsWith("_col.fbx")) { mi.isReadable = path.EndsWith("_col.fbx"); changed = true; }
+                bool readable = path.EndsWith("_col.fbx") || path.Contains("/Atlantis/");   // Atlantis' crags and cone are scaled non-uniformly under MeshColliders: builds need them readable
+                if (mi.isReadable != readable) { mi.isReadable = readable; changed = true; }
                 if (mi.materialImportMode != ModelImporterMaterialImportMode.ImportViaMaterialDescription) { mi.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription; changed = true; }
                 if (mi.animationType != ModelImporterAnimationType.None && path.Contains("/Nautilus/")) { mi.animationType = ModelImporterAnimationType.None; mi.importAnimation = false; changed = true; }
                 if (path.Contains("Nautilus_Exterior") && !path.EndsWith("_col.fbx"))

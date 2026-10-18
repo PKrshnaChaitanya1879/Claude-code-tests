@@ -21,7 +21,9 @@ namespace Verne.EditorTools
             go.transform.localScale = Vector3.one * scale;
             if (collider)
             {
-                var b = go.GetComponent<MeshRenderer>().bounds;
+                var r = go.GetComponentInChildren<Renderer>();
+                if (r == null) return go;
+                var b = r.bounds;
                 var c = go.AddComponent<BoxCollider>();
                 c.center = go.transform.InverseTransformPoint(b.center);
                 var ls = go.transform.lossyScale;

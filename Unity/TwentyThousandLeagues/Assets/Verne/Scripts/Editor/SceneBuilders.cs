@@ -83,6 +83,33 @@ namespace Verne.EditorTools
             RenderSettings.ambientGroundColor = ground;
             RenderSettings.skybox = null;
             RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
+            RenderSettings.customReflectionTexture = AmbientCube(sky, equator, ground);   // brass and iron reflect the room's own light, not black
+        }
+
+        /// <summary>A tiny reflection cubemap in the scene's ambient colours (sky above, equator around, ground below), saved as an asset.</summary>
+        static Cubemap AmbientCube(Color sky, Color equator, Color ground)
+        {
+            const int N = 16;
+            var cube = new Cubemap(N, TextureFormat.RGBA32, false);
+            var faces = new[] { CubemapFace.PositiveX, CubemapFace.NegativeX, CubemapFace.PositiveY, CubemapFace.NegativeY, CubemapFace.PositiveZ, CubemapFace.NegativeZ };
+            foreach (var f in faces)
+            {
+                var px = new Color[N * N];
+                for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
+                    {
+                        float v = 1f - (y + 0.5f) / N;    // 1 at the top row of a side face
+                        Color c = f == CubemapFace.PositiveY ? sky : f == CubemapFace.NegativeY ? ground
+                                : (v > 0.5f ? Color.Lerp(equator, sky, (v - 0.5f) * 2f) : Color.Lerp(ground, equator, v * 2f));
+                        c.a = 1f; px[y * N + x] = c;
+                    }
+                cube.SetPixels(px, f);
+            }
+            cube.Apply(false);
+            string path = VerneBootstrap.Generated + "/Rendering/AmbientReflection_" + UnityEngine.SceneManagement.SceneManager.GetActiveScene().name + ".cubemap";
+            if (AssetDatabase.LoadAssetAtPath<Cubemap>(path) != null) AssetDatabase.DeleteAsset(path);
+            AssetDatabase.CreateAsset(cube, path);
+            return cube;
         }
 
         static void Fog(bool on, Color color, float density)
@@ -919,6 +946,7 @@ namespace Verne.EditorTools
             surf.useGeometry = UnityEngine.AI.NavMeshCollectGeometry.PhysicsColliders;
             surf.layerMask = ~((1 << 2) | (1 << ProjectSetup.InteractableLayer));
             surf.minRegionArea = 4f;
+            surf.overrideVoxelSize = true; surf.voxelSize = 0.3f;       // coarse enough to bake in seconds on a laptop, fine enough for 0.5 m agents
             surf.BuildNavMesh();
             if (surf.navMeshData == null) { Notes.Add("NavMesh bake failed for " + key + ": divers walk straight legs."); return; }
             string path = VerneBootstrap.Generated + "/NavMesh_" + key + ".asset";
