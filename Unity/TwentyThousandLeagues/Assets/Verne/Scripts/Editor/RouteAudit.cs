@@ -41,7 +41,8 @@ namespace Verne.EditorTools
                     if (!Physics.Raycast(new Vector3(p.x, p.y + 30f, p.z), Vector3.down, out var hit, 60f, mask, QueryTriggerInteraction.Ignore)) continue;
                     samples++;
                     var a = hit.point + Vector3.up * 0.4f; var b = hit.point + Vector3.up * 1.45f;
-                    if (Physics.CheckCapsule(a, b, 0.35f, mask, QueryTriggerInteraction.Ignore)) { blocked++; if (where.Count < 6) where.Add($"({p.x:0},{p.z:0})"); }
+                    var hits = Physics.OverlapCapsule(a, b, 0.35f, mask, QueryTriggerInteraction.Ignore);
+                    if (hits.Length > 0) { blocked++; if (where.Count < 10) where.Add($"({p.x:0},{p.z:0}) {hits[0].name}"); }
                 }
             }
             SceneBuilders.Notes.Add($"Audit {scene}: the way is clear at {samples - blocked} of {samples} one-metre samples" + (blocked > 0 ? "; blocked near " + string.Join(" ", where) : "."));

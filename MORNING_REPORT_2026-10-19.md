@@ -30,11 +30,17 @@ five rounds instead of guessing. Run it yourself any time to see the same shots.
 | Divers' feet | The walk cycle was a moonwalk (knees bent on the wrong stroke); fixed, ankles keep the lead soles flat. |
 | A grey smear in the missions | It was the helmet's breath fog stuck at full strength (my bug). Now a faint mist on exhales. |
 
+## Also done after the first draft of this report
+- **Engine room**: the cog now turns by its teeth (40:16) and the machinery runs at a slow cruise you can see (Verne's 120 revolutions a second would only be a blur).
+- **Mission I**: deeper contrast; the near forest goes to silhouette and the light shafts carry the image; the Ruhmkorff lamps reach further, so colour comes back where they land.
+- **Mission II**: the faint fill light is now the volcano's ember (warm) instead of blue-grey.
+- **Coral gallery**: only its walls and roof collide now; please walk through it to the cemetery and tell me if anything still stops you.
+
 ## Honest list of what is still not right
 - **Mission II**: a faint grey haze in the middle of the dark at 150 fathoms; I haven't found its source yet.
 - **Mission I**: much closer to INSIDE (depth falls into darkness) but still hazier than INSIDE's underwater chapter, and the coral colours under the lamp need another pass. Check the frame `Logs/tour/Mission1_m1_coral.png`.
 - **Divers** are still simple low-poly figures; the gait is fixed but the bodies could be closer to the engravings.
-- **Engine room, flora and Atlantis's petrified forest** were not touched this evening.
+- **Flora and Atlantis's petrified forest** were not touched this evening; the engine room only got the gear/speed fix.
 - **Saloon ceiling**: the design is the same as the browser's; only the colour changed. Tell me what you'd like different.
 
 Send me your bug list and I'll start there.

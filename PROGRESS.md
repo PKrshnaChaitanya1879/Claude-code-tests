@@ -233,3 +233,10 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 - Removed `com.unity.ai.assistant` and `com.unity.pipeline` from *her* Fathom manifest (couldn't resolve); not in the repo.
 - **Build Everything: 17 OK, 0 failed, 0 missing scripts.** Full report: `Docs/setup_reports/2026-10-18_unity6000.6.2_first_open.txt`.
 - **For Part 4, from the report:** Mission II route is clear at only 98/163 samples, blocked around (0,38)–(0,43), so fix that first; Mission I is blocked near (0,95)–(-2,101). 78 Mission II renderers lack colliders (pennatula, ruins, columns, streets). Remaining deprecations to clean: `FindObjectsByType(..., FindObjectsSortMode)` (SceneBuilders 981/983/1318), `Physics.autoSyncTransforms` (ProjectSetup 73). Target Unity 6000.6 from now on.
+
+### 2026-10-18 evening · live sessions with GUM (15:00–16:30, 18:45–21:30), no scheduled task
+- GUM's second review: `reference/feedback/` + Prompt2.pdf (levers, sea window, paintings, bust, papers, books, dining room, kitchen, bathroom, robing room, divers' feet, Lost Continent lighting/trunk/blue things). Her rules: 1860s light (no LED white, no gloss), textures from the internet only, keep the loading screens.
+- **New tool: Verne → Capture Tour**: plays each scene on her laptop and saves real frames to `Fathom/Logs/tour`. Five tuning rounds were made from those frames (sheets in `Source/previews/tour`).
+- Done and seen in-game: everything listed in `MORNING_REPORT_2026-10-19.md`.
+- Her Fathom copy differs from the repo only in the folder name `Assets/Verne/Code` (repo: `Scripts`). Copy changed files across with that mapping.
+- **Next**: GUM's bug list first; then the Mission II grey haze (source not found, very faint); Mission I colour under the lamp; divers closer to the engravings; flora (Crespo forest) and the petrified forest of Atlantis; engine room's electro-magnets and levers per I.XIII.

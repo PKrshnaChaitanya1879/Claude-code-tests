@@ -438,7 +438,7 @@ namespace Verne.EditorTools
         /// <summary>The axle of the screw, the great wheel and the cog turn ("about a hundred and twenty revolutions", slowed for the eye).</summary>
         static void MachineryTurns(Transform art)
         {
-            foreach (var (n, rpm) in new[] { ("rot_shaft", 30f), ("rot_great_wheel", 30f), ("rot_cog", -30f * 1.62f / 0.66f) })
+            foreach (var (n, rpm) in new[] { ("rot_shaft", 90f), ("rot_great_wheel", 90f), ("rot_cog", -90f * 40f / 16f) })   // GUM: "the RPM, crank and gear were so off": a slow cruise (Verne's 120 rev/s is a blur), and the cog turns by its teeth, 40:16
             {
                 var t = Markers.Find(art, n);
                 if (t == null) { Notes.Add("Engine part missing: " + n); continue; }
@@ -1257,7 +1257,7 @@ namespace Verne.EditorTools
         {
             var s = NewScene("Mission2");
             // midnight at 150 fathoms; the only light is the volcano's red glow, two miles off
-            Ambient(new Color(0.02f, 0.02f, 0.03f), new Color(0.015f, 0.01f, 0.012f), new Color(0.005f, 0.004f, 0.004f));
+            Ambient(new Color(0.02f, 0.009f, 0.006f), new Color(0.014f, 0.0065f, 0.005f), new Color(0.004f, 0.002f, 0.0015f));   // tour 5: only the volcano lights this night: the faint fill is its ember, not a blue-grey haze
             Fog(true, new Color(0.012f, 0.014f, 0.02f), 0.012f);   // fallback only; thin enough that the glow and the city still show from the summit
             var root = new GameObject("Atlantis approach").transform;
             // (M5, started in Part 3) the stony plain → the climb through the petrified copse → the crevice → the first platform →
