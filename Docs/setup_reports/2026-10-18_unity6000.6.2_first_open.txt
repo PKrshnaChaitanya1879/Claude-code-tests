@@ -1,0 +1,67 @@
+Twenty Thousand Leagues: setup report
+Unity 6000.6.2f1 · Windows 11  (10.0.26300) · AMD Radeon(TM) Graphics
+Started 2026-10-18 11:11:43
+
+[ OK ] Folders  (0.0 s)
+[ OK ] Player settings (linear colour, input handling, window)  (53.2 s)
+       Input handling set to Both. Unity may ask to restart the editor: say yes, then the game uses keyboard, mouse and gamepad.
+       Colour space Linear, Direct3D 11, 1920×1080 borderless.
+[ OK ] Tags and layers  (0.0 s)
+       Layers: Player, Interactable, HeldItem, Water, Hull, Creature
+[ OK ] Physics and time  (0.0 s)
+[ OK ] Texture import (1024 max, compressed)  (18.5 s)
+       71 textures re-imported.
+[ OK ] Audio import (score streamed, beds compressed in memory)  (40.6 s)
+       Audio import: 14 clips set (music streamed, loops compressed, effects decompressed).
+[ OK ] Fonts (TextMesh Pro SDF assets)  (2.0 s)
+       4 font assets created in Assets/Verne/Resources/VerneFonts.
+[ OK ] URP assets and quality tiers (Light / Balanced / Full)  (5.3 s)
+       Renderer feature added: Decals (hand-placed AO and shadows)
+       Renderer feature added: Verne underwater (volumetric water)
+       URP assets: Light (0.70× + FSR, 1 cascade, 25 m shadows), Balanced (0.80× + FSR, 2 cascades), Full (1.0×, soft shadows).
+       Quality levels now: Light, Balanced, Full; default Balanced; the game picks Light on integrated GPUs on first run.
+[ OK ] Volume profiles (grade per scene)  (1.8 s)
+[ OK ] Materials  (5.1 s)
+       23 materials in Assets/Verne/Generated/Materials.
+[ OK ] Model: Nautilus exterior (Blender FBX → prefab with LODs and collider)  (3.9 s)
+       Prefab Assets/Verne/Generated/Nautilus_Exterior.prefab (LOD0 ≈ 5.8k, LOD1 ≈ 2.9k, LOD2 ≈ 1.3k triangles; 14-sided collider).
+[ OK ] Scene: Title  (7.3 s)
+       saved Assets/Verne/Generated/Scenes/Title.unity
+[ OK ] Scene: Nautilus  (29.0 s)
+       Nautilus_Interior_Fore prefab: 14 furniture colliders.
+       Nautilus_Interior_Aft prefab: 9 furniture colliders.
+       39 greybox pieces hidden in the forward block; their colliders remain.
+       73 greybox pieces hidden in the forward block; their colliders remain.
+       saved Assets/Verne/Generated/Scenes/Nautilus.unity
+[ OK ] Scene: Mission I (Crespo forest, coral kingdom)  (5.2 s)
+       Mission I flora: 612 props from 32 Blender species; 348 give way to a diver, sway or close their polyps (Verne/Flora); 610 fade out by distance (LODGroup), small things sooner.
+       Nautilus placed on the bottom: deck 1.8 m, door above the rungs at z = -2.6.
+       NavMesh Mission1: 1684 triangles.
+       Lamp-following contact shadows on 9 bodies.
+       Audit Mission I: 10 renderers above the ankle without a collider: Details ×1, Hull ×1, Screw ×1, Details_LOD1 ×1, Hull_LOD1 ×1, Screw_LOD1 ×1, Details_LOD2 ×1, Hull_LOD2 ×1
+       Audit Mission I: the way is clear at 97 of 106 one-metre samples; blocked near (0,40) (0,95) (0,95) (-1,99) (-1,100) (-2,101)
+       Audit Mission I: 7 of 7 legs of the guide's route have a complete NavMesh path (the rest fall back to straight legs).
+       saved Assets/Verne/Generated/Scenes/Mission1.unity
+[ OK ] Scene: Mission II (Atlantis)  (5.0 s)
+       Mission II: 407 pieces of the Atlantis kit placed (plain, copse, crevice, platform, summit, city, volcano).
+       Nautilus placed on the bottom: deck 1.8 m, door above the rungs at z = -2.6.
+       NavMesh Mission2: 2809 triangles.
+       Lamp-following contact shadows on 2 bodies.
+       Audit Mission II: 78 renderers above the ankle without a collider: pennatule ×20, log_bridge ×1, street ×4, house_ruin_a ×10, house_ruin_c ×8, house_ruin_b ×10, col_drum ×4, col_tuscan ×12
+       Audit Mission II: the way is clear at 98 of 163 one-metre samples; blocked near (0,38) (0,39) (0,40) (0,41) (0,42) (0,43)
+       Audit Mission II: 8 of 8 legs of the guide's route have a complete NavMesh path (the rest fall back to straight legs).
+       saved Assets/Verne/Generated/Scenes/Mission2.unity
+[ OK ] Build settings  (0.0 s)
+       Build order: Title, Nautilus, Mission1, Mission2
+[ OK ] Validate scenes (missing scripts, references, budgets)  (1.3 s)
+       Title: water 'Water (Title)', 1 hero light(s), surface at 24 m
+       Title: 53 renderers, 25,235 triangles, 45 colliders, 2 lights, 0 missing scripts
+       Nautilus: 3 turning machine parts
+       Nautilus: 234 renderers, 62,973 triangles, 166 colliders, 16 lights, 0 missing scripts
+       Mission1: water 'Water (Mission1)', 0 hero light(s), surface at 9 m
+       Mission1: 803 renderers, 2,45,501 triangles, 531 colliders, 10 lights, 0 missing scripts
+       Mission2: water 'Water (Mission2)', 1 hero light(s), surface at 274 m
+       Mission2: 536 renderers, 2,62,995 triangles, 259 colliders, 4 lights, 0 missing scripts
+
+Finished in 179.4 s: 17 steps OK, 0 failed.
+Open Assets/Verne/Generated/Scenes/Title.unity and press Play.

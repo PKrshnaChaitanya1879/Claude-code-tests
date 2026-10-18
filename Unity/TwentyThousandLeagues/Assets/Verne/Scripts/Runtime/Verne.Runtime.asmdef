@@ -7,7 +7,7 @@
         "Unity.InputSystem",
         "Unity.TextMeshPro",
         "UnityEngine.UI",
-        "Unity.Cinemachine",
+        
         "Unity.Timeline",
         "Unity.AI.Navigation"
     ],

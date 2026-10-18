@@ -30,7 +30,7 @@ namespace Verne
         void Start()
         {
             var mesh = kind == Kind.Medusa || kind == Kind.Floater ? SeaWindowView.MedusaMesh : SeaWindowView.FishMesh;
-            var rnd = new System.Random(GetInstanceID());
+            var rnd = new System.Random(name.GetHashCode() ^ transform.position.GetHashCode());
             m_Fish = new Transform[count]; m_Offset = new Vector3[count]; m_Vel = new Vector3[count]; m_Flee = new Vector3[count]; m_Phase = new float[count];
             m_Centre = waypoints != null && waypoints.Length > 0 ? waypoints[0] : transform.position;
             m_Target = Next();

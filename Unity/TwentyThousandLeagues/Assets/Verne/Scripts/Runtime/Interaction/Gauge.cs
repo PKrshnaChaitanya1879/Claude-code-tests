@@ -27,7 +27,7 @@ namespace Verne
             m_Vel += ((target - m_Value) * k - m_Vel * c) * Time.deltaTime;
             m_Value += m_Vel * Time.deltaTime;
             float n = Mathf.InverseLerp(minValue, maxValue, m_Value);
-            n += (Mathf.PerlinNoise(Time.time * 7f, GetInstanceID() * 0.01f) - 0.5f) * tremble;
+            n += (Mathf.PerlinNoise(Time.time * 7f, (name.GetHashCode() % 997) * 0.01f) - 0.5f) * tremble;
             if (needle != null) needle.localRotation = Quaternion.AngleAxis(Mathf.LerpUnclamped(minAngle, maxAngle, n), axis);
         }
     }

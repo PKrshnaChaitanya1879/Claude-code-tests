@@ -188,7 +188,7 @@ namespace Verne.EditorTools
                 a.shadowDepthBias = 1.0f;
                 a.shadowNormalBias = 0.8f;
                 a.useSRPBatcher = true;
-                a.supportsDynamicBatching = false;
+                // a.supportsDynamicBatching = false;  (removed in Unity 6.6)
                 a.colorGradingMode = ColorGradingMode.HighDynamicRange;
                 a.colorGradingLutSize = 32;
                 var so = new SerializedObject(a);

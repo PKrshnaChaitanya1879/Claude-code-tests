@@ -226,3 +226,10 @@ Each run appends to the log at the bottom and keeps this checklist honest.
     3. M6: mixer states, the cell and ladder sounds, a pass over the cues once someone can listen.
     4. Then M7.
   - **Blockers:** only GUM's machine can run Unity.
+
+### 2026-10-18 · between parts: first real open in Unity (GUM's laptop, project "Fathom")
+- GUM opened it in **Unity 6000.6.2f1** (not 6000.0), in her own project `C:\Users\fumbl\Fathom`, with `Assets/Verne` copied in. On her copy the scripts folder is renamed `Assets/Verne/Code` (a rename was what made Unity finally compile scripts it had registered but skipped).
+- Fixed for Unity 6.6 (and still fine on 6.0): `GetInstanceID()` is now a compile error (FishSchool, Gauge → name/position hash); `UniversalRenderPipelineAsset.supportsDynamicBatching` is removed (ProjectSetup); dropped the unused `Unity.Cinemachine` reference from Verne.Runtime.asmdef (Cinemachine isn't installed and her network can't fetch packages: certificate errors to packages.unity.com).
+- Removed `com.unity.ai.assistant` and `com.unity.pipeline` from *her* Fathom manifest (couldn't resolve); not in the repo.
+- **Build Everything: 17 OK, 0 failed, 0 missing scripts.** Full report: `Docs/setup_reports/2026-10-18_unity6000.6.2_first_open.txt`.
+- **For Part 4, from the report:** Mission II route is clear at only 98/163 samples, blocked around (0,38)–(0,43), so fix that first; Mission I is blocked near (0,95)–(-2,101). 78 Mission II renderers lack colliders (pennatula, ruins, columns, streets). Remaining deprecations to clean: `FindObjectsByType(..., FindObjectsSortMode)` (SceneBuilders 981/983/1318), `Physics.autoSyncTransforms` (ProjectSetup 73). Target Unity 6000.6 from now on.
