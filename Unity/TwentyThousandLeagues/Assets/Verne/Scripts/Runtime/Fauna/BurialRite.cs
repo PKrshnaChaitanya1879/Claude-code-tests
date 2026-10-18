@@ -71,6 +71,7 @@ namespace Verne
                     c.transform.rotation = Quaternion.LookRotation(Flat(grave - c.transform.position));
                 }
             StartCoroutine(Letterbox(true));
+            Music.Play("burial", false, 0.8f, 4f);       // the score's chorale, timed to the rite (Source/audio/score.py)
             Hud.Toast("“I understood all! This glade was a cemetery, this hole a tomb, this oblong object the body of the man who had died in the night!”", 6f);
             // the digging
             if (digger != null)

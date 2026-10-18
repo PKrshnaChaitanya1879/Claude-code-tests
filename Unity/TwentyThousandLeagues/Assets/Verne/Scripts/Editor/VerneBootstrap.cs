@@ -70,6 +70,7 @@ namespace Verne.EditorTools
             Step("Tags and layers", ProjectSetup.TagsAndLayers);
             Step("Physics and time", ProjectSetup.PhysicsAndTime);
             Step("Texture import (1024 max, compressed)", ProjectSetup.TextureImport);
+            Step("Audio import (score streamed, beds compressed in memory)", AudioImport.Configure);
             Step("Fonts (TextMesh Pro SDF assets)", ProjectSetup.Fonts);
             Step("URP assets and quality tiers (Light / Balanced / Full)", ProjectSetup.RenderPipelines);
             Step("Volume profiles (grade per scene)", ProjectSetup.VolumeProfiles);
