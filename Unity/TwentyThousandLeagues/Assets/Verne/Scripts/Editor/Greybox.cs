@@ -70,6 +70,10 @@ namespace Verne.EditorTools
         /// A straight wall from a to b (on the floor, y = floor), with openings measured along the
         /// wall from a. Pieces: segments between openings, lintels above, sills below windows.
         /// </summary>
+        /// <summary>Walls, floors and ceilings: the structure whose invisible colliders stay when the Blender art is shown.</summary>
+        public static readonly HashSet<Transform> Structure = new HashSet<Transform>();
+        public static bool IsStructure(Transform t) { for (; t != null; t = t.parent) if (Structure.Contains(t)) return true; return false; }
+
         public struct Doorway { public Transform wall; public float at, width, height; }
         /// <summary>Every walk-through opening made by Wall() since the scene started (cleared per scene).</summary>
         public static readonly List<Doorway> Doorways = new List<Doorway>();
@@ -118,6 +122,7 @@ namespace Verne.EditorTools
         {
             var root = new GameObject(name).transform;
             root.SetParent(parent, false);
+            Structure.Add(root);
             Vector2 d = b - a;
             float len = d.magnitude;
             Vector2 dir = d / len;
@@ -151,8 +156,10 @@ namespace Verne.EditorTools
         /// <summary>Floor and ceiling slabs for a rectangular room (x0..x1, z0..z1).</summary>
         public static void Slabs(string name, Transform parent, float x0, float x1, float z0, float z1, float floor, float height, string floorMat, string ceilMat, string surface)
         {
-            Box(name + " floor", parent, new Vector3((x0 + x1) * 0.5f, floor - 0.1f, (z0 + z1) * 0.5f), new Vector3(x1 - x0, 0.2f, z1 - z0), floorMat, 1.6f, true, surface);
-            Box(name + " ceiling", parent, new Vector3((x0 + x1) * 0.5f, floor + height + 0.1f, (z0 + z1) * 0.5f), new Vector3(x1 - x0, 0.2f, z1 - z0), ceilMat, 2.0f);
+            var fl = Box(name + " floor", parent, new Vector3((x0 + x1) * 0.5f, floor - 0.1f, (z0 + z1) * 0.5f), new Vector3(x1 - x0, 0.2f, z1 - z0), floorMat, 1.6f, true, surface);
+            Structure.Add(fl.transform);
+            var ce = Box(name + " ceiling", parent, new Vector3((x0 + x1) * 0.5f, floor + height + 0.1f, (z0 + z1) * 0.5f), new Vector3(x1 - x0, 0.2f, z1 - z0), ceilMat, 2.0f);
+            Structure.Add(ce.transform);
         }
 
         public static Light PointLight(string name, Transform parent, Vector3 pos, Color color, float intensity, float range, LightShadows shadows = LightShadows.None)

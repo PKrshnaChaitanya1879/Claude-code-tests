@@ -188,7 +188,7 @@ namespace Verne.EditorTools
         public static void Nautilus()
         {
             var s = NewScene("Nautilus");
-            Greybox.Doorways.Clear();
+            Greybox.Doorways.Clear(); Greybox.Structure.Clear();
             Ambient(new Color(0.28f, 0.25f, 0.21f), new Color(0.16f, 0.14f, 0.12f), new Color(0.06f, 0.05f, 0.05f));
             Fog(false, Color.black, 0f);
             var ship = new GameObject("Nautilus (greybox, true dimensions)").transform;
@@ -450,7 +450,7 @@ namespace Verne.EditorTools
         /// <summary>The greybox boxes stay as exact, invisible colliders where the Blender rooms are shown.</summary>
         static void HideGreyboxWhereArt(Transform ship, float z0, float z1)
         {
-            int n = 0;
+            int n = 0, nc = 0;
             foreach (var r in ship.GetComponentsInChildren<MeshRenderer>(true))
             {
                 if (r.GetComponentInParent<NautilusArtMarker>() != null) continue;
@@ -460,8 +460,11 @@ namespace Verne.EditorTools
                 float z = r.bounds.center.z;
                 if (z < z0 - 0.1f || z > z1) continue;
                 r.enabled = false; n++;
+                // GUM: "not able to cross the room". Hidden greybox FURNITURE kept its collider where the Blender
+                // furniture (with its own colliders) stands elsewhere: invisible walls. Only structure keeps its collider.
+                if (!Greybox.IsStructure(r.transform)) foreach (var c in r.GetComponents<Collider>()) if (!c.isTrigger) { c.enabled = false; nc++; }
             }
-            Notes.Add($"{n} greybox pieces hidden in the forward block; their colliders remain.");
+            Notes.Add($"{n} greybox pieces hidden; {nc} invisible furniture colliders removed (walls, floors and ceilings keep theirs).");
         }
 
         static Transform Room(Transform ship, string name, float x0, float x1, float z0, float z1, float h, string wallMat, string floorMat, string ceilMat, string surface)
