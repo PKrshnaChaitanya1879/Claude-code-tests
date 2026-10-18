@@ -70,6 +70,50 @@ namespace Verne.EditorTools
         /// A straight wall from a to b (on the floor, y = floor), with openings measured along the
         /// wall from a. Pieces: segments between openings, lintels above, sills below windows.
         /// </summary>
+        public struct Doorway { public Transform wall; public float at, width, height; }
+        /// <summary>Every walk-through opening made by Wall() since the scene started (cleared per scene).</summary>
+        public static readonly List<Doorway> Doorways = new List<Doorway>();
+
+        /// <summary>
+        /// GUM: "the door ways get blocked by some models". Sweeps a box through every doorway (60 cm each side
+        /// of the wall) and clears what is in it: invisible leftover greybox colliders are switched off, visible
+        /// loose furniture is slid out of the way along the wall, art colliders inside the opening are switched off.
+        /// Returns a line for the setup report.
+        /// </summary>
+        public static string ClearDoorways()
+        {
+            Physics.SyncTransforms();
+            int hidden = 0, moved = 0, art = 0; var where = new List<string>();
+            foreach (var d in Doorways)
+            {
+                if (d.wall == null) continue;
+                var c = d.wall.TransformPoint(new Vector3(0f, 0.1f + (d.height - 0.25f) * 0.5f, d.at));
+                var half = new Vector3(0.6f, (d.height - 0.25f) * 0.5f, d.width * 0.5f - 0.05f);
+                var rot = d.wall.rotation;
+                foreach (var col in Physics.OverlapBox(c, half, rot, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    if (col.transform.IsChildOf(d.wall)) continue;                          // the wall's own jambs and lintel
+                    if (col.GetComponentInParent<Verne.Door>() != null) continue;            // the door leaf swings in its own frame
+                    if (col.GetComponentInParent<Verne.Ladder>() != null) continue;
+                    var b = col.bounds;
+                    if (b.size.x > 4f && b.size.z > 4f) continue;                            // floors and ceilings
+                    var r = col.GetComponent<Renderer>();
+                    bool isArt = col.GetComponentInParent<Verne.NautilusArtMarker>() != null;
+                    if (r == null || !r.enabled) { col.enabled = false; hidden++; where.Add(col.name); continue; }
+                    if (isArt) { col.enabled = false; art++; where.Add(col.name); continue; }
+                    // loose greybox furniture: slide it along the wall until it clears the opening
+                    var along = rot * Vector3.forward;
+                    float side = Vector3.Dot(b.center - c, along) >= 0f ? 1f : -1f;
+                    float need = half.z + Vector3.Scale(b.extents, new Vector3(Mathf.Abs(along.x), 0f, Mathf.Abs(along.z))).magnitude - Mathf.Abs(Vector3.Dot(b.center - c, along)) + 0.1f;
+                    var t = col.transform; while (t.parent != null && t.parent.GetComponent<Collider>() == null && t.parent.childCount == 1) t = t.parent;
+                    t.position += along * side * Mathf.Max(0f, need); moved++; where.Add(col.name);
+                }
+            }
+            Physics.SyncTransforms();
+            string list = where.Count > 0 ? ": " + string.Join(", ", where.GetRange(0, Mathf.Min(12, where.Count))) : "";
+            return $"Doorways: {Doorways.Count} checked; {hidden} invisible leftover colliders removed, {art} art colliders opened, {moved} pieces of furniture slid clear{list}.";
+        }
+
         public static Transform Wall(string name, Transform parent, Vector2 a, Vector2 b, float floor, float height, string mat, params Opening[] openings)
         {
             var root = new GameObject(name).transform;
@@ -87,6 +131,7 @@ namespace Verne.EditorTools
             int i = 0;
             foreach (var o in list)
             {
+                if (o.sill < 0.05f && o.height >= 1.8f) Doorways.Add(new Doorway { wall = root, at = o.at, width = o.width, height = o.height });
                 float s0 = o.at - o.width * 0.5f, s1 = o.at + o.width * 0.5f;
                 if (s0 > cursor + 0.01f) Piece(root, $"{name} {i++}", cursor, s0, 0f, height, mat);
                 if (o.height + o.sill < height - 0.01f) Piece(root, $"{name} lintel {i++}", s0, s1, o.sill + o.height, height, mat);

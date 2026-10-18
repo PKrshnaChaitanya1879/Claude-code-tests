@@ -27,12 +27,53 @@ namespace Verne
         Vector3 m_Centre, m_Target;
         int m_Wp;
 
+        // Solid things fish must never enter (GUM: "fishes are glitching through the submarine").
+        // Every collider on the Hull layer becomes a capsule along its longest axis, gathered once per scene.
+        struct Capsule { public Vector3 a, b; public float r; }
+        static Capsule[] s_Obstacles; static int s_ObstacleScene = -1;
+        static void GatherObstacles()
+        {
+            int sc = UnityEngine.SceneManagement.SceneManager.GetActiveScene().handle;
+            if (s_Obstacles != null && s_ObstacleScene == sc) return;
+            s_ObstacleScene = sc;
+            int hull = LayerMask.NameToLayer("Hull");
+            var list = new System.Collections.Generic.List<Capsule>();
+            if (hull >= 0)
+                foreach (var c in Object.FindObjectsByType<Collider>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                {
+                    if (c.isTrigger || c.gameObject.layer != hull) continue;
+                    var b = c.bounds; var e = b.extents;
+                    int ax = e.x >= e.y && e.x >= e.z ? 0 : (e.y >= e.z ? 1 : 2);
+                    float len = e[ax], r = ax == 0 ? Mathf.Max(e.y, e.z) : ax == 1 ? Mathf.Max(e.x, e.z) : Mathf.Max(e.x, e.y);
+                    var dir = Vector3.zero; dir[ax] = Mathf.Max(0f, len - r);
+                    list.Add(new Capsule { a = b.center - dir, b = b.center + dir, r = r * 1.08f + 0.35f });
+                }
+            s_Obstacles = list.ToArray();
+        }
+        /// <summary>Pushes p out of every hull capsule; returns the outward normal if it was inside (else zero).</summary>
+        static Vector3 PushOut(ref Vector3 p, float margin)
+        {
+            Vector3 n = Vector3.zero;
+            for (int k = 0; k < s_Obstacles.Length; k++)
+            {
+                var c = s_Obstacles[k];
+                Vector3 ab = c.b - c.a; float t = ab.sqrMagnitude > 1e-6f ? Mathf.Clamp01(Vector3.Dot(p - c.a, ab) / ab.sqrMagnitude) : 0f;
+                Vector3 q = c.a + ab * t, d = p - q; float dist = d.magnitude, r = c.r + margin;
+                if (dist >= r) continue;
+                Vector3 dn = dist > 1e-4f ? d / dist : Vector3.up;
+                p = q + dn * r; n += dn;
+            }
+            return n;
+        }
+
         void Start()
         {
             var mesh = kind == Kind.Medusa || kind == Kind.Floater ? SeaWindowView.MedusaMesh : SeaWindowView.FishMesh;
             var rnd = new System.Random(name.GetHashCode() ^ transform.position.GetHashCode());
             m_Fish = new Transform[count]; m_Offset = new Vector3[count]; m_Vel = new Vector3[count]; m_Flee = new Vector3[count]; m_Phase = new float[count];
             m_Centre = waypoints != null && waypoints.Length > 0 ? waypoints[0] : transform.position;
+            GatherObstacles();
+            PushOut(ref m_Centre, 1.5f);
             m_Target = Next();
             for (int i = 0; i < count; i++)
             {
@@ -65,6 +106,7 @@ namespace Verne
             Vector3 toT = m_Target - m_Centre;
             if (toT.magnitude < 1.5f) m_Target = Next();
             m_Centre += toT.normalized * Mathf.Min(speed * dt, toT.magnitude);
+            if (PushOut(ref m_Centre, spread * 0.5f + 0.5f) != Vector3.zero) m_Target = Next();   // the school skirts the hull
             var p = PlayerMotor.Instance != null ? PlayerMotor.Instance.transform.position + Vector3.up * 1.5f : new Vector3(0, -1e4f, 0);
             for (int i = 0; i < m_Fish.Length; i++)
             {
@@ -78,7 +120,10 @@ namespace Verne
                 if (kind == Kind.Floater) want.y = m_Centre.y + Mathf.Sin(t * 0.4f + ph) * 0.08f;   // riding the swell's underside
                 Vector3 acc = (want - f.position) * (kind == Kind.Medusa || kind == Kind.Floater ? 0.3f : 2.2f) + m_Flee[i] * 4f - m_Vel[i] * 1.8f;
                 m_Vel[i] += acc * dt;
-                f.position += m_Vel[i] * dt;
+                var np = f.position + m_Vel[i] * dt;
+                var hit = PushOut(ref np, size);
+                if (hit != Vector3.zero) { hit.Normalize(); m_Vel[i] -= hit * Mathf.Min(0f, Vector3.Dot(m_Vel[i], hit)) * 1.6f; }   // glance off, never through
+                f.position = np;
                 if (kind == Kind.Floater) { f.Rotate(0f, dt * 6f, 0f, Space.World); continue; }
                 if (kind == Kind.Medusa)
                 {

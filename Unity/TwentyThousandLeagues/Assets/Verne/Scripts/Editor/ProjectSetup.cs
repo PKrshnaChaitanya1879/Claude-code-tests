@@ -262,13 +262,13 @@ namespace Verne.EditorTools
         {
             // underwater: split-toning keeps the shadows in the cold of the water and warms whatever the sun or a lamp reaches,
             // so colour comes alive where the light is (GUM: INSIDE, but vibrant, not bleak)
-            Grade("Title", exposure: 0.2f, contrast: 18f, saturation: -6f, bloom: 0.8f, vignette: 0.28f, tint: new Color(0.95f, 1.0f, 1.03f),
-                  splitShadows: new Color(0.30f, 0.50f, 0.58f), splitHighlights: new Color(0.62f, 0.56f, 0.48f));
+            Grade("Title", exposure: 0.0f, contrast: 22f, saturation: -12f, bloom: 0.8f, vignette: 0.34f, tint: new Color(0.92f, 1.0f, 1.04f),
+                  splitShadows: new Color(0.16f, 0.32f, 0.40f), splitHighlights: new Color(0.55f, 0.60f, 0.62f));
             Grade("Nautilus", exposure: 0.0f, contrast: 14f, saturation: 4f, bloom: 0.6f, vignette: 0.22f, tint: new Color(1.04f, 1.0f, 0.95f));
-            Grade("Mission1", exposure: 0.3f, contrast: 16f, saturation: 12f, bloom: 0.75f, vignette: 0.25f, tint: new Color(0.97f, 1.02f, 1.0f),
-                  splitShadows: new Color(0.28f, 0.52f, 0.56f), splitHighlights: new Color(0.70f, 0.58f, 0.44f));
-            Grade("Mission2", exposure: 0.0f, contrast: 22f, saturation: 0f, bloom: 0.9f, vignette: 0.32f, tint: new Color(1.04f, 0.97f, 0.97f),
-                  splitShadows: new Color(0.36f, 0.40f, 0.58f), splitHighlights: new Color(0.74f, 0.50f, 0.36f));
+            Grade("Mission1", exposure: 0.0f, contrast: 22f, saturation: -6f, bloom: 0.75f, vignette: 0.34f, tint: new Color(0.92f, 1.0f, 1.04f),
+                  splitShadows: new Color(0.16f, 0.34f, 0.40f), splitHighlights: new Color(0.52f, 0.60f, 0.62f));
+            Grade("Mission2", exposure: 0.0f, contrast: 26f, saturation: -10f, bloom: 0.9f, vignette: 0.38f, tint: new Color(0.95f, 0.98f, 1.04f),
+                  splitShadows: new Color(0.14f, 0.18f, 0.30f), splitHighlights: new Color(0.70f, 0.48f, 0.34f));
         }
 
         public static VolumeProfile Grade(string scene, float exposure, float contrast, float saturation, float bloom, float vignette, Color tint,

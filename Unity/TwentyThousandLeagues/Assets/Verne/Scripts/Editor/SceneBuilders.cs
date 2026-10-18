@@ -188,6 +188,7 @@ namespace Verne.EditorTools
         public static void Nautilus()
         {
             var s = NewScene("Nautilus");
+            Greybox.Doorways.Clear();
             Ambient(new Color(0.28f, 0.25f, 0.21f), new Color(0.16f, 0.14f, 0.12f), new Color(0.06f, 0.05f, 0.05f));
             Fog(false, Color.black, 0f);
             var ship = new GameObject("Nautilus (greybox, true dimensions)").transform;
@@ -276,8 +277,10 @@ namespace Verne.EditorTools
             var chapter = ship.gameObject.AddComponent<ChapterAboard>();
             chapter.note = s_Note; chapter.cell = s_Cell; chapter.seaDoor = s_SeaDoor;
             BookPlaques(ship);
+            PaintingPlaques(ship);
             Ladder(hall, new Vector3(2.4f, 0, -1.6f), 3.2f);
 
+            Notes.Add(Greybox.ClearDoorways());
             Spawn(new Vector3(0.8f, 0.05f, 26.2f), 180f, MoveMode.Air, 120f);
             GlobalVolume("Nautilus");
             Save(s, "Nautilus");
@@ -295,6 +298,66 @@ namespace Verne.EditorTools
             var r = go.AddComponent<Readable>();
             r.verb = verb; r.noun = noun; r.title = title; r.body = body; r.signature = cite;
             return r;
+        }
+
+
+        static readonly Dictionary<string, (string artist, string title)> k_Paintings = new Dictionary<string, (string, string)>
+        {
+            { "437373", ("Raphael", "Giuliano de' Medici (1479–1516), Duke of Nemours") },
+            { "435992", ("Correggio (Antonio Allegri)", "Saints Peter, Martha, Mary Magdalen, and Leonard") },
+            { "437827", ("Titian", "Venus and the Lute Player") },
+            { "437828", ("Titian", "Alfonso d'Este (1486–1534), Duke of Ferrara") },
+            { "437889", ("Paolo Veronese (Paolo Caliari)", "Alessandro Vittoria (1525–1608)") },
+            { "437890", ("Paolo Veronese (Paolo Caliari)", "Boy with a Greyhound") },
+            { "437172", ("Bartolomé Estebán Murillo", "The Crucifixion") },
+            { "437173", ("Bartolomé Estebán Murillo", "Don Andrés de Andrade y la Cal") },
+            { "437872", ("Velázquez", "Mariana of Austria (1634–1696), Queen of Spain") },
+            { "437875", ("Velázquez", "Portrait of a Man") },
+            { "437776", ("David Teniers the Younger", "The Good Samaritan") },
+            { "437777", ("David Teniers the Younger", "Guardroom with the Deliverance of Saint Peter") },
+            { "437070", ("Gabriël Metsu", "A Musical Party") },
+            { "437071", ("Gabriël Metsu", "The Visit to the Nursery") },
+            { "437339", ("Pierre Paul Prud'hon", "Andromache and Astyanax") },
+            { "437340", ("Pierre Paul Prud'hon", "Charles Maurice de Talleyrand Périgord (1754–1838), Prince de Talleyrand") },
+            { "437886", ("Joseph Vernet", "Harbor Scene with a Grotto and Fishermen Hauling in Nets") },
+            { "437846", ("Constant Troyon", "Going to Market") },
+            { "437847", ("Constant Troyon", "Road in the Woods") },
+            { "437049", ("Ernest Meissonier", "The Card Players") },
+            { "437050", ("Ernest Meissonier", "Soldier Playing the Theorbo") }
+        };
+
+        /// <summary>
+        /// Each canvas in the saloon becomes readable: look at it and the picture fills the left of the screen,
+        /// the painter, the title and Aronnax's words beside it (GUM: "see the painting next to our message").
+        /// Works on the Blender art, where every canvas is its own sub-mesh with an M_Paint_&lt;id&gt; material.
+        /// </summary>
+        static void PaintingPlaques(Transform ship)
+        {
+            int n = 0;
+            foreach (var mr in ship.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                var mf = mr.GetComponent<MeshFilter>(); if (mf == null || mf.sharedMesh == null) continue;
+                var mats = mr.sharedMaterials; var mesh = mf.sharedMesh;
+                for (int i = 0; i < mats.Length && i < mesh.subMeshCount; i++)
+                {
+                    var m = mats[i]; if (m == null || !m.name.StartsWith("M_Paint_")) continue;
+                    string id = m.name.Substring("M_Paint_".Length);
+                    var lb = mesh.GetSubMesh(i).bounds;
+                    var wc = mr.transform.TransformPoint(lb.center);
+                    var ws = Vector3.Scale(lb.size, mr.transform.lossyScale);
+                    ws = mr.transform.rotation * ws; ws = new Vector3(Mathf.Abs(ws.x), Mathf.Abs(ws.y), Mathf.Abs(ws.z));
+                    ws = Vector3.Max(ws + Vector3.one * 0.08f, new Vector3(0.25f, 0.25f, 0.25f));
+                    k_Paintings.TryGetValue(id, out var info);
+                    var r = Plaque(ship, "Painting " + id, ship.InverseTransformPoint(wc), ws, "Look at", "the painting",
+                        string.IsNullOrEmpty(info.artist) ? "A canvas" : info.artist,
+                        (string.IsNullOrEmpty(info.title) ? "" : info.title + "\n\n") +
+                        "\u201cSome thirty pictures by great masters, uniformly framed, separated by bright drapery, ornamented the walls, which were hung with tapestry of severe design.\u201d",
+                        "Twenty Thousand Leagues, I.XI");
+                    r.image = m.GetTexture("_BaseMap");
+                    n++;
+                }
+            }
+            Notes.Add($"Paintings: {n} canvases readable, each shown large beside its words.");
         }
 
         /// <summary>Everything aboard that Aronnax examines in Part I, ch. IX–XI, with the book's words (Mercier translation).</summary>
@@ -705,15 +768,15 @@ namespace Verne.EditorTools
             switch (preset)
             {
                 case "Title":       // the Nautilus resting in blue twilight, sun shafts through the swell
-                    w.surfaceY = 24f; w.extinction = new Color(0.2f, 0.07f, 0.065f); w.scatterAlbedo = new Color(0.4f, 0.48f, 0.5f);
+                    w.surfaceY = 24f; w.extinction = new Color(0.2f, 0.07f, 0.065f); w.scatterAlbedo = new Color(0.25f, 0.42f, 0.52f);   // cold, from the browser build
                     w.kd = new Color(0.14f, 0.05f, 0.045f); w.surfaceAmbient = new Color(0.05f, 0.09f, 0.1f); w.sunShafts = 2.2f; w.forwardScatter = 0.65f; w.maxDistance = 60f; break;
                 case "Mission1":    // Crespo: five fathoms, clear and vibrant near the surface, darker down the slope
                     // tuned with Source/tools/preview_water_mock.py (Source/previews/m3_water_mock_Mission1.png): grey-green luminous fog,
                     // stems as silhouettes, red kept at five fathoms (Kd red 0.12) so the sand stays warm where the sun lands
-                    w.surfaceY = 9f; w.extinction = new Color(0.16f, 0.06f, 0.056f); w.scatterAlbedo = new Color(0.42f, 0.5f, 0.52f);
+                    w.surfaceY = 9f; w.extinction = new Color(0.106f, 0.067f, 0.061f); w.scatterAlbedo = new Color(0.25f, 0.46f, 0.57f);   // the browser build's σa+σs, σs/σt (GUM: "INSIDE, not Subnautica")
                     w.kd = new Color(0.12f, 0.045f, 0.04f); w.surfaceAmbient = new Color(0.06f, 0.11f, 0.12f); w.sunShafts = 2.5f; w.forwardScatter = 0.65f; w.maxDistance = 50f; break;
                 case "Mission2":    // 150 fathoms at midnight: no daylight; the volcano's red glow is the only light (art-directed so red carries)
-                    w.surfaceY = 274f; w.extinction = new Color(0.010f, 0.018f, 0.024f); w.scatterAlbedo = new Color(0.9f, 0.7f, 0.6f);
+                    w.surfaceY = 274f; w.extinction = new Color(0.012f, 0.014f, 0.016f); w.scatterAlbedo = new Color(0.28f, 0.35f, 0.40f);   // cold scatter: warm albedo made the whole night an orange-brown haze
                     w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 90f; w.heroGain = 1500f; w.forwardScatter = 0.45f; break;   // the city 100-200 m off must still read from the summit
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
@@ -1080,8 +1143,8 @@ namespace Verne.EditorTools
         {
             var s = NewScene("Mission1");
             // shallows at ~9 m: bright, green-blue far field (M3 replaces fog with the physical water model)
-            Ambient(new Color(0.16f, 0.34f, 0.36f), new Color(0.07f, 0.17f, 0.19f), new Color(0.03f, 0.06f, 0.07f));
-            Fog(true, new Color(0.10f, 0.33f, 0.36f), 0.022f);
+            Ambient(new Color(0.07f, 0.15f, 0.17f), new Color(0.03f, 0.07f, 0.08f), new Color(0.01f, 0.02f, 0.025f));
+            Fog(true, new Color(0.03f, 0.09f, 0.10f), 0.03f);
             var sun = Sun("Sun (refracted)", new Vector3(58, 200, 0), new Color(0.9f, 0.97f, 0.92f), 1.8f);   // from ahead along the route: shafts and silhouettes
             Caustics(sun, 7f);
             var root = new GameObject("Crespo").transform;
@@ -1178,7 +1241,7 @@ namespace Verne.EditorTools
             var s = NewScene("Mission2");
             // midnight at 150 fathoms; the only light is the volcano's red glow, two miles off
             Ambient(new Color(0.02f, 0.02f, 0.03f), new Color(0.015f, 0.01f, 0.012f), new Color(0.005f, 0.004f, 0.004f));
-            Fog(true, new Color(0.035f, 0.015f, 0.015f), 0.012f);   // fallback only; thin enough that the glow and the city still show from the summit
+            Fog(true, new Color(0.012f, 0.014f, 0.02f), 0.012f);   // fallback only; thin enough that the glow and the city still show from the summit
             var root = new GameObject("Atlantis approach").transform;
             // (M5, started in Part 3) the stony plain → the climb through the petrified copse → the crevice → the first platform →
             // the summit (z 150, 60 m up) → the far side falling sheer, twice the height, to the drowned city (II.IX)

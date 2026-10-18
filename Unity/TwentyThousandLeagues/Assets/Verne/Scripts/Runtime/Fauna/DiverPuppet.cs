@@ -19,7 +19,8 @@ namespace Verne
         public float speed;                       // set by the mover, m/s
         public float blend = 3f;
 
-        Transform m_Hips, m_Torso, m_Head, m_ShL, m_ShR, m_ElL, m_ElR, m_HipL, m_HipR, m_KnL, m_KnR;
+        Transform m_Hips, m_Torso, m_Head, m_ShL, m_ShR, m_ElL, m_ElR, m_HipL, m_HipR, m_KnL, m_KnR, m_AnL, m_AnR;
+        float m_AnW;
         Vector3 m_HipsRest;
         float m_Phase, m_T;
         // current joint angles (degrees about X unless noted) and root drop
@@ -30,6 +31,7 @@ namespace Verne
             m_Hips = Find("Hips"); m_Torso = Find("Torso"); m_Head = Find("Head");
             m_ShL = Find("Shoulder.L"); m_ShR = Find("Shoulder.R"); m_ElL = Find("Elbow.L"); m_ElR = Find("Elbow.R");
             m_HipL = Find("Hip.L"); m_HipR = Find("Hip.R"); m_KnL = Find("Knee.L"); m_KnR = Find("Knee.R");
+            m_AnL = Find("Ankle.L"); m_AnR = Find("Ankle.R");
             if (m_Hips != null) m_HipsRest = m_Hips.localPosition;
             m_Phase = Random.value * 6.28f;
         }
@@ -54,7 +56,8 @@ namespace Verne
             {
                 case Gesture.Walk:
                     tHipL = -24f * s * walk; tHipR = 24f * s * walk;
-                    tKnL = Mathf.Max(0f, 32f * -c) * walk; tKnR = Mathf.Max(0f, 32f * c) * walk;
+                    // a knee bends while its leg swings FORWARD (hip angle falling), straight while it bears weight
+                    tKnL = Mathf.Max(0f, 38f * c) * walk; tKnR = Mathf.Max(0f, -38f * c) * walk;
                     tShL = 14f * s * walk; tShR = -14f * s * walk;
                     tTorso = -6f * walk + 2f * Mathf.Abs(s);
                     tDrop = -0.035f * Mathf.Abs(s) * walk;
@@ -89,6 +92,9 @@ namespace Verne
             if (m_Hips != null) m_Hips.localPosition = m_HipsRest + Vector3.up * drop;
             Set(m_Torso, aTorso); Set(m_Head, aHead);
             Set(m_ShL, aShL); Set(m_ElL, aElL); Set(m_HipL, aHipL); Set(m_KnL, aKnL); Set(m_HipR, aHipR); Set(m_KnR, aKnR); Set(m_ElR, aElR);
+            // lead soles stay flat: the ankle undoes most of hip + knee (and lets the toe lift a little on the swing)
+            m_AnW = Mathf.Lerp(m_AnW, gesture == Gesture.Walk ? 0.85f : 0f, k);
+            Set(m_AnL, -(aHipL + aKnL) * m_AnW); Set(m_AnR, -(aHipR + aKnR) * m_AnW);
             if (m_ShR != null) m_ShR.localRotation = Quaternion.Euler(aShR, 0f, aShRz);
         }
 

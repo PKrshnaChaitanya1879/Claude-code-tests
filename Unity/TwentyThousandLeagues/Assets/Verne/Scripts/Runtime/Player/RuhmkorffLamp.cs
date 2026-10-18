@@ -12,7 +12,7 @@ namespace Verne
     /// </summary>
     public class RuhmkorffLamp : MonoBehaviour
     {
-        public float intensity = 6f, range = 18f, angle = 52f;
+        public float intensity = 9f, range = 18f, angle = 38f;
         Light m_Light;
         bool m_On;
         AudioClip m_Click;
@@ -28,8 +28,8 @@ namespace Verne
             go.transform.localPosition = new Vector3(0.12f, -0.55f, 0.18f);     // at the belt, a little to the right
             go.transform.localRotation = Quaternion.Euler(8f, 0f, 0f);
             m_Light = go.AddComponent<Light>();
-            m_Light.type = LightType.Spot; m_Light.range = range; m_Light.spotAngle = angle; m_Light.innerSpotAngle = angle * 0.55f;
-            m_Light.color = new Color(1f, 0.95f, 0.86f); m_Light.intensity = intensity;
+            m_Light.type = LightType.Spot; m_Light.range = range; m_Light.spotAngle = angle; m_Light.innerSpotAngle = angle * 0.72f;
+            m_Light.color = new Color(0.86f, 0.94f, 1f); m_Light.intensity = intensity;
             m_Light.shadows = LightShadows.None;    // one shadowed light per area: the sun keeps it
             m_Light.enabled = false;
             go.AddComponent<LampBounce>();          // the sand throws a little of the beam back (Playdead's bounce)

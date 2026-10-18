@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Verne
 {
@@ -13,6 +14,7 @@ namespace Verne
         Canvas m_Canvas;
         CanvasGroup m_Group;
         TextMeshProUGUI m_Title, m_Body, m_Sign, m_Hint;
+        RawImage m_Image; AspectRatioFitter m_Fit; RectTransform m_Col, m_Frame;
         bool m_Open;
         float m_OpenedAt;
 
@@ -36,7 +38,14 @@ namespace Verne
             var scrim = VerneUI.Panel(m_Canvas.transform, "Scrim", new Color(0.04f, 0.045f, 0.06f, 0.86f));
             var sr = scrim.rectTransform; sr.anchorMin = Vector2.zero; sr.anchorMax = Vector2.one; sr.offsetMin = sr.offsetMax = Vector2.zero;
 
+            // the picture, large, on the left; the words beside it (only when there is a picture)
+            m_Frame = VerneUI.Rect("Picture", m_Canvas.transform, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(140, 0), new Vector2(900, 900));
+            var img = VerneUI.Rect("Image", m_Frame, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            m_Image = img.gameObject.AddComponent<RawImage>();
+            m_Fit = img.gameObject.AddComponent<AspectRatioFitter>(); m_Fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            m_Frame.gameObject.SetActive(false);
             var col = VerneUI.Rect("Column", m_Canvas.transform, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(240, 0), new Vector2(1020, 820));
+            m_Col = col;
             m_Title = VerneUI.Text(col, "Title", "", 56, VerneUI.BoldFont, TextAlignmentOptions.TopLeft);
             Place(m_Title.rectTransform, 0, 90);
             VerneUI.Hairline(col, new Vector2(0, -104), 120, VerneUI.Accent);
@@ -56,9 +65,20 @@ namespace Verne
             r.anchoredPosition = new Vector2(0, -top); r.sizeDelta = new Vector2(0, height);
         }
 
-        public static void Show(string title, string body, string signature)
+        public static void Show(string title, string body, string signature) => Show(title, body, signature, null);
+
+        public static void Show(string title, string body, string signature, Texture image)
         {
             var c = Ensure();
+            bool pic = image != null;
+            c.m_Frame.gameObject.SetActive(pic);
+            if (pic)
+            {
+                c.m_Image.texture = image;
+                c.m_Fit.aspectRatio = image.height > 0 ? (float)image.width / image.height : 1f;   // the canvas' own proportions inside a 900 px box
+            }
+            c.m_Col.anchoredPosition = new Vector2(pic ? 1100 : 240, 0);
+            c.m_Col.sizeDelta = new Vector2(pic ? 700 : 1020, 820);
             c.m_Title.text = title ?? "";
             c.m_Body.text = body ?? "";
             c.m_Sign.text = string.IsNullOrEmpty(signature) ? "" : "— " + signature;
