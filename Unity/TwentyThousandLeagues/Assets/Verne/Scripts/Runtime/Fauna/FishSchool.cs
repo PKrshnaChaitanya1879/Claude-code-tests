@@ -30,10 +30,10 @@ namespace Verne
         // Solid things fish must never enter (GUM: "fishes are glitching through the submarine").
         // Every collider on the Hull layer becomes a capsule along its longest axis, gathered once per scene.
         struct Capsule { public Vector3 a, b; public float r; }
-        static Capsule[] s_Obstacles; static int s_ObstacleScene = -1;
+        static Capsule[] s_Obstacles; static string s_ObstacleScene;
         static void GatherObstacles()
         {
-            int sc = UnityEngine.SceneManagement.SceneManager.GetActiveScene().handle;
+            string sc = UnityEngine.SceneManagement.SceneManager.GetActiveScene().path;   // (a path: SceneHandle changed type in Unity 6.6)
             if (s_Obstacles != null && s_ObstacleScene == sc) return;
             s_ObstacleScene = sc;
             int hull = LayerMask.NameToLayer("Hull");
