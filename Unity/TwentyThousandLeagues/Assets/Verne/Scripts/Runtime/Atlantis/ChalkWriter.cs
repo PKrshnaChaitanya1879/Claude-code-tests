@@ -36,6 +36,7 @@ namespace Verne
         {
             var puppet = nemo != null ? nemo.GetComponent<DiverPuppet>() : null;
             if (nemo != null) nemo.hold = true;
+            Music.Play("atlantis", false, 0.85f, 6f);        // timed to the word, the city and the moon (Source/audio/score.py)
             if (puppet != null)
             {
                 var to = transform.position - puppet.transform.position; to.y = 0f;
@@ -56,9 +57,9 @@ namespace Verne
             Hud.Toast("ATLANTIS", 5f);
             yield return new WaitForSeconds(6f);
             Hud.Toast("“What a light shot through my mind! Atlantis, the ancient Meropis of Theopompus, the Atlantis of Plato.”", 7f);
-            yield return new WaitForSeconds(16f);
+            yield return new WaitForSeconds(34f);       // "We remained for an hour": the score's chorus over the city (35–72 s)
             Hud.Toast("“Captain Nemo remained motionless, as if petrified in mute ecstasy, leaning on a mossy stone.”", 6f);
-            yield return new WaitForSeconds(12f);
+            yield return new WaitForSeconds(25f);       // the moon arrives with the score's one major chord (74 s)
             // the moon's gleam
             Hud.Toast("“At this moment the moon appeared through the mass of waters and threw her pale rays on the buried continent. It was but a gleam, but what an indescribable effect!”", 9f);
             if (moon != null)

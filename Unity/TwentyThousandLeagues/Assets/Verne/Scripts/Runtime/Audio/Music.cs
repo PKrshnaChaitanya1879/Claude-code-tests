@@ -15,6 +15,7 @@ namespace Verne
         int m_Cur;
         float[] m_Target = new float[2];
         float m_Fade = 3f;
+        Organ m_Organ; bool m_OrganSearched;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -38,8 +39,11 @@ namespace Verne
 
         void ForScene(string scene)
         {
+            m_Organ = null; m_OrganSearched = false;
             if (scene == SceneFlow.Title) Play("title", true, 0.8f, 2f);
+            else if (scene == SceneFlow.Nautilus) Play("nautilus", true, 0.32f, 6f);        // under the hull's hum; the organ silences it
             else if (scene == SceneFlow.Mission1) Play("m1_wonder", true, 0.55f, 6f);
+            else if (scene == SceneFlow.Mission2) Play("night_walk", true, 0.6f, 10f);
             else Play(null, false, 0f, 3f);
         }
 
@@ -67,6 +71,8 @@ namespace Verne
         void Update()
         {
             float mv = GameSettings.Current != null ? GameSettings.Current.musicVolume : 0.7f;
+            if (!m_OrganSearched) { m_Organ = FindFirstObjectByType<Organ>(); m_OrganSearched = true; }
+            if (m_Organ != null && m_Organ.IsPlaying) mv = 0f;                              // Nemo's organ has the saloon
             for (int i = 0; i < 2; i++)
             {
                 var s = m_Src[i];

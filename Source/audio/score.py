@@ -215,6 +215,82 @@ def cue_burial():
     x = mix(x, bed(len(x) / SR, 73.42 / 2, 31, air=0.1, dark=1.3), -10.0)
     finish('burial', hall(x, room=0.95, wet=0.42, dark_db=-7.0), -22.0, loop=False, fade_in=2.0, fade_out=8.0)
 
-CUES = dict(title=cue_title, m1_wonder=cue_m1_wonder, burial=cue_burial)
+# --------------------------------------------------------------------------------------------- aboard
+def cue_nautilus():
+    """Aboard (~2:00, loops, quiet under the hull's hum): an elegant slow waltz, as Nemo's own house would have it:
+    clarinet and violin trading the motif in 3/4 over pizzicato-like harp and soft strings, celesta at the cadences."""
+    rng = np.random.default_rng(4); S = Song(84); bars = 48
+    harm = [[0, 7, 15], [-2, 5, 14], [-4, 3, 12], [-5, 2, 10], [0, 7, 15], [3, 10, 19], [-5, 2, 11], [0, 7, 12]]
+    for bar in range(bars):
+        c = harm[(bar // 2) % len(harm)]; b = bar * 3
+        S.note('cb', GM['contrabass'], b, 0.9, semis(c[0], 2), 54)
+        for k in (1, 2):
+            for s_ in c[1:]: S.note('harp', GM['harp'], b + k, 0.6, semis(s_, 4), 36)
+        if bar % 2 == 0:
+            for s_ in c: S.note('pad', GM['slow_strings'], b, 5.8, semis(s_, 3 if s_ == c[0] else 4), 36)
+    waltz = [(0, 1), (7, 2), (5, 1), (3, 1), (2, 1), (3, 2), (0, 1), (-2, 3)]
+    for start, inst, oct_ in ((12, 'clarinet', 4), (36, 'violin', 5), (72, 'clarinet', 4), (96, 'violin', 5)):
+        motif(S, inst, GM[inst], start, oct_, 60, waltz, stretch=1.0)
+    for b in (21, 45, 81, 105, 141):
+        S.note('cel', GM['celesta'], b, 2, semis(int(rng.choice([12, 14, 19])), 5), 30)
+    x = render(S, bars * 3 * 60 / S.bpm + 4)
+    x = mix(x, bed(len(x) / SR, 73.42, 41, air=0.1, dark=0.6), -16.0)
+    finish('nautilus', hall(x, room=0.7, wet=0.25, dark_db=-3.0), -24.0, loop=True)
+
+# --------------------------------------------------------------------------------------------- Mission II
+def cue_night_walk():
+    """The night walk to the volcano (~2:40, loops): mostly the drone (INSIDE); low strings ppp entering one by one,
+    a distant horn with the motif's first three notes, long silences; the red glow is a low swelling cluster."""
+    rng = np.random.default_rng(5); S = Song(40); L = 104
+    for k in range(14):
+        t0 = rng.uniform(0, L - 20); d = rng.uniform(10, 24)
+        p = semis(int(rng.choice([0, 1, 3, 7, 8, -2])), 2 if rng.random() < 0.4 else 3)
+        S.note('lo', GM['slow_strings'], t0, d, p, int(30 + rng.integers(0, 14)))
+    S.swell('lo', GM['slow_strings'], 0, 20, 30, 70); S.swell('lo', GM['slow_strings'], 70, L, 70, 40)
+    for b in (30, 78):
+        motif(S, 'hn', GM['french_horn'], b, 3, 34, NEMO[:3], stretch=2.5)
+        S.swell('hn', GM['french_horn'], b, b + 3, 30, 75, steps=12); S.swell('hn', GM['french_horn'], b + 6, b + 10, 75, 30, steps=12)   # far off, never a blast
+    for b in np.arange(10, L, 9.0):
+        if rng.random() < 0.35: S.note('trem', GM['tremolo'], b, 6, semis(int(rng.choice([13, 15, 20])), 4), 26)
+    x = render(S, L * 60 / S.bpm + 4)
+    x = mix(x, bed(len(x) / SR, 73.42 / 2, 51, air=0.15, dark=1.4), -4.0)
+    finish('night_walk', hall(x, room=0.97, wet=0.45, dark_db=-9.0), -25.0, loop=True)
+
+def cue_atlantis():
+    """The summit (~1:40, one shot, timed to ChalkWriter): tremolo strings rising from the drone as the word is
+    traced, the choir and horns stating Nemo's motif in full over the city, a held D major chord (the only one in
+    the score) for the moon's gleam, and the descent."""
+    S = Song(52)
+    for k, p in enumerate((semis(0, 2), semis(7, 3), semis(0, 4), semis(3, 4), semis(7, 4))):
+        S.note('trem', GM['tremolo'], k * 1.5, 30 - k * 1.5, p, 50)
+    S.swell('trem', GM['tremolo'], 0, 30, 20, 100)
+    for b, c in ((30, [0, 7, 15, 19]), (38, [-4, 3, 12, 15]), (46, [-2, 5, 14, 17]), (54, [-5, 2, 10, 14])):
+        for s_ in c:
+            S.note('choir', GM['choir'], b, 7.8, semis(s_, 3 if s_ == c[0] else 4), 62)
+            S.note('str', GM['strings'], b, 7.8, semis(s_, 3 if s_ == c[0] else 4), 66)
+        S.note('cb', GM['contrabass'], b, 7.8, semis(c[0], 2), 66)
+    motif(S, 'hn', GM['french_horn'], 30, 4, 84, stretch=3.4)
+    S.swell('str', GM['strings'], 30, 40, 45, 100); S.swell('choir', GM['choir'], 30, 42, 40, 100); S.swell('hn', GM['french_horn'], 30, 36, 50, 100)   # the city opens, it doesn't slam
+    motif(S, 'vln', GM['violin'], 46, 5, 74, stretch=2.0)
+    for s_ in (0, 6, 9, 12, 18):                     # the moon: D major, high and soft
+        S.note('moon', GM['slow_strings'], 64, 16, semis(s_, 4 if s_ < 12 else 5), 50)
+    S.note('cel', GM['celesta'], 64.5, 4, semis(18, 5), 40); S.note('cel', GM['celesta'], 68, 4, semis(21, 5), 34)
+    S.swell('moon', GM['slow_strings'], 64, 80, 90, 0)
+    x = render(S, 84 * 60 / S.bpm + 6)
+    x = mix(x, bed(len(x) / SR, 73.42 / 2, 61, air=0.1, dark=1.2), -12.0)
+    finish('atlantis', hall(x, room=0.95, wet=0.4, dark_db=-5.0), -20.0, loop=False, fade_in=1.0, fade_out=8.0)
+
+def cue_end():
+    """The end card (~0:45): the solo violin alone with the motif, then harp, the last note left open."""
+    S = Song(56)
+    b = motif(S, 'vln', GM['violin'], 1, 5, 66, stretch=1.8)
+    for k, d in enumerate([0, 4, 7, 9, 11, 14]):
+        S.note('harp', GM['harp'], b + k * 0.5, 4, deg(d, 3 if k < 3 else 4), 44)
+    S.note('pad', GM['slow_strings'], b, 10, semis(0, 3), 40); S.note('pad', GM['slow_strings'], b, 10, semis(7, 3), 36)
+    x = render(S, (b + 12) * 60 / S.bpm)
+    x = mix(x, bed(len(x) / SR, 73.42, 71, air=0.1), -14.0)
+    finish('end', hall(x, room=0.9, wet=0.38), -22.0, loop=False, fade_in=0.5, fade_out=6.0)
+
+CUES = dict(title=cue_title, m1_wonder=cue_m1_wonder, burial=cue_burial, nautilus=cue_nautilus, night_walk=cue_night_walk, atlantis=cue_atlantis, end=cue_end)
 if __name__ == '__main__':
     for name in (sys.argv[1:] or list(CUES)): CUES[name]()

@@ -22,6 +22,8 @@ namespace Verne
             m_Src.spatialBlend = 0.6f; m_Src.minDistance = 4f; m_Src.maxDistance = 40f; m_Src.volume = 0.9f;
         }
 
+        public bool IsPlaying => m_Src != null && m_Src.isPlaying;
+
         public override string Prompt => m_Src != null && m_Src.isPlaying ? "Lift your hands from the keys" : "Play the organ";
 
         protected override void OnBegin(Interactor who)
