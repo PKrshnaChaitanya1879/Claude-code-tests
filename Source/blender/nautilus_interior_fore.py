@@ -486,11 +486,49 @@ def mosaic_table(bm):
 obj_from('mosaic_table', mosaic_table, props={'col': 1}, smooth=40)
 
 def bust(bm, xc, yc, mi):
-    lathe(bm, [(0.0, 0.0), (0.24, 0.0), (0.24, 0.08), (0.18, 0.12), (0.15, 0.9), (0.2, 0.96), (0.22, 1.05), (0.0, 1.05)], 8, (xc, yc, 0), MI['ebony'])
-    # shoulders and chest
-    lathe(bm, [(0.0, 1.05), (0.17, 1.05), (0.24, 1.18), (0.22, 1.32), (0.12, 1.4), (0.06, 1.42), (0.0, 1.42)], 10, (xc, yc, 0), mi)
-    # neck and head
-    lathe(bm, [(0.0, 1.4), (0.055, 1.4), (0.06, 1.5), (0.1, 1.55), (0.11, 1.65), (0.1, 1.73), (0.06, 1.79), (0.0, 1.8)], 10, (xc, yc, 0), mi)
+    """A classical bust on a fluted pedestal (GUM: "fix the models and the vase"): square plinth, fluted shaft,
+    moulded capital; on it a socle and a sculpted head and shoulders, not a turned vase."""
+    F = (0.0, -1.0 if yc > 0 else 1.0)   # the bust looks into the room
+    box(bm, xc - 0.22, xc + 0.22, yc - 0.22, yc + 0.22, 0.0, 0.08, MI['ebony'])
+    box(bm, xc - 0.19, xc + 0.19, yc - 0.19, yc + 0.19, 0.08, 0.14, MI['ebony'])
+    prof = []
+    n = 20
+    for k in range(n):   # flutes: alternating radii round the shaft
+        pass
+    lathe(bm, [(0.15, 0.14), (0.14, 0.2), (0.125, 0.25), (0.115, 0.85), (0.13, 0.9), (0.16, 0.95), (0.0, 0.95)], 20, (xc, yc, 0), MI['ebony'])
+    for k in range(10):   # the flutes, as fine gilt fillets between them
+        a = 2 * math.pi * k / 10
+        fx, fy = xc + math.cos(a) * 0.118, yc + math.sin(a) * 0.118
+        box(bm, fx - 0.006, fx + 0.006, fy - 0.006, fy + 0.006, 0.27, 0.83, MI['gilt'])
+    box(bm, xc - 0.19, xc + 0.19, yc - 0.19, yc + 0.19, 0.95, 1.0, MI['ebony'])
+    box(bm, xc - 0.2, xc + 0.2, yc - 0.2, yc + 0.2, 1.0, 1.015, MI['gilt'])
+    # the socle and the bust
+    lathe(bm, [(0.0, 1.015), (0.09, 1.015), (0.08, 1.04), (0.06, 1.06), (0.07, 1.08), (0.0, 1.08)], 14, (xc, yc, 0), mi)
+    sub = bmesh.new()
+    bmesh.ops.create_uvsphere(sub, u_segments=18, v_segments=10, radius=1.0)
+    for v in sub.verts:   # shoulders and chest: a wide flattened half-ellipsoid, cut flat below, drapery folds
+        x, y, z = v.co
+        z = max(z, -0.05)
+        fold = 0.04 * math.sin(6 * math.atan2(y, x)) * (1 - z)
+        lx, ly = x * (0.14 + fold * 0.5), y * (0.25 + fold)          # deep along the gaze, wide across the shoulders
+        v.co = Vector((xc + lx * F[0] - ly * F[1], yc + lx * F[1] + ly * F[0], 1.08 + (z + 0.05) * 0.25))
+    merge_into(bm, sub, mi_map={0: mi})
+    sub = bmesh.new()   # neck
+    bmesh.ops.create_cone(sub, cap_ends=False, segments=12, radius1=0.068, radius2=0.06, depth=0.09)
+    for v in sub.verts: v.co = Vector((v.co.x + xc, v.co.y + yc, v.co.z + 1.31))
+    merge_into(bm, sub, mi_map={0: mi})
+    sub = bmesh.new()   # the head: brow, nose, chin, hair at the back
+    bmesh.ops.create_uvsphere(sub, u_segments=18, v_segments=12, radius=1.0)
+    for v in sub.verts:
+        x, y, z = v.co
+        r = 1.0
+        if x > 0.55 and abs(y) < 0.25 and -0.35 < z < 0.15: r += 0.18 * (1 - abs(y) / 0.25) * (1 - abs(z + 0.1) / 0.25)   # nose
+        if x > 0.6 and 0.15 < z < 0.4: r += 0.05                                                                     # brow
+        if z < -0.4 and x > 0.2: r -= 0.08                                                                            # jaw narrowing
+        if x < -0.2 and z > -0.2: r += 0.06                                                                           # hair mass behind
+        lx, ly = x * 0.1 * r, y * 0.088 * r
+        v.co = Vector((xc + lx * F[0] - ly * F[1], yc + lx * F[1] + ly * F[0], 1.45 + z * 0.115 * r))
+    merge_into(bm, sub, mi_map={0: mi})
 def busts(bm):
     bust(bm, 10.4, -2.75, MI['marble']); bust(bm, 10.4, 2.85, MI['bronze']); bust(bm, 19.3, -2.85, MI['marble'])
 obj_from('saloon_busts', busts, props={'col': 1}, smooth=50)

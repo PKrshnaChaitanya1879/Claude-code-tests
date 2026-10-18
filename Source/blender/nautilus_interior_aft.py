@@ -419,6 +419,14 @@ def robing(bm):
         box(bm, x - 0.01, x + 0.01, YS + 0.02, YS + 0.3, 1.9, 1.94, MI['brass'])
         hanging_dress(bm, x, YS + 0.3, (1, 0))
     box(bm, -12.89, -12.85, -2.7, 0.8, 1.92, 1.96, MI['brass'])
+    # GUM: "make the room look better". The fore row hangs in an oak wardrobe, as a gentleman's dressing-room:
+    # a panelled back, uprights between each pair of dresses, a moulded cornice, and the leaden boots in a row below
+    box(bm, -12.56, -12.52, -2.75, 0.82, 0.0, 2.3, MI['oak'])
+    for y in (-2.62, -1.755, -0.895, -0.035, 0.825):
+        box(bm, -13.25, -12.52, y - 0.025, y + 0.025, 0.0, 2.3, MI['oak'])
+    box(bm, -13.3, -12.52, -2.8, 0.87, 2.22, 2.3, MI['oak'])
+    box(bm, -13.33, -12.52, -2.83, 0.9, 2.3, 2.34, MI['ebony'])
+    box(bm, -13.25, -12.52, -2.75, 0.82, 0.0, 0.12, MI['ebony'])
     for k in range(8):
         y = -2.4 + k * 0.43
         hanging_dress(bm, -12.87, y, (0, 1))
