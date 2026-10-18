@@ -91,6 +91,11 @@ namespace Verne.EditorTools
                 }
             }
             foreach (var r in root.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            // a body: the visitor can't walk through a diver (no clipping), on Ignore Raycast so ground probes skip it
+            var cap = root.gameObject.AddComponent<CapsuleCollider>();
+            cap.radius = 0.32f; cap.height = 1.9f; cap.center = new Vector3(0, 0.95f, 0); cap.direction = 1;
+            var rb = root.gameObject.AddComponent<Rigidbody>(); rb.isKinematic = true; rb.useGravity = false;
+            root.gameObject.layer = 2;
             return root.gameObject.AddComponent<DiverPuppet>();
         }
     }

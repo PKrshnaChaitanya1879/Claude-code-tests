@@ -903,6 +903,24 @@ namespace Verne.EditorTools
         /// Hand-placed contact shadow / AO under a thing, as Playdead did ("no global illumination or even automated AO"):
         /// a URP decal projecting a soft dark blob straight down.
         /// </summary>
+        /// <summary>(M4) A NavMesh over the scene's colliders (sea floor, rocks, stems, the hull), saved as an asset with the scene.</summary>
+        static void BakeNavMesh(GameObject host, string key)
+        {
+            Physics.SyncTransforms();
+            var surf = host.AddComponent<Unity.AI.Navigation.NavMeshSurface>();
+            surf.collectObjects = Unity.AI.Navigation.CollectObjects.All;
+            surf.useGeometry = UnityEngine.AI.NavMeshCollectGeometry.PhysicsColliders;
+            surf.layerMask = ~((1 << 2) | (1 << ProjectSetup.InteractableLayer));
+            surf.minRegionArea = 4f;
+            surf.BuildNavMesh();
+            if (surf.navMeshData == null) { Notes.Add("NavMesh bake failed for " + key + ": divers walk straight legs."); return; }
+            string path = VerneBootstrap.Generated + "/NavMesh_" + key + ".asset";
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.AI.NavMeshData>(path) != null) AssetDatabase.DeleteAsset(path);
+            AssetDatabase.CreateAsset(surf.navMeshData, path);
+            var tri = UnityEngine.AI.NavMesh.CalculateTriangulation();
+            Notes.Add($"NavMesh {key}: {tri.indices.Length / 3} triangles.");
+        }
+
         static Material AoMaterial()
         {
             if (s_AoMat == null)
@@ -1047,6 +1065,10 @@ namespace Verne.EditorTools
             }
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             CrespoFauna(root);
+            // clearings for the burial's actors and the sea-spider, then the NavMesh, before any diver exists
+            foreach (var c in new[] { new Vector3(0, 0, 102.6f), new Vector3(0, 0, 104f), new Vector3(-1.6f, 0, 105.4f), new Vector3(1.0f, 0, 104.7f) }) CrespoFlora.ClearAround(c, 1.8f);
+            CrespoFlora.ClearAround(new Vector3(2.4f, 0, 62f), 1.5f);
+            BakeNavMesh(root.gameObject, "Mission1");
             // Captain Nemo leads, a crewman follows him (I.XV); the lamps are lit where the coral gallery darkens
             Vector3 G(float x, float z) => new Vector3(x, GroundAt(new Vector3(x, 0, z)), z);
             var nemo = Divers.Build(root, "Captain Nemo (diver)", G(0.6f, 5f), 0f, true, false, true);
@@ -1066,7 +1088,19 @@ namespace Verne.EditorTools
                 }
                 // the burial (I.XXIV): four bearers waiting in the glade with the body on their shoulders, the grave to be dug
                 var grave = G(0f, 104f);
-                foreach (var c in new[] { new Vector3(0, 0, 102.6f), grave, new Vector3(-1.6f, 0, 105.4f), new Vector3(1.0f, 0, 104.7f) }) CrespoFlora.ClearAround(c, 1.8f);
+                // Ned Land and Conseil walk with the Professor (I.XXIII: "Conseil hastened to accept it, and this time the Canadian seemed
+                // quite ready to follow us"); they kneel with the others at the grave
+                var companions = new List<DiverPuppet>();
+                var ned = Divers.Build(root, "Ned Land (diver)", G(-1.8f, -0.5f), 0f, true, false, false);
+                if (ned != null)
+                {
+                    var f = ned.gameObject.AddComponent<DiverFollower>(); f.slot = new Vector2(-1.7f, -2.2f); f.pace = 0.85f;
+                    f.firstLine = "Ned Land, for once, had come without grumbling: no harpoon, no complaint, only the copper helmet nodding at my side.";
+                    companions.Add(ned);
+                }
+                var conseil = Divers.Build(root, "Conseil (diver)", G(1.6f, -0.8f), 0f, true, false, false);
+                if (conseil != null) { var f = conseil.gameObject.AddComponent<DiverFollower>(); f.slot = new Vector2(1.5f, -1.6f); f.pace = 0.85f; companions.Add(conseil); }
+                foreach (var cpn in companions) { var cl = cpn.GetComponentInChildren<Light>(true); if (cl != null) cl.enabled = false; }   // lamps stay dark: URP's per-object light budget
                 var bearers = new List<DiverPuppet>();
                 foreach (var (bx, bz) in new[] { (-0.42f, 102.0f), (0.42f, 102.0f), (-0.42f, 103.2f), (0.42f, 103.2f) })
                 {
@@ -1078,8 +1112,15 @@ namespace Verne.EditorTools
                 rite.nemo = guide; rite.digger = crew; rite.bearers = bearers.ToArray(); rite.grave = grave;
                 rite.shroud = Divers.Shroud(root, G(0f, 102.6f) + Vector3.up * 1.72f);
                 rite.mound = CrespoFlora.Spawn("grave_mound", grave, 0f);
+                rite.companions = companions.ToArray();
+                // the bearers walk the whole way at the back of the party, the body on their shoulders (I.XXIV)
+                var proc = new GameObject("The bearers' procession (I.XXIV)").AddComponent<Procession>();
+                proc.transform.SetParent(root, false);
+                proc.transform.position = G(2.6f, 1.2f);
+                proc.bearers = bearers.ToArray(); proc.shroud = rite.shroud;
+                proc.waypoints = new[] { G(0.6f, 12f), G(0.2f, 30f), G(0.2f, 46f), G(0.4f, 70f), G(0.2f, 95f), G(0f, 99.5f), G(0f, 102.6f) };
+                rite.procession = proc;
                 // the sea-spider by the forest path (I.XVI), knocked over when the Captain passes
-                CrespoFlora.ClearAround(new Vector3(2.4f, 0, 62f), 1.5f);
                 var spider = Creatures.Spawn(root, "sea_spider", G(2.4f, 62f), 200f, 1f, true);
                 if (spider != null) spider.AddComponent<SeaSpider>().nemo = nemo.transform;
                 AoBlob(root, grave, 1.1f, 2.0f);   // the dark of the fresh grave
@@ -1114,6 +1155,7 @@ namespace Verne.EditorTools
             var sp = new Vector3(0, 0, 0);
             // Captain Nemo with his iron-pointed stick, no lamps ("They will be useless"), leading toward the red glow
             Vector3 G2(float x, float z) => new Vector3(x, GroundAt(new Vector3(x, 0, z)), z);
+            BakeNavMesh(root.gameObject, "Mission2");
             var nemo2 = Divers.Build(root, "Captain Nemo (diver)", G2(0.8f, 5f), 0f, false, true, false);
             if (nemo2 != null)
             {

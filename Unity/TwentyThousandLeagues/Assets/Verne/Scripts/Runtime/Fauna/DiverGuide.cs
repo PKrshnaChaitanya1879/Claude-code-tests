@@ -1,11 +1,14 @@
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace Verne
 {
     /// <summary>
     /// Captain Nemo leading the way (I.XV: "Captain Nemo walked in front, his companion followed some steps
     /// behind"): walks the route's waypoints at a heavy pace, keeps to the ground, waits and beckons when the
-    /// visitor falls behind, and stands at the last point. M4 replaces the straight legs with NavMesh paths.
+    /// visitor falls behind, and stands at the last point. (M4) On the scene's baked NavMesh it walks with a
+    /// NavMeshAgent, so it goes round rocks, stems and the visitor instead of through them; without a NavMesh it
+    /// falls back to straight legs.
     /// </summary>
     public class DiverGuide : MonoBehaviour
     {
@@ -26,7 +29,14 @@ namespace Verne
         public bool hold;
         float m_BeckonTimer;
 
-        void Start() { m_Puppet = GetComponent<DiverPuppet>(); }
+        NavMeshAgent m_Agent;
+        int m_SetFor = -1;
+
+        void Start()
+        {
+            m_Puppet = GetComponent<DiverPuppet>();
+            m_Agent = Agents.Attach(gameObject, pace);
+        }
 
         void Update()
         {
@@ -39,10 +49,12 @@ namespace Verne
             }
             var p = PlayerMotor.Instance;
             float d = p != null ? Vector3.Distance(p.transform.position, transform.position) : 0f;
-            if (hold) return;
+            if (hold) { if (m_Agent != null) m_Agent.isStopped = true; return; }
+            if (m_Done) { if (m_Agent != null) m_Agent.isStopped = true; }
             if (m_Done) { m_Puppet.gesture = DiverPuppet.Gesture.Idle; m_Puppet.speed = 0f; Face(p != null ? p.transform.position : transform.position + transform.forward); return; }
             if (!m_Waiting && d > waitDistance) m_Waiting = true;
             if (m_Waiting && d < resumeDistance) m_Waiting = false;
+            if (m_Agent != null) m_Agent.isStopped = m_Waiting;
             if (m_Waiting)
             {
                 m_Puppet.speed = 0f;
@@ -54,6 +66,22 @@ namespace Verne
             }
             var target = waypoints[m_I];
             var to = target - transform.position; to.y = 0f;
+            if (m_Agent != null)
+            {
+                if (m_SetFor != m_I) { m_Agent.SetDestination(target); m_SetFor = m_I; return; }
+                m_Agent.speed = pace;
+                bool there = !m_Agent.pathPending && (m_Agent.remainingDistance < 0.5f || to.magnitude < 0.5f);
+                if (there)
+                {
+                    m_I++;
+                    if (m_I >= waypoints.Length) { m_Done = true; if (!string.IsNullOrEmpty(arrivedLine)) Hud.Toast(arrivedLine, 5f); }
+                    return;
+                }
+                float v = m_Agent.velocity.magnitude;
+                m_Puppet.gesture = v > 0.05f ? DiverPuppet.Gesture.Walk : DiverPuppet.Gesture.Idle;
+                m_Puppet.speed = v;
+                return;
+            }
             if (to.magnitude < 0.4f)
             {
                 m_I++;
@@ -62,7 +90,7 @@ namespace Verne
             }
             var step = to.normalized * pace * Time.deltaTime;
             var pos = transform.position + step;
-            if (Physics.Raycast(pos + Vector3.up * 2f, Vector3.down, out var hit, 6f, ~0, QueryTriggerInteraction.Ignore)) pos.y = Mathf.Lerp(transform.position.y, hit.point.y, 0.2f);
+            if (Physics.Raycast(pos + Vector3.up * 2f, Vector3.down, out var hit, 6f, ~(1 << 2), QueryTriggerInteraction.Ignore)) pos.y = Mathf.Lerp(transform.position.y, hit.point.y, 0.2f);
             transform.position = pos;
             Face(transform.position + to);
             m_Puppet.gesture = DiverPuppet.Gesture.Walk;

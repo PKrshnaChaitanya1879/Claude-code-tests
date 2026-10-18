@@ -17,6 +17,10 @@ namespace Verne
         public DiverGuide nemo;
         public DiverPuppet digger;
         public DiverPuppet[] bearers;
+        [Tooltip("Ned Land and Conseil: they kneel with the others.")]
+        public DiverPuppet[] companions;
+        [Tooltip("The bearers walk from the Nautilus; the rite waits for them to reach the grave.")]
+        public Procession procession;
         public Transform shroud;
         public GameObject mound;          // hidden until the grave is filled
         public Vector3 grave;             // world position of the grave
@@ -41,6 +45,7 @@ namespace Verne
             if (p == null || nemo == null || !nemo.Arrived) return;
             var dg = digger != null ? digger.GetComponent<DiverGuide>() : null;
             if (dg != null && !dg.Arrived) return;      // the man with the pickaxe has reached the grave
+            if (procession != null && !procession.Arrived) return;   // and the bearers with the body
             if (Vector3.Distance(p.transform.position, grave) < startRadius) StartCoroutine(Rite());
         }
 
@@ -57,6 +62,14 @@ namespace Verne
             var nemoPuppet = nemo.GetComponent<DiverPuppet>();
             var diggerGuide = digger != null ? digger.GetComponent<DiverGuide>() : null;
             if (diggerGuide != null) diggerGuide.hold = true;
+            if (companions != null)
+                foreach (var c in companions)
+                {
+                    if (c == null) continue;
+                    var f = c.GetComponent<DiverFollower>(); if (f != null) f.hold = true;
+                    c.gesture = DiverPuppet.Gesture.Idle; c.speed = 0f;
+                    c.transform.rotation = Quaternion.LookRotation(Flat(grave - c.transform.position));
+                }
             StartCoroutine(Letterbox(true));
             Hud.Toast("“I understood all! This glade was a cemetery, this hole a tomb, this oblong object the body of the man who had died in the night!”", 6f);
             // the digging
@@ -112,6 +125,7 @@ namespace Verne
             if (n != null) yield return n;
             if (digger != null) yield return digger;
             if (bearers != null) foreach (var b in bearers) if (b != null) yield return b;
+            if (companions != null) foreach (var c in companions) if (c != null) yield return c;
         }
 
         static Vector3 Flat(Vector3 v) { v.y = 0f; return v.sqrMagnitude > 1e-4f ? v : Vector3.forward; }

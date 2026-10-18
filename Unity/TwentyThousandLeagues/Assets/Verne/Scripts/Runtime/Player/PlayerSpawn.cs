@@ -19,6 +19,12 @@ namespace Verne
         {
             if (PlayerMotor.Instance != null) return;
             var motor = Build(transform.position, transform.eulerAngles.y, mode, nearClip, farClip);
+            if (motor != null)
+            {
+                // the divers' NavMesh agents step round the visitor instead of into him
+                var ob = motor.gameObject.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+                ob.shape = UnityEngine.AI.NavMeshObstacleShape.Capsule; ob.radius = 0.4f; ob.height = 1.8f; ob.center = new Vector3(0, 0.9f, 0); ob.carving = false;
+            }
             if (motor != null && shadowMaterial != null)
             {
                 var ls = motor.gameObject.AddComponent<LampShadow>();
