@@ -28,13 +28,14 @@ M0 (toolchain, design bible, illustration catalogue, INSIDE notes) and M1 (the U
 - M3, the underwater rendering (INSIDE). Finish it.
 - Then M4, Mission I (the forest, the coral kingdom and the cemetery), including flora, fauna and the animated divers.
 
-## Part 4 · Mon 19 Oct, 02:40
-- M5, Mission II (the night walk, the volcano, Atlantis).
-- M6, sound and the original score.
+## Part 4 · Mon 19 Oct, 02:40  (REPLANNED after GUM's review, see FEEDBACK.md)
+- First, read `FEEDBACK.md` and every page of `reference/feedback/2026-10-18_GUM_review_of_unity_build.pdf`.
+- F1 (the INSIDE look in all four scenes, porting the browser prototype's grade and light), then F2 (all the bugs). Verify each with renders next to the PDF stills.
+- Target Unity 6000.6.2f1 (her editor). Her project folder is `C:\Users\fumbl\Fathom` and the scripts there live in `Assets/Verne/Code`, not `Scripts`.
 
 ## Part 5 · Mon 19 Oct, 07:40
-- M7 (interface and the engraving loading cards), M8 (optimisation, a 30 fps budget, collision and NavMesh audit) and M9 (polish).
-- A final review against `BRIEF.md`.
-- Then disable the scheduled task and tell GUM the build is finished.
+- F3 in order of what she sees first: the Nautilus rooms (saloon, library, dining room, engine room, galley, bathroom, cabins) to the book, then the divers, then seabed flora/fauna, then the Atlantis petrified trees.
+- F4: the Windows .exe path tested end to end.
+- Then the final review against `BRIEF.md` and `FEEDBACK.md`. Do NOT disable the scheduled task if FEEDBACK.md still has unticked items; tell GUM honestly what is left.
 
-**Priority in Part 5:** a complete game she can open matters more than polish. Leave nothing half-wired.
+**Priority:** what she complained about, before anything new.
