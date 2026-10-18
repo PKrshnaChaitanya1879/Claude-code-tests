@@ -1166,6 +1166,7 @@ namespace Verne.EditorTools
             var sp = new Vector3(0, 0, 0);
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
             LampShadows();
+            RouteAudit.Run("Mission I", root, new[] { G(0.3f, 6f), G(0.3f, 14f), G(0f, 30f), G(0f, 46f), G(0.2f, 70f), G(0f, 95f), G(-1.6f, 101f), G(-1.6f, 105.4f) });
             Water("Mission1");
             GlobalVolume("Mission1");
             Save(s, "Mission1");
@@ -1231,6 +1232,7 @@ namespace Verne.EditorTools
             fall.transform.SetParent(root, false);
             if (kit) AtlantisKit.Summit(root, nemo2 != null ? nemo2.GetComponent<DiverGuide>() : null);
             LampShadows();
+            RouteAudit.Run("Mission II", root, new[] { G2(0.5f, 6f), G2(0.5f, 20f), G2(0f, 45f), G2(0.5f, 70f), G2(0f, 93f), G2(0f, 111f), G2(0f, 118f), G2(0.4f, 128f), G2(-1.8f, 150.2f) });
             Water("Mission2", l);
             GlobalVolume("Mission2");
             Save(s, "Mission2");

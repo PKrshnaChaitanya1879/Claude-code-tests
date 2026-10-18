@@ -74,7 +74,7 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 
 ### M8 · Optimisation and robustness
 - [ ] LODs, static batching, GPU instancing, occlusion culling, baked lighting, texture compression.
-- [ ] Collision audit (scripted raycast sweeps) and NavMesh audit.
+- [~] Collision audit (scripted raycast sweeps) and NavMesh audit. *(Part 3: `RouteAudit` runs as each excursion is built and writes into the setup report: renderers above the ankle with no collider, a 0.35 m body tested every metre along the way, and complete NavMesh paths for the guide's legs. Results come with GUM's first `verne_setup_report.txt`; the Nautilus interior sweep remains.)*
 - [ ] `Docs/PERFORMANCE.md` with budgets and measured or estimated numbers.
 
 ### M9 · Polish
