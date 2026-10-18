@@ -24,7 +24,7 @@ namespace Verne.EditorTools
             new Spec { name = "Brass",       tex = "brass",     tint = new Color(0.78f, 0.60f, 0.34f), metal = 1.0f, smooth = 0.42f,  tile = 1f },
             new Spec { name = "Oak",         tex = "oak",       tint = new Color(0.95f, 0.85f, 0.75f), metal = 0f,   smooth = 0.35f, tile = 1f },
             new Spec { name = "Ebony",       tex = "ebony",     tint = new Color(0.55f, 0.48f, 0.55f), metal = 0f,   smooth = 0.38f, tile = 1f },
-            new Spec { name = "Carpet",      tex = "carpet",    tint = new Color(0.92f, 0.88f, 0.86f), metal = 0f,   smooth = 0.05f, tile = 1f },
+            new Spec { name = "Carpet",      tex = "carpet",    tint = new Color(0.92f, 0.88f, 0.86f), metal = 0f,   smooth = 0.05f, tile = 1.6f },
             new Spec { name = "Leather",     tex = "leather",   tint = new Color(0.95f, 0.9f, 0.85f), metal = 0f,   smooth = 0.4f,  tile = 1f },
             new Spec { name = "Marble",      tex = "marble",    tint = new Color(0.90f, 0.87f, 0.80f), metal = 0f,   smooth = 0.45f,  tile = 1f },
             new Spec { name = "Plaster",     tex = "plaster",   tint = new Color(0.86f, 0.83f, 0.78f), metal = 0f,   smooth = 0.15f, tile = 1f },
@@ -40,6 +40,7 @@ namespace Verne.EditorTools
             new Spec { name = "Glass",       tex = null,        tint = new Color(0.62f, 0.72f, 0.7f, 0.2f), metal = 0f, smooth = 0.85f, tile = 1f, transparent = true },
             new Spec { name = "LuminousCeiling", tex = "ceiling", tint = new Color(1f, 0.9f, 0.72f), metal = 0f, smooth = 0.1f, tile = 1f, emission = new Color(1.25f, 0.92f, 0.55f) },
             new Spec { name = "LampWhite",   tex = null,        tint = Color.white, metal = 0f, smooth = 0.5f, tile = 1f, emission = new Color(5.5f, 4.2f, 2.6f) },
+            new Spec { name = "BustMarble",  tex = "bust",      tint = new Color(1f, 0.97f, 0.9f), metal = 0f, smooth = 0.32f, tile = 1f },   // Poly Haven marble_bust_01 (CC0), its own UVs
             new Spec { name = "Linen",       tex = null,        tint = new Color(0.86f, 0.85f, 0.82f), metal = 0f, smooth = 0.1f, tile = 1f },
             new Spec { name = "CoralRed",    tex = null,        tint = new Color(0.78f, 0.12f, 0.10f), metal = 0f, smooth = 0.3f, tile = 1f },
             new Spec { name = "HullPlate",   tex = "hull",      tint = new Color(1f, 1f, 1f),          metal = 0.55f, smooth = 0.45f, tile = 1f },   // one riveted plate per UV tile (Source/tools/hull_plate_maps.py)

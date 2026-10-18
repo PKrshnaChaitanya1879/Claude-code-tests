@@ -522,7 +522,7 @@ def bust_sculpts():
         o = src.copy(); o.name = 'saloon_bust_sculpt_%d' % k
         coll('INT').objects.link(o)
         o.location = (xc, yc, 1.015)
-        o.rotation_euler = (0, 0, 0 if yc > 0 else math.pi)
+        o.rotation_euler = (0, 0, math.pi if yc > 0 else 0)
         o.scale = (1.15, 1.15, 1.15)
         o['keepuv'] = 1
     for o in new: bpy.data.objects.remove(o, do_unlink=True)

@@ -18,7 +18,7 @@ namespace Verne.EditorTools
         {
             ("M_ebony", "Ebony"), ("M_oak", "Oak"), ("M_carpet", "Carpet"), ("M_tapestry", "Tapestry"), ("M_plaster", "Plaster"),
             ("M_marble", "Marble"), ("M_brass", "Brass"), ("M_iron", "Iron"), ("M_ironpaint", "IronPaint"), ("M_leather", "Leather"),
-            ("M_ceiling", "LuminousCeiling"), ("M_linen", "Linen"), ("M_grate", "Iron"), ("M_glass", "Glass"),
+            ("M_ceiling", "LuminousCeiling"), ("M_bust", "BustMarble"), ("M_linen", "Linen"), ("M_grate", "Iron"), ("M_glass", "Glass"),
         };
 
         /// <summary>Imports one Blender block, swaps its flat colours for the project's textured CC0 materials and
