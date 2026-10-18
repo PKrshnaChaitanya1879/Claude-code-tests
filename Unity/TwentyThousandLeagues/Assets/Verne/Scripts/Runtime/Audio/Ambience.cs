@@ -70,7 +70,13 @@ namespace Verne
             // heard through the helmet: a low-pass on the listener while it is on
             if (m_Listener == null) { m_Listener = FindFirstObjectByType<AudioListener>(); m_Lp = m_Listener != null ? m_Listener.GetComponent<AudioLowPassFilter>() : null; }
             if (m_Listener != null && m_Lp == null) { m_Lp = m_Listener.gameObject.AddComponent<AudioLowPassFilter>(); m_Lp.cutoffFrequency = 22000f; }
-            if (m_Lp != null) m_Lp.cutoffFrequency = Mathf.MoveTowards(m_Lp.cutoffFrequency, HelmetView.On ? 2400f : 22000f, Time.unscaledDeltaTime * 30000f);
+            // depth: the deeper the dive, the darker the world sounds through the copper (9 m at Crespo, 274 m at Atlantis)
+            float depth = 0f;
+            var w = VerneWater.Active;
+            if (w != null && m_Listener != null) depth = Mathf.Max(0f, w.surfaceY - m_Listener.transform.position.y);
+            float helmetCut = Mathf.Lerp(2600f, 1500f, Mathf.Clamp01(depth / 300f));
+            if (m_Lp != null) m_Lp.cutoffFrequency = Mathf.MoveTowards(m_Lp.cutoffFrequency, HelmetView.On ? helmetCut : 22000f, Time.unscaledDeltaTime * 30000f);
+            m_Bed.pitch = m_Bed.clip == m_Water ? Mathf.Lerp(1f, 0.85f, Mathf.Clamp01(depth / 300f)) : 1f;   // the bed's rumble sinks with the pressure
         }
     }
 }
