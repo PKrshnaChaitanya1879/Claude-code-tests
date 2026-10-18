@@ -257,13 +257,19 @@ namespace Verne.EditorTools
         // ---------------------------------------------------------------- grades
         public static void VolumeProfiles()
         {
-            Grade("Title", exposure: 0.2f, contrast: 18f, saturation: -6f, bloom: 0.8f, vignette: 0.28f, tint: new Color(0.95f, 1.0f, 1.03f));
+            // underwater: split-toning keeps the shadows in the cold of the water and warms whatever the sun or a lamp reaches,
+            // so colour comes alive where the light is (GUM: INSIDE, but vibrant, not bleak)
+            Grade("Title", exposure: 0.2f, contrast: 18f, saturation: -6f, bloom: 0.8f, vignette: 0.28f, tint: new Color(0.95f, 1.0f, 1.03f),
+                  splitShadows: new Color(0.30f, 0.50f, 0.58f), splitHighlights: new Color(0.62f, 0.56f, 0.48f));
             Grade("Nautilus", exposure: 0.0f, contrast: 14f, saturation: 4f, bloom: 0.6f, vignette: 0.22f, tint: new Color(1.04f, 1.0f, 0.95f));
-            Grade("Mission1", exposure: 0.3f, contrast: 16f, saturation: 12f, bloom: 0.75f, vignette: 0.25f, tint: new Color(0.97f, 1.02f, 1.0f));
-            Grade("Mission2", exposure: 0.0f, contrast: 22f, saturation: 0f, bloom: 0.9f, vignette: 0.32f, tint: new Color(1.04f, 0.97f, 0.97f));
+            Grade("Mission1", exposure: 0.3f, contrast: 16f, saturation: 12f, bloom: 0.75f, vignette: 0.25f, tint: new Color(0.97f, 1.02f, 1.0f),
+                  splitShadows: new Color(0.28f, 0.52f, 0.56f), splitHighlights: new Color(0.70f, 0.58f, 0.44f));
+            Grade("Mission2", exposure: 0.0f, contrast: 22f, saturation: 0f, bloom: 0.9f, vignette: 0.32f, tint: new Color(1.04f, 0.97f, 0.97f),
+                  splitShadows: new Color(0.36f, 0.40f, 0.58f), splitHighlights: new Color(0.74f, 0.50f, 0.36f));
         }
 
-        public static VolumeProfile Grade(string scene, float exposure, float contrast, float saturation, float bloom, float vignette, Color tint)
+        public static VolumeProfile Grade(string scene, float exposure, float contrast, float saturation, float bloom, float vignette, Color tint,
+                                          Color splitShadows = default, Color splitHighlights = default)
         {
             string path = VerneBootstrap.Generated + "/Profiles/Grade_" + scene + ".asset";
             var old = AssetDatabase.LoadAssetAtPath<VolumeProfile>(path);
@@ -274,6 +280,10 @@ namespace Verne.EditorTools
             var tm = Add<Tonemapping>(p); tm.mode.Override(TonemappingMode.Neutral);
             var b = Add<Bloom>(p); b.threshold.Override(1.0f); b.intensity.Override(bloom); b.scatter.Override(0.65f); b.highQualityFiltering.Override(false);
             var ca = Add<ColorAdjustments>(p); ca.postExposure.Override(exposure); ca.contrast.Override(contrast); ca.saturation.Override(saturation); ca.colorFilter.Override(tint);
+            if (splitShadows.maxColorComponent > 0f)
+            {
+                var st = Add<SplitToning>(p); st.shadows.Override(splitShadows); st.highlights.Override(splitHighlights); st.balance.Override(-10f);
+            }
             var v = Add<Vignette>(p); v.intensity.Override(vignette); v.smoothness.Override(0.45f); v.color.Override(new Color(0.02f, 0.025f, 0.035f));
             AssetDatabase.SaveAssets();
             return p;

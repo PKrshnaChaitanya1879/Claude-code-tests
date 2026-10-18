@@ -35,14 +35,14 @@ namespace Verne.EditorTools
             s_Collect = true;
 
             // 1. the sandy plain (z 3–35)
-            Scatter(new[] { "sea_star_red", "sea_star_orange", "sea_star_violet" }, 46, -22, 22, 3, 36, 0.9f, 1.4f);
+            Scatter(new[] { "sea_star_red", "sea_star_orange", "sea_star_violet" }, 70, -22, 22, 3, 36, 1.0f, 1.6f);
             Scatter(new[] { "shells" }, 18, -20, 20, 3, 36, 0.9f, 1.3f);
             Scatter(new[] { "fungia" }, 12, -18, 18, 5, 36, 0.9f, 1.3f);
             Scatter(new[] { "anemone" }, 14, -18, 18, 5, 36, 0.8f, 1.5f, lane: 2.2f);
             Scatter(new[] { "cup_corals", "sponge" }, 14, -18, 18, 8, 40, 0.9f, 1.3f, lane: 2.2f);
             Scatter(new[] { "brain_coral", "brain_coral_teal" }, 6, -16, 16, 10, 40, 0.7f, 1.4f, lane: 2.5f);
             // 2. the prairie (z 28–46)
-            Scatter(new[] { "red_algae", "padina", "acetabularia" }, 70, -20, 20, 26, 48, 0.9f, 1.6f);
+            Scatter(new[] { "red_algae", "padina", "acetabularia" }, 110, -20, 20, 22, 48, 1.1f, 2.0f);   // the prairie in colour (look-dev: 70 small ones read bare)
             Scatter(new[] { "fucus" }, 14, -18, 18, 32, 50, 0.9f, 1.3f, lane: 2.2f);
             // 3. the forest (z 44–96): laminaries and alariae, a walkable lane kept clear down the middle
             Scatter(new[] { "laminaria_a", "laminaria_b" }, 130, -26, 26, 44, 96, 0.85f, 1.25f, lane: 2.2f);
@@ -92,8 +92,9 @@ namespace Verne.EditorTools
             foreach (var (go, name) in s_NeedCollider) if (go != null) AddCollider(go, name);
             s_NeedCollider.Clear();
             int living = Animate(s_Root);
+            int culled = CullByDistance(s_Root);
             s_Root.gameObject.AddComponent<VerneVisitors>();
-            VerneBootstrap.Note($"Mission I flora: {Placed} props from {s_Src.Count} Blender species; {living} sway or close their polyps (Verne/Flora).");
+            VerneBootstrap.Note($"Mission I flora: {Placed} props from {s_Src.Count} Blender species; {living} sway or close their polyps (Verne/Flora); {culled} fade out by distance (LODGroup), small things sooner.");
             return true;
         }
 
@@ -156,6 +157,28 @@ namespace Verne.EditorTools
                 n++;
             }
             AssetDatabase.SaveAssets();
+            return n;
+        }
+
+        /// <summary>
+        /// Every prop culls itself once it is too small to matter in the water (the fog has it by then): a stem at ~45 m,
+        /// a sea-star at ~12 m. Keeps the draw calls of the swaying (unbatched) forest inside the laptop budget.
+        /// </summary>
+        static int CullByDistance(Transform root)
+        {
+            int n = 0;
+            foreach (Transform t in root)
+            {
+                var mr = t.GetComponent<MeshRenderer>();
+                if (mr == null || t.name.StartsWith("gallery_vault") || t.name.StartsWith("coral_cross")) continue;
+                float size = Mathf.Max(mr.bounds.size.x, mr.bounds.size.y, mr.bounds.size.z);
+                float dist = Mathf.Clamp(10f + size * 9f, 12f, 48f);
+                var lg = t.gameObject.AddComponent<LODGroup>();
+                lg.SetLODs(new[] { new LOD(Mathf.Clamp(size / (1.155f * dist), 0.002f, 0.5f), new Renderer[] { mr }) });
+                lg.fadeMode = LODFadeMode.None;
+                lg.RecalculateBounds();
+                n++;
+            }
             return n;
         }
 

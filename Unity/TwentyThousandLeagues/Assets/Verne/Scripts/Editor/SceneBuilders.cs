@@ -1077,6 +1077,7 @@ namespace Verne.EditorTools
                 var guide = nemo.gameObject.AddComponent<DiverGuide>();
                 guide.waypoints = new[] { G(0.3f, 14f), G(0f, 30f), G(0f, 46f), G(0.2f, 70f), G(0f, 95f), G(-1.6f, 101f), G(-1.6f, 105.4f) };
                 guide.lamp = nemo.GetComponentInChildren<Light>(true); guide.lampOnAfterZ = 92f;
+                if (guide.lamp != null) guide.lamp.gameObject.AddComponent<LampBounce>();
                 guide.lampLine = "“The light from our lamps produced sometimes magical effects, following the rough outlines of the natural arches and pendants disposed like lustres.” (L: your lamp)";
                 guide.arrivedLine = "“Captain Nemo had stopped. We occupied, in this place, the centre of a vast glade surrounded by the lofty foliage of the submarine forest.”";
                 var crew = Divers.Build(root, "A crewman with a pickaxe (diver)", G(-1.4f, 3.5f), 0f, true, false, false, true);
@@ -1085,6 +1086,7 @@ namespace Verne.EditorTools
                     var g2 = crew.gameObject.AddComponent<DiverGuide>();
                     g2.waypoints = new[] { G(-1.1f, 12f), G(-0.9f, 28f), G(-0.9f, 44f), G(-1.0f, 68f), G(-1.0f, 93f), G(1.6f, 101f), G(1.0f, 104.7f) };
                     g2.lamp = crew.GetComponentInChildren<Light>(true); g2.lampOnAfterZ = 91f; g2.pace = 0.72f;
+                    if (g2.lamp != null) g2.lamp.gameObject.AddComponent<LampBounce>();
                 }
                 // the burial (I.XXIV): four bearers waiting in the glade with the body on their shoulders, the grave to be dug
                 var grave = G(0f, 104f);

@@ -32,6 +32,7 @@ namespace Verne
             m_Light.color = new Color(1f, 0.95f, 0.86f); m_Light.intensity = intensity;
             m_Light.shadows = LightShadows.None;    // one shadowed light per area: the sun keeps it
             m_Light.enabled = false;
+            go.AddComponent<LampBounce>();          // the sand throws a little of the beam back (Playdead's bounce)
             m_Click = Resources.Load<AudioClip>("VerneAudio/sfx/valve_squeak");
         }
 
