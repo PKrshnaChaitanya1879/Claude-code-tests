@@ -177,6 +177,7 @@ namespace Verne
                     d.mat = m_Mat; d.pass = 0; d.src = TextureHandle.nullHandle; d.history = TextureHandle.nullHandle; d.scatter = TextureHandle.nullHandle;
                     b.UseTexture(res.cameraDepthTexture);
                     if (res.mainShadowsTexture.IsValid()) b.UseTexture(res.mainShadowsTexture);
+                    b.UseAllGlobalTextures(true);     // the shader reads the depth and shadow-map globals: keep them bound and alive
                     b.SetRenderAttachment(raw, 0, AccessFlags.Write);
                     b.AllowPassCulling(false);
                     b.SetRenderFunc((PassData data, RasterGraphContext ctx) => Draw(ctx.cmd, data));
@@ -185,7 +186,7 @@ namespace Verne
                 using (var b = renderGraph.AddRasterRenderPass<PassData>("Verne water: temporal", out var d, profilingSampler))
                 {
                     d.mat = m_Mat; d.pass = 1; d.src = raw; d.history = prev; d.scatter = TextureHandle.nullHandle;
-                    b.UseTexture(raw); b.UseTexture(prev); b.UseTexture(res.cameraDepthTexture);
+                    b.UseTexture(raw); b.UseTexture(prev); b.UseTexture(res.cameraDepthTexture); b.UseAllGlobalTextures(true);
                     b.SetRenderAttachment(next, 0, AccessFlags.Write);
                     b.AllowPassCulling(false);
                     b.SetRenderFunc((PassData data, RasterGraphContext ctx) => Draw(ctx.cmd, data));
@@ -206,7 +207,7 @@ namespace Verne
                 using (var b = renderGraph.AddRasterRenderPass<PassData>("Verne water: composite", out var d, profilingSampler))
                 {
                     d.mat = m_Mat; d.pass = 2; d.src = copy; d.history = TextureHandle.nullHandle; d.scatter = next;
-                    b.UseTexture(copy); b.UseTexture(next); b.UseTexture(res.cameraDepthTexture);
+                    b.UseTexture(copy); b.UseTexture(next); b.UseTexture(res.cameraDepthTexture); b.UseAllGlobalTextures(true);
                     b.SetRenderAttachment(res.activeColorTexture, 0, AccessFlags.Write);
                     b.SetRenderFunc((PassData data, RasterGraphContext ctx) => Draw(ctx.cmd, data));
                 }

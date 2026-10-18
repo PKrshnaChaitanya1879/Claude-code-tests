@@ -35,3 +35,17 @@ Everything static is marked for static batching and occlusion. Expected draw cal
 ## Saloon window
 
 Fish and medusae are GPU-instanced: **6 draw calls** for 153 creatures, skipped entirely while the iron panels are shut.
+
+## Mission I (Part 3 additions)
+
+| Item | Count | Cost and how it is held down |
+|---|---|---|
+| Flora props | ≈ 700 placed (210 laminaries, 110 prairie tufts, 70 sea-stars, the coral kingdom) | Every prop has a one-level `LODGroup` that culls it by size: a 4 m ribbon at ~45 m, a sea-star at ~12 m (the water hides both by then). |
+| `Verne/Flora` props (weed that gives way, anemones, polyps) | ≈ 400 of the 700 | Not static-batched (the bend needs each prop's own origin), but SRP-Batcher compatible. Estimate in the forest lane after culling: 120–160 draws. |
+| Static flora and rocks | the rest + 60 rocks (80–320 triangles each) | Static batching. |
+| Laminaries | ≈ 320 triangles each, ≈ 67 k in all | Within the scene's ~150 k triangle budget. |
+| Lamp bounce lights (`LampBounce`) | at most 3 (Nemo, the crewman, the visitor) | Unshadowed point lights of 3 m range; off on Light. |
+| Lamp shadows (`LampShadow`) | 9 decals (divers and the visitor) | One URP decal each, AO material shared. |
+| Fallback shaft cards | 10 quads | Only drawn when the ray-march is not running. |
+
+Expected Mission I draw calls: ≈ 250–350 on Light (budget 500). M8 measures it.
