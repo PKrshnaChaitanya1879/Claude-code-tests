@@ -240,3 +240,4 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 - Done and seen in-game: everything listed in `MORNING_REPORT_2026-10-19.md`.
 - Her Fathom copy differs from the repo only in the folder name `Assets/Verne/Code` (repo: `Scripts`). Copy changed files across with that mapping.
 - **Next**: GUM's bug list first; then the Mission II grey haze (source not found, very faint); Mission I colour under the lamp; divers closer to the engravings; flora (Crespo forest) and the petrified forest of Atlantis; engine room's electro-magnets and levers per I.XIII.
+- 20:30 IST: gallery walls and arch legs fixed (audit clear at 105/106); Ruhmkorff lamp intensity restored. Next: coral density in the coral kingdom.

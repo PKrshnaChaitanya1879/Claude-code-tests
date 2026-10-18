@@ -34,9 +34,11 @@ five rounds instead of guessing. Run it yourself any time to see the same shots.
 - **Engine room**: the cog now turns by its teeth (40:16) and the machinery runs at a slow cruise you can see (Verne's 120 revolutions a second would only be a blur).
 - **Mission I**: deeper contrast; the near forest goes to silhouette and the light shafts carry the image; the Ruhmkorff lamps reach further, so colour comes back where they land.
 - **Mission II**: the faint fill light is now the volcano's ember (warm) instead of blue-grey.
-- **Coral gallery**: only its walls and roof collide now; please walk through it to the cemetery and tell me if anything still stops you.
+- **Coral gallery and arches**: you can walk through now. The route check finds the way clear at 105 of 106 one-metre steps; the last one is a single plant to step around.
+- **Ruhmkorff lamp**: a typo had left it at a fraction of its power. It now throws a warm-white pool that brings colour back where it lands (`Source/previews/tour/round6_mission1.jpg`).
 
 ## Honest list of what is still not right
+- **The coral kingdom** still reads mostly as kelp; the reds and purples of Verne's coral need more coral and less forest in that stretch.
 - **Mission II**: a faint grey haze in the middle of the dark at 150 fathoms; I haven't found its source yet.
 - **Mission I**: much closer to INSIDE (depth falls into darkness) but still hazier than INSIDE's underwater chapter, and the coral colours under the lamp need another pass. Check the frame `Logs/tour/Mission1_m1_coral.png`.
 - **Divers** are still simple low-poly figures; the gait is fixed but the bodies could be closer to the engravings.
