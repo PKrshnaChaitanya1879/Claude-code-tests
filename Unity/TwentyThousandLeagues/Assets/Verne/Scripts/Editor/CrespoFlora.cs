@@ -271,12 +271,15 @@ namespace Verne.EditorTools
                 case "coral_arch":
                 {
                     Object.DestroyImmediate(host);
-                    bool alongX = LongAxisIsX(name);
-                    foreach (float sx in new[] { -2.5f, 2.5f })
+                    // legs at the two feet of the arch in world metres (its mesh scale made local ±2.5 land in the way)
+                    bool spanX = b.size.x >= b.size.z;
+                    float half = (spanX ? b.extents.x : b.extents.z) - 0.55f;
+                    foreach (float sx in new[] { -half, half })
                     {
-                        var leg = new GameObject("leg"); leg.transform.SetParent(go.transform, false);
-                        leg.transform.localPosition = alongX ? new Vector3(sx, 0f, 0f) : new Vector3(0f, 0f, sx);
-                        var cc = leg.AddComponent<CapsuleCollider>(); cc.radius = 0.7f; cc.height = 3.2f; cc.center = new Vector3(0, 1.6f, 0); cc.direction = 1;
+                        var leg = new GameObject("leg"); leg.transform.SetParent(go.transform.parent, false);
+                        leg.transform.position = new Vector3(b.center.x + (spanX ? sx : 0f), b.min.y, b.center.z + (spanX ? 0f : sx));
+                        var cc = leg.AddComponent<CapsuleCollider>(); cc.radius = 0.45f; cc.height = 3.2f; cc.center = new Vector3(0, 1.6f, 0); cc.direction = 1;
+                        leg.layer = go.layer;
                     }
                     return;
                 }
@@ -296,26 +299,18 @@ namespace Verne.EditorTools
                 case "gallery_vault":
                 {
                     Object.DestroyImmediate(host);
-                    // the vault's walls and roof collide; whatever of it hangs or bulges into the walk (the route audit found it
-                    // across the way at z 95–105) does not: keep only triangles beside the 1.8 m lane or above head height
-                    var src = go.GetComponent<MeshFilter>().sharedMesh;
-                    var vs = src.vertices; var tri = src.triangles; var keepT = new List<int>();
-                    var sc = go.transform.lossyScale;
-                    // the lane runs along the vault's longest horizontal axis
-                    bool alongZ = src.bounds.size.z >= src.bounds.size.x;
-                    for (int t = 0; t < tri.Length; t += 3)
+                    // GUM's way runs through the gallery: the vault mesh is a few large triangles, so it can't be trimmed
+                    // into a lane. Two thin walls at its outer flanks (world bounds) keep you inside it; the inside is free.
+                    var wb = go.GetComponent<MeshRenderer>().bounds;
+                    for (int side = -1; side <= 1; side += 2)
                     {
-                        var c = (vs[tri[t]] + vs[tri[t + 1]] + vs[tri[t + 2]]) / 3f;
-                        float across = Mathf.Abs((alongZ ? c.x : c.z) - (alongZ ? src.bounds.center.x : src.bounds.center.z)) * (alongZ ? sc.x : sc.z);
-                        if (across > 0.9f || c.y * sc.y > 2.1f) { keepT.Add(tri[t]); keepT.Add(tri[t + 1]); keepT.Add(tri[t + 2]); }
+                        var w = new GameObject("gallery_wall_" + (side < 0 ? "port" : "stbd"));
+                        w.transform.SetParent(go.transform.parent, false);
+                        w.transform.position = new Vector3(side < 0 ? wb.min.x - 0.2f : wb.max.x + 0.2f, wb.center.y, wb.center.z);
+                        var wc = w.AddComponent<BoxCollider>(); wc.size = new Vector3(0.4f, wb.size.y, wb.size.z);
+                        w.layer = go.layer;
                     }
-                    var colMesh = new Mesh { name = "gallery_vault_walls" };
-                    colMesh.indexFormat = vs.Length > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
-                    colMesh.vertices = vs; colMesh.triangles = keepT.ToArray();
-                    string mp = VerneBootstrap.Generated + "/Meshes/gallery_vault_walls.asset";   // saved, so the scene keeps it
-                    if (AssetDatabase.LoadAssetAtPath<Mesh>(mp) != null) AssetDatabase.DeleteAsset(mp);
-                    AssetDatabase.CreateAsset(colMesh, mp);
-                    var mc = go.AddComponent<MeshCollider>(); mc.sharedMesh = colMesh;
+                    SceneBuilders.Notes.Add($"Coral gallery: walls at x {wb.min.x:0.0} and {wb.max.x:0.0}, z {wb.min.z:0} to {wb.max.z:0}; inside free.");
                     var r0 = go.GetComponent<MeshRenderer>(); if (r0 != null) r0.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
                     return;
                 }

@@ -29,7 +29,8 @@ namespace Verne
             go.transform.localRotation = Quaternion.Euler(8f, 0f, 0f);
             m_Light = go.AddComponent<Light>();
             m_Light.type = LightType.Spot; m_Light.range = range; m_Light.spotAngle = angle; m_Light.innerSpotAngle = angle * 0.72f;
-            m_Light.color = new Color(1f, 0.93f, 0.8f);   // "white and continuous", but a carbon-arc white, never LED blue m_Light.intensity = intensity;
+            m_Light.color = new Color(1f, 0.93f, 0.8f);   // "white and continuous", but a carbon-arc white, never LED blue
+            m_Light.intensity = intensity;
             m_Light.shadows = LightShadows.None;    // one shadowed light per area: the sun keeps it
             m_Light.enabled = false;
             go.AddComponent<LampBounce>();          // the sand throws a little of the beam back (Playdead's bounce)

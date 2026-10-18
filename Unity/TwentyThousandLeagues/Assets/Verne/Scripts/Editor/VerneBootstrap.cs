@@ -20,7 +20,7 @@ namespace Verne.EditorTools
         public const string Generated = "Assets/Verne/Generated";
         const string DoneMarker = "ProjectSettings/VerneBootstrap.done";
         const string ReportPath = "Logs/verne_setup_report.txt";
-        public const int Version = 15;   // bump to re-run the first-open build after an update
+        public const int Version = 18;   // bump to re-run the first-open build after an update
 
         static StringBuilder s_Report;
         static int s_Ok, s_Fail;
