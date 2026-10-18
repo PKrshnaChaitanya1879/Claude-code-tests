@@ -86,15 +86,36 @@ def blade(bm, base, a, w, h, n, mi, bend=0.0, twist=0.0):
         f = bm.faces.new([bm.verts.new(v) for v in q[::-1]]); f.material_index = mi
 
 # ------------------------------------------------------------ the forest of Crespo ("the region of perpendicularity")
-def laminaria(bm, h=4.4, seed=1):
-    """Laminaries: a rigid stipe rising straight to the surface's light, a crown of long blades at the top
-    (I.XVI: 'the stems ... rose perpendicularly'). These are the forest's trunks."""
+def ribbon(bm, base, a, w, h, n, mi, ruffle=0.05, lean=0.0, seed=0, out=None):
+    """A long crinkled ribbon rising straight up (im035): the edges ruffle in and out of the blade's plane."""
     r = random.Random(seed)
-    tube(bm, [(0, 0, 0), (0.03, 0, h * 0.5), (0, 0.03, h)], [0.11, 0.08, 0.05], 6, MI['kelp_dark'])
+    nrm = Vector((math.cos(a), math.sin(a), 0)); side0 = Vector((-math.sin(a), math.cos(a), 0))
+    ph = r.uniform(0, 6.28)
+    L, R_ = [], []
+    for i in range(n + 1):
+        t = i / n
+        o = Vector((base[0], base[1], 0)).normalized() if out is None and (base[0] or base[1]) else (out or nrm)
+        c = Vector(base) + o * lean * t * t + nrm * 0.05 * math.sin(t * 5 + ph) + Vector((0, 0, t * h))
+        ww = w * (0.35 + 0.65 * math.sin(min(1.0, t * 1.08) * math.pi) ** 0.6)
+        crinkle = ruffle * math.sin(i * 2.2 + ph)
+        L.append(c - side0 * ww + nrm * crinkle); R_.append(c + side0 * ww - nrm * crinkle * 0.6)
+    for i in range(n):
+        q = [L[i], R_[i], R_[i + 1], L[i + 1]]
+        f = bm.faces.new([bm.verts.new(v) for v in q]); f.material_index = mi
+        f = bm.faces.new([bm.verts.new(v) for v in q[::-1]]); f.material_index = mi
+
+def laminaria(bm, h=4.4, seed=1):
+    """Laminaries after im035 and I.XVI: broad crinkled ribbons rising from a holdfast straight to the light,
+    'kept as straight as a rod of iron' (the region of perpendicularity), fawn, olive and brown.
+    These are the forest's trunks."""
+    r = random.Random(seed)
     lathe(bm, [(0.0, 0.0), (0.3, 0.0), (0.16, 0.14), (0.09, 0.24)], 7, (0, 0, 0), MI['kelp_dark'])     # holdfast
-    for k in range(8):
-        a = k * 2.4 + r.uniform(-0.3, 0.3)
-        blade(bm, (0, 0, h * (0.5 + 0.06 * k)), a, 0.26, h * 0.42, 7, MI['kelp'], bend=0.6, twist=0.5)
+    tube(bm, [(0, 0, 0.1), (0, 0, 0.5)], [0.09, 0.07], 6, MI['kelp_dark'])                               # short stipe
+    for k in range(4):
+        a = k * 1.57 + r.uniform(-0.4, 0.4)
+        hh = h * r.uniform(0.75, 1.0)
+        ribbon(bm, (math.cos(a) * 0.15, math.sin(a) * 0.15, 0.45), a + math.pi / 2 + r.uniform(-0.5, 0.5), r.uniform(0.22, 0.32), hh, 16,
+               (MI['kelp'], MI['algae_brown'], MI['kelp_dark'])[k % 3], ruffle=0.11, lean=0.7, seed=seed * 10 + k)
 prop('laminaria_a', lambda bm: laminaria(bm, 4.4, 1), smooth=40)
 prop('laminaria_b', lambda bm: laminaria(bm, 3.4, 2), smooth=40)
 def alaria(bm, seed=3):

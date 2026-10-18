@@ -94,20 +94,21 @@ namespace Verne.EditorTools
             int living = Animate(s_Root);
             int culled = CullByDistance(s_Root);
             s_Root.gameObject.AddComponent<VerneVisitors>();
-            VerneBootstrap.Note($"Mission I flora: {Placed} props from {s_Src.Count} Blender species; {living} sway or close their polyps (Verne/Flora); {culled} fade out by distance (LODGroup), small things sooner.");
+            VerneBootstrap.Note($"Mission I flora: {Placed} props from {s_Src.Count} Blender species; {living} give way to a diver, sway or close their polyps (Verne/Flora); {culled} fade out by distance (LODGroup), small things sooner.");
             return true;
         }
 
-        // the swell in the weed and the polyps that close: (sway m at 1 m, height of full bend, period scale, polyp depth, wrap)
-        static readonly Dictionary<string, (float sway, float h, float speed, float polyp, float wrap)> s_Living =
-            new Dictionary<string, (float, float, float, float, float)>
+        // (sway m at 1 m, height of full bend, period scale, polyp depth, wrap, yield m). The forest of Crespo is motionless
+        // ("the region of perpendicularity", I.XVI): weed never sways, it only gives way to a diver and springs back.
+        static readonly Dictionary<string, (float sway, float h, float speed, float polyp, float wrap, float yield)> s_Living =
+            new Dictionary<string, (float, float, float, float, float, float)>
         {
-            { "M_kelp",        (0.05f, 3.0f, 0.8f, 0f,    0.35f) },   // Verne's laminaries are "rigid": a slow lean, no flutter
-            { "M_kelp_dark",   (0.05f, 3.0f, 0.8f, 0f,    0.35f) },
-            { "M_algae_red",   (0.20f, 0.8f, 1.1f, 0f,    0.45f) },   // the fronds of the prairie move most
-            { "M_algae_brown", (0.16f, 1.0f, 1.0f, 0f,    0.40f) },
-            { "M_anemone",     (0.14f, 0.3f, 1.3f, 0f,    0.30f) },
-            { "M_polyp",       (0f,    1.0f, 1.0f, 0.04f, 0.20f) },   // the white polyps on the "Flower of Blood"
+            { "M_kelp",        (0f,    3.0f, 1.0f, 0f,    0.35f, 0.45f) },
+            { "M_kelp_dark",   (0f,    3.0f, 1.0f, 0f,    0.35f, 0.45f) },
+            { "M_algae_red",   (0f,    0.6f, 1.0f, 0f,    0.45f, 0.25f) },
+            { "M_algae_brown", (0f,    1.2f, 1.0f, 0f,    0.40f, 0.35f) },
+            { "M_anemone",     (0.10f, 0.3f, 1.3f, 0f,    0.30f, 0f) },      // an animal: its crown moves of itself
+            { "M_polyp",       (0f,    1.0f, 1.0f, 0.04f, 0.20f, 0f) },      // the white polyps on the "Flower of Blood"
         };
         static readonly Dictionary<Material, Material> s_LivingCache = new Dictionary<Material, Material>();
 
@@ -140,12 +141,12 @@ namespace Verne.EditorTools
                         m.SetFloat("_Smoothness", src.HasProperty("_Smoothness") ? Mathf.Min(src.GetFloat("_Smoothness"), 0.5f) : 0.3f);
                         m.SetFloat("_Metallic", 0f);
                         m.SetFloat("_Sway", spec.sway); m.SetFloat("_SwayHeight", spec.h); m.SetFloat("_SwaySpeed", spec.speed);
-                        m.SetFloat("_Polyp", spec.polyp); m.SetFloat("_Wrap", spec.wrap);
+                        m.SetFloat("_Polyp", spec.polyp); m.SetFloat("_Wrap", spec.wrap); m.SetFloat("_Yield", spec.yield);
                         m.enableInstancing = true;
                         EditorUtility.SetDirty(m);
                         s_LivingCache[src] = m;
                     }
-                    mats[i] = m; any = true; sways |= spec.sway > 0f;
+                    mats[i] = m; any = true; sways |= spec.sway > 0f || spec.yield > 0f;
                 }
                 if (!any) continue;
                 mr.sharedMaterials = mats;

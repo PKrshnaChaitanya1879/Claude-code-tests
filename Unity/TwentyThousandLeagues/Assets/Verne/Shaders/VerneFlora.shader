@@ -1,6 +1,10 @@
 // Verne/Flora (M4): the living things of Crespo's forest and the coral kingdom, lit by URP's own PBR
 // (main light + its shadows and caustic cookie, the lamps as additional lights, SH ambient, fog), plus:
-//  - _Sway > 0: the swell moving through the weed. Height above the prop's own origin drives the bend, so the
+//  - _Yield > 0: Verne's forest of Crespo is MOTIONLESS ("Not a filament, not a ribbon ... but kept as straight as
+//    a rod of iron ... Motionless, yet when bent to one side by the hand, they directly resumed their former
+//    position", I.XVI). So the weed does not sway: it leans away from a diver brushing through it and springs
+//    straight again as he passes (the newest entries of _VerneVisitors only).
+//  - _Sway > 0: a slow swell, kept for the animals (the anemones' crowns). Height above the prop's own origin drives the bend, so the
 //    holdfast stays put and the fronds lean and recover; phase from the world position, two frequencies so a
 //    forest never moves in lockstep. Verne's laminaries are "rigid" ("the region of perpendicularity", I.XVI):
 //    the stems sway little, the fronds of algae and the anemones' crowns more.
@@ -22,6 +26,7 @@ Shader "Verne/Flora"
         _SwayHeight ("Height of full bend (m)", Float) = 2
         _SwaySpeed ("Swell period scale", Float) = 1
         _Polyp ("Polyp retract depth (m)", Float) = 0
+        _Yield ("Bend away from a diver (m at full height)", Float) = 0
         _Wrap ("Wrap lighting (translucent fronds)", Range(0, 1)) = 0.25
     }
 
@@ -33,7 +38,7 @@ Shader "Verne/Flora"
         half4 _BaseColor;
         half4 _EmissionColor;
         half _Metallic, _Smoothness, _Wrap;
-        float _Sway, _SwayHeight, _SwaySpeed, _Polyp;
+        float _Sway, _SwayHeight, _SwaySpeed, _Polyp, _Yield;
     CBUFFER_END
     TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
 
@@ -58,6 +63,24 @@ Shader "Verne/Flora"
             float2 off = (dir * (a + 0.25) + float2(-dir.y, dir.x) * c) * _Sway * s * bend;
             posWS.xz += off;
             posWS.y -= dot(off, off) / max(2.0 * h, 0.1);                                      // keep the frond's length
+        }
+        if (_Yield > 0)
+        {
+            float h = max(0.0, posWS.y - originWS.y);
+            float bend = pow(saturate(h / max(_SwayHeight, 0.05)), 1.5);
+            float2 push = 0;
+            [unroll] for (int i = 0; i < 8; i++)
+            {
+                float2 d = originWS.xz - _VerneVisitors[i].xz;
+                float r = length(d);
+                float fresh = 1.0 - saturate(_VerneVisitors[i].w * 4.0);          // springs back within ~1 s of the diver leaving
+                push += (d / max(r, 1e-3)) * smoothstep(1.3, 0.35, r) * fresh;
+            }
+            float m = length(push);
+            push = m > 1.0 ? push / m : push;
+            float2 off = push * _Yield * bend;
+            posWS.xz += off;
+            posWS.y -= dot(off, off) / max(2.0 * max(h, 0.1), 0.1);
         }
         if (_Polyp > 0)
         {
