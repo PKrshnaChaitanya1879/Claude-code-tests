@@ -12,11 +12,18 @@ namespace Verne
         public MoveMode mode = MoveMode.Air;
         public float nearClip = 0.05f;
         public float farClip = 400f;
+        [Tooltip("Underwater: the decal for the visitor's own lamp-following contact shadow (LampShadow).")]
+        public Material shadowMaterial;
 
         void Start()
         {
             if (PlayerMotor.Instance != null) return;
-            Build(transform.position, transform.eulerAngles.y, mode, nearClip, farClip);
+            var motor = Build(transform.position, transform.eulerAngles.y, mode, nearClip, farClip);
+            if (motor != null && shadowMaterial != null)
+            {
+                var ls = motor.gameObject.AddComponent<LampShadow>();
+                ls.material = shadowMaterial; ls.radius = 0.45f;
+            }
         }
 
         public static PlayerMotor Build(Vector3 pos, float yaw, MoveMode mode, float near = 0.05f, float far = 400f)

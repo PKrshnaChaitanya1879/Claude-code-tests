@@ -26,7 +26,15 @@ def variants(prog):
             sets.append([k for k in kws if k != '_'] + [None])
         # INSTANCING_ON is not checked: outside Unity's compiler the instancing macros don't expand
         # (a minimal URP-style instanced shader fails the same way), so only the plain variant is compiled.
-    return [list(filter(None, c)) for c in itertools.product(*sets)] if sets else [[]]
+    if not sets: return [[]]
+    n = 1
+    for st in sets: n *= len(st)
+    if n <= 64: return [list(filter(None, c)) for c in itertools.product(*sets)]
+    # too many to compile all (URP lit-style shaders): every keyword alone, plus the "all first" and "all last" combinations
+    out = [[]] + [[k] for st in sets for k in st if k]
+    out.append([st[0] for st in sets if st[0]])
+    out.append([[k for k in st if k][-1] for st in sets if any(st)])
+    return out
 
 ok = True
 for path in sys.argv[1:]:

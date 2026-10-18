@@ -683,6 +683,25 @@ namespace Verne.EditorTools
                     w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 60f; w.heroGain = 1500f; w.forwardScatter = 0.45f; break;
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
+            if (w.sunShafts > 0f)
+            {
+                // fallback shafts: only drawn while the ray-marched pass is not (unsupported GPU or feature off)
+                var sh = Shader.Find("Verne/ShaftCard");
+                if (sh != null)
+                {
+                    string path = VerneBootstrap.Generated + "/Materials/M_ShaftCard_" + preset + ".mat";
+                    var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+                    if (m == null) { m = new Material(sh); AssetDatabase.CreateAsset(m, path); }
+                    m.shader = sh;
+                    var c = w.surfaceAmbient * 6f; c.a = 1f;
+                    m.SetColor("_Color", c); m.SetFloat("_Intensity", 0.3f); m.enableInstancing = true;
+                    EditorUtility.SetDirty(m);
+                    var cards = new GameObject("Shaft cards (fallback)").AddComponent<ShaftCards>();
+                    cards.transform.SetParent(w.transform, false);
+                    cards.material = m;
+                }
+                else Notes.Add("Verne/ShaftCard shader missing: no fallback shafts.");
+            }
             return w;
         }
 
@@ -884,12 +903,12 @@ namespace Verne.EditorTools
         /// Hand-placed contact shadow / AO under a thing, as Playdead did ("no global illumination or even automated AO"):
         /// a URP decal projecting a soft dark blob straight down.
         /// </summary>
-        static void AoBlob(Transform parent, Vector3 worldPos, float w, float l, float yaw = 0f, float depth = 2f)
+        static Material AoMaterial()
         {
             if (s_AoMat == null)
             {
                 var sh = AssetDatabase.LoadAssetAtPath<Shader>("Packages/com.unity.render-pipelines.universal/Shaders/Decal.shadergraph");
-                if (sh == null) return;
+                if (sh == null) return null;
                 string path = VerneBootstrap.Generated + "/Materials/M_DecalAO.mat";
                 s_AoMat = AssetDatabase.LoadAssetAtPath<Material>(path);
                 if (s_AoMat == null) { s_AoMat = new Material(sh); AssetDatabase.CreateAsset(s_AoMat, path); }
@@ -897,6 +916,24 @@ namespace Verne.EditorTools
                 s_AoMat.enableInstancing = true;
                 EditorUtility.SetDirty(s_AoMat);
             }
+            return s_AoMat;
+        }
+
+        /// <summary>INSIDE's torch shadows: a decal at every diver's feet (and the visitor's) that swings away from the lamps.</summary>
+        static void LampShadows()
+        {
+            var m = AoMaterial();
+            if (m == null) { Notes.Add("Decal shader missing: no lamp shadows."); return; }
+            int n = 0;
+            foreach (var d in Object.FindObjectsByType<DiverPuppet>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            { var ls = d.gameObject.AddComponent<LampShadow>(); ls.material = m; n++; }
+            foreach (var sp in Object.FindObjectsByType<PlayerSpawn>(FindObjectsInactive.Include, FindObjectsSortMode.None)) { sp.shadowMaterial = m; n++; }
+            Notes.Add($"Lamp-following contact shadows on {n} bodies.");
+        }
+
+        static void AoBlob(Transform parent, Vector3 worldPos, float w, float l, float yaw = 0f, float depth = 2f)
+        {
+            if (AoMaterial() == null) return;
             var go = new GameObject("AO decal");
             go.transform.SetParent(parent, false);
             go.transform.position = worldPos;   // centred on the ground: reaches above and below it
@@ -1050,6 +1087,7 @@ namespace Verne.EditorTools
             else Notes.Add("Diver parts FBX missing: no divers in Mission I.");
             var sp = new Vector3(0, 0, 0);
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
+            LampShadows();
             Water("Mission1");
             GlobalVolume("Mission1");
             Save(s, "Mission1");
@@ -1093,6 +1131,7 @@ namespace Verne.EditorTools
                 Creatures.Spawn(root, i % 3 == 0 ? "lobster_giant" : "crab_giant", G2(cp.x, cp.z), side > 0 ? -90f + (float)rndC.NextDouble() * 40f : 90f - (float)rndC.NextDouble() * 40f, 0.9f + (float)rndC.NextDouble() * 0.5f);
             }
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
+            LampShadows();
             Water("Mission2", l);
             GlobalVolume("Mission2");
             Save(s, "Mission2");
