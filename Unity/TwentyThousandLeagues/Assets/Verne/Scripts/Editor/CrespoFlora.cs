@@ -91,8 +91,72 @@ namespace Verne.EditorTools
             s_Collect = false;
             foreach (var (go, name) in s_NeedCollider) if (go != null) AddCollider(go, name);
             s_NeedCollider.Clear();
-            VerneBootstrap.Note($"Mission I flora: {Placed} props from {s_Src.Count} Blender species.");
+            int living = Animate(s_Root);
+            s_Root.gameObject.AddComponent<VerneVisitors>();
+            VerneBootstrap.Note($"Mission I flora: {Placed} props from {s_Src.Count} Blender species; {living} sway or close their polyps (Verne/Flora).");
             return true;
+        }
+
+        // the swell in the weed and the polyps that close: (sway m at 1 m, height of full bend, period scale, polyp depth, wrap)
+        static readonly Dictionary<string, (float sway, float h, float speed, float polyp, float wrap)> s_Living =
+            new Dictionary<string, (float, float, float, float, float)>
+        {
+            { "M_kelp",        (0.05f, 3.0f, 0.8f, 0f,    0.35f) },   // Verne's laminaries are "rigid": a slow lean, no flutter
+            { "M_kelp_dark",   (0.05f, 3.0f, 0.8f, 0f,    0.35f) },
+            { "M_algae_red",   (0.20f, 0.8f, 1.1f, 0f,    0.45f) },   // the fronds of the prairie move most
+            { "M_algae_brown", (0.16f, 1.0f, 1.0f, 0f,    0.40f) },
+            { "M_anemone",     (0.14f, 0.3f, 1.3f, 0f,    0.30f) },
+            { "M_polyp",       (0f,    1.0f, 1.0f, 0.04f, 0.20f) },   // the white polyps on the "Flower of Blood"
+        };
+        static readonly Dictionary<Material, Material> s_LivingCache = new Dictionary<Material, Material>();
+
+        /// <summary>Moves the weed, the anemones and the coral's polyps onto Verne/Flora (they leave static batching: the sway needs each prop's origin).</summary>
+        static int Animate(Transform root)
+        {
+            var sh = Shader.Find("Verne/Flora");
+            if (sh == null) { VerneBootstrap.Note("Verne/Flora shader missing: the flora stays still."); return 0; }
+            s_LivingCache.Clear();
+            int n = 0;
+            foreach (var mr in root.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                var mats = mr.sharedMaterials;
+                bool any = false, sways = false;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    var src = mats[i];
+                    if (src == null) continue;
+                    string key = src.name.Replace(" (Instance)", "");
+                    if (!s_Living.TryGetValue(key, out var spec)) continue;
+                    if (!s_LivingCache.TryGetValue(src, out var m))
+                    {
+                        string path = VerneBootstrap.Generated + "/Materials/M_Flora_" + key.Substring(2) + ".mat";
+                        m = AssetDatabase.LoadAssetAtPath<Material>(path);
+                        if (m == null) { m = new Material(sh); AssetDatabase.CreateAsset(m, path); }
+                        m.shader = sh;
+                        Color c = src.HasProperty("_BaseColor") ? src.GetColor("_BaseColor") : (src.HasProperty("_Color") ? src.GetColor("_Color") : Color.grey);
+                        m.SetColor("_BaseColor", c);
+                        if (src.HasProperty("_BaseMap") && src.GetTexture("_BaseMap") != null) m.SetTexture("_BaseMap", src.GetTexture("_BaseMap"));
+                        m.SetFloat("_Smoothness", src.HasProperty("_Smoothness") ? Mathf.Min(src.GetFloat("_Smoothness"), 0.5f) : 0.3f);
+                        m.SetFloat("_Metallic", 0f);
+                        m.SetFloat("_Sway", spec.sway); m.SetFloat("_SwayHeight", spec.h); m.SetFloat("_SwaySpeed", spec.speed);
+                        m.SetFloat("_Polyp", spec.polyp); m.SetFloat("_Wrap", spec.wrap);
+                        m.enableInstancing = true;
+                        EditorUtility.SetDirty(m);
+                        s_LivingCache[src] = m;
+                    }
+                    mats[i] = m; any = true; sways |= spec.sway > 0f;
+                }
+                if (!any) continue;
+                mr.sharedMaterials = mats;
+                if (sways)
+                {
+                    var f = GameObjectUtility.GetStaticEditorFlags(mr.gameObject) & ~StaticEditorFlags.BatchingStatic;
+                    GameObjectUtility.SetStaticEditorFlags(mr.gameObject, f);
+                }
+                n++;
+            }
+            AssetDatabase.SaveAssets();
+            return n;
         }
 
         /// <summary>Whether the imported mesh is long along its local X (else Z): the FBX axis conversion decides, so we measure.</summary>

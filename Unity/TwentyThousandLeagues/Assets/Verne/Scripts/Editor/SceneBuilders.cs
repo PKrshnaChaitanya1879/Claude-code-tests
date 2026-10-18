@@ -920,11 +920,54 @@ namespace Verne.EditorTools
                 if (p.magnitude < 4f) continue;
                 var s = new Vector3(0.6f + (float)rnd.NextDouble() * 2.2f, 0.4f + (float)rnd.NextDouble() * 1.6f, 0.6f + (float)rnd.NextDouble() * 2.2f) * scale;
                 s = new Vector3(Mathf.Round(s.x * 2f) / 2f, Mathf.Round(s.y * 2f) / 2f, Mathf.Round(s.z * 2f) / 2f); // shared meshes
+                var art = RockArt(root, rnd, mat == "Rock" ? null : mat, scale);
+                if (art != null)
+                {
+                    // the Blender rock (Source/blender/seabed_rocks.py): base already sunk below 0, so it sits on the sand
+                    float yaw = (float)rnd.NextDouble() * 360f;
+                    art.transform.position = new Vector3(p.x, GroundAt(p), p.z);
+                    art.transform.rotation = Quaternion.Euler(0f, yaw, 0f) * art.transform.rotation;
+                    var b = art.GetComponent<MeshRenderer>().bounds;
+                    AoBlob(root, new Vector3(p.x, GroundAt(p), p.z), b.size.x * 1.35f, b.size.z * 1.35f, 0f);
+                    continue;
+                }
                 var go = Box("Rock " + i, root, p, s, mat, 1.2f, true, "rock");
                 go.transform.position = new Vector3(p.x, GroundAt(p) + s.y * 0.3f, p.z);
                 go.transform.rotation = Quaternion.Euler((float)rnd.NextDouble() * 20f, (float)rnd.NextDouble() * 360f, (float)rnd.NextDouble() * 20f);
                 AoBlob(root, new Vector3(p.x, GroundAt(p), p.z), s.x * 1.7f, s.z * 1.7f, go.transform.eulerAngles.y);
             }
+        }
+
+        static readonly string[] s_RockNames = { "rock_boulder_a", "rock_boulder_b", "rock_boulder_c", "rock_slab_a", "rock_slab_b", "rock_outcrop_a", "rock_outcrop_b", "rock_pebbles" };
+        static readonly float[] s_RockWeights = { 3, 3, 3, 2, 2, 1.2f, 1, 2 };
+
+        /// <summary>One faceted Blender rock (Models/Seabed/Seabed_Rocks.fbx), or null if the FBX is missing (then the greybox box).
+        /// <paramref name="overrideMat"/> repaints it (basalt for Atlantis); else it keeps its encrusted Blender materials.</summary>
+        static GameObject RockArt(Transform parent, System.Random rnd, string overrideMat, float scale)
+        {
+            var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(VerneBootstrap.Root + "/Models/Seabed/Seabed_Rocks.fbx");
+            if (fbx == null) return null;
+            float total = 0f; foreach (var w in s_RockWeights) total += w;
+            float pick = (float)rnd.NextDouble() * total; int k = 0;
+            for (; k < s_RockWeights.Length - 1; k++) { pick -= s_RockWeights[k]; if (pick <= 0f) break; }
+            Transform src = null;
+            foreach (var t in fbx.GetComponentsInChildren<Transform>(true)) if (t.name == s_RockNames[k]) { src = t; break; }
+            if (src == null || src.GetComponent<MeshFilter>() == null) return null;
+            var go = Object.Instantiate(src.gameObject, parent);
+            go.name = s_RockNames[k];
+            go.transform.localScale = Vector3.one * scale * (0.7f + (float)rnd.NextDouble() * 0.9f);
+            go.transform.rotation = src.rotation;
+            var mr = go.GetComponent<MeshRenderer>();
+            if (overrideMat != null)
+            {
+                var m = Materials.Get(overrideMat);
+                var arr = mr.sharedMaterials; for (int i = 0; i < arr.Length; i++) arr[i] = m; mr.sharedMaterials = arr;
+            }
+            var mc = go.AddComponent<MeshCollider>();
+            mc.sharedMesh = go.GetComponent<MeshFilter>().sharedMesh;   // 80–320 triangles: cheap and exact, so nothing walks into it
+            go.AddComponent<Surface>().kind = "rock";
+            GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic | StaticEditorFlags.OccluderStatic);
+            return go;
         }
 
         /// <summary>The book's "region of perpendicularity": rigid vertical stems (I.XVI).</summary>
