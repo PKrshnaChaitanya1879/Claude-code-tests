@@ -36,8 +36,13 @@ jobs:
         run: |
           $log = Join-Path $env:RUNNER_TEMP "selftest.txt"
           $p = Start-Process -FilePath "dist\Grvty\Grvty.exe" -ArgumentList "--selftest", "`"$log`"" -Wait -PassThru
-          if (Test-Path $log) { Get-Content $log }
-          if ($p.ExitCode -ne 0) { Write-Error "Self-test failed"; exit 1 }
+          $txt = if (Test-Path $log) { Get-Content $log -Raw } else { "no log written (exit code $($p.ExitCode))" }
+          Write-Output $txt
+          if ($p.ExitCode -ne 0) {
+            $one = ($txt -replace "`r", "" -replace "`n", " | ")
+            Write-Output "::error title=Self-test failed::$one"
+            exit 1
+          }
 
       - name: Pack the app into the installer
         run: python -c "import shutil; shutil.make_archive('installer/payload', 'zip', 'dist/Grvty')"
