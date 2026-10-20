@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grvty</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="ambient" id="ambient"></div>
+<div class="wash"></div>
+<div class="grainy"></div>
+
+<div class="app">
+  <header class="top">
+    <div class="brand glass">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><circle class="planet" cx="12" cy="15" r="8"/><g class="moon" id="moon"><circle cx="23" cy="5" r="3"/></g></svg>
+      <b>grvty</b>
+    </div>
+    <nav class="tabs glass liquid" id="tabs" aria-label="Views">
+      <span class="drop"></span>
+      <button data-view="looks" class="on"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Looks</button>
+      <button data-view="edit"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Edit</button>
+    </nav>
+    <div class="right">
+      <div class="mode glass" id="mode" role="radiogroup" aria-label="Theme">
+        <span class="drop"></span>
+        <button data-theme-pick="light" title="Cute" aria-label="Cute theme"><svg class="i" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></button>
+        <button data-theme-pick="dark" title="Dark" aria-label="Dark theme"><svg class="i" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
+      </div>
+      <button class="btn solid" id="btnExport" disabled><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Export</span></button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="stage" id="stage">
+      <!-- first run: no photos yet -->
+      <div class="empty" id="empty">
+        <div class="empty-card glass strong">
+          <svg class="orbit" viewBox="0 0 160 160" aria-hidden="true">
+            <circle class="ring" cx="80" cy="80" r="58"/>
+            <circle class="planet" cx="80" cy="80" r="26"/>
+            <g class="moonlet"><circle cx="121" cy="39" r="9"/></g>
+          </svg>
+          <h1>Drop your photos here</h1>
+          <p>RAW or JPEG, as many as you like. Everything stays on this laptop.</p>
+          <button class="btn solid big" id="btnAddEmpty"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Choose photos</button>
+        </div>
+      </div>
+
+      <div class="view looks" id="vLooks" hidden>
+        <form class="prompt glass strong" id="promptForm" autocomplete="off">
+          <svg class="i spark" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg>
+          <input id="promptIn" placeholder="Describe a look… moody black and white, warm sepia highlights" spellcheck="false">
+          <div class="seg" id="engineSeg"><span class="drop"></span><button type="button" class="on" data-v="preset">Preset</button><button type="button" data-v="ai" class="soon">AI</button></div>
+          <div class="seg count" id="countSeg"><span class="drop"></span><span class="lbl">Show</span><button type="button" data-n="4">4</button><button type="button" data-n="8">8</button><button type="button" class="on" data-n="12">12</button><button type="button" data-n="16">16</button></div>
+          <button class="btn solid" id="btnGrade" type="submit"><span class="lbl">Grade it</span><svg class="spin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><circle class="m" cx="20" cy="12" r="2"/></svg></button>
+        </form>
+        <div class="chips" id="chips"><span class="lbl">Try</span>
+          <button class="chip glass" data-p="moody black and white with crushed blacks and grain">Moody mono</button>
+          <button class="chip glass" data-p="sepia toned black and white, cool shadows, faded blacks">Sepia split</button>
+          <button class="chip glass" data-p="deep red low-key light, crushed blacks">Red room</button>
+          <button class="chip glass" data-p="warm golden hour, soft highlights, muted blues">Golden hour</button>
+          <button class="chip glass" data-p="faded film, lifted blacks, a little grain">Faded film</button>
+          <button class="chip glass" data-p="portrait, soft contrast, warm skin tones">Soft portrait</button>
+          <button class="chip glass" data-p="">Surprise me</button>
+        </div>
+        <div class="grid" id="grid"></div>
+      </div>
+
+      <div class="view edit" id="vEdit" hidden>
+        <div class="photo" id="photo">
+          <img id="after" alt="Photo being edited" draggable="false">
+          <img id="before" class="before" alt="" draggable="false">
+          <div class="split" id="split"><span class="tag l">Before</span><span class="tag r">After</span><span class="lens"><svg class="i" viewBox="0 0 24 24"><path d="M9 7l-5 5 5 5M15 7l5 5-5 5"/></svg></span></div>
+          <div class="busy" id="busy" hidden></div>
+        </div>
+        <div class="toolbar glass liquid">
+          <button id="btnCompare" class="on" title="Before / after"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v18M5 6h4v12H5zM15 6h4v12h-4z"/></svg><span>Before / after</span></button>
+          <span class="sep"></span>
+          <button id="btnUndo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg class="i" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+          <button id="btnRedo" title="Redo (Ctrl+Y)" aria-label="Redo"><svg class="i" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
+          <span class="sep"></span>
+          <button id="btnCopy" title="Copy this photo's look"><svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><span>Copy look</span></button>
+          <button id="btnPaste" title="Paste the copied look onto ticked photos" disabled><svg class="i" viewBox="0 0 24 24"><path d="M9 4h6v3H9zM8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></svg><span>Paste</span></button>
+          <span class="sep"></span>
+          <button id="btnReset" title="Reset everything"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>Reset</span></button>
+        </div>
+      </div>
+      <div class="drop-hint" id="dropHint" hidden><div class="glass strong">Drop to add photos</div></div>
+    </section>
+
+    <aside class="side glass" id="side">
+      <div id="sideLooks" class="pick" hidden>
+        <h3><span class="bubble-ico"><svg class="i" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span>Your pick</h3>
+        <div class="frame"><img id="pickImg" alt="Selected look"></div>
+        <div class="title" id="pickName">Pick a look</div>
+        <div class="tags" id="pickTags"></div>
+        <div class="hair"></div>
+        <div class="actions">
+          <button class="btn solid" id="btnMore"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg>More like this</button>
+          <button class="btn ghost" id="btnTune"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Fine-tune in Edit</button>
+          <button class="btn ghost" id="btnPreset"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/></svg>Save as Lightroom preset</button>
+          <button class="btn ghost" id="btnApply"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="13" height="13" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v11"/></svg><span id="applyLbl">Use on this photo</span></button>
+        </div>
+        <p class="note">Every look you use teaches Grvty a little more about your taste. Arrow keys move between looks; Enter opens one in Edit.</p>
+      </div>
+      <div id="sideEdit" class="edit-side" hidden></div>
+      <div id="sideEmpty" class="side-empty">
+        <h3><span class="bubble-ico"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg></span>How Grvty works</h3>
+        <ol class="steps">
+          <li><b>Add photos.</b> Drop RAW or JPEG files anywhere in this window.</li>
+          <li><b>Describe a look</b> or tap an idea, and choose how many versions to see.</li>
+          <li><b>Pick your favourite.</b> Ask for more like it, fine-tune it, or save it as a Lightroom preset.</li>
+          <li><b>Export</b> one photo or a whole batch with the same look.</li>
+        </ol>
+      </div>
+    </aside>
+  </main>
+
+  <div class="dockwrap">
+    <div class="dock glass liquid" id="dock">
+      <button class="add" id="btnAdd" aria-label="Add photos" title="Add photos"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      <div class="strip" id="strip"></div>
+      <div class="meta" id="dockMeta"><b>No photos yet</b>Add some to start</div>
+    </div>
+  </div>
+</div>
+
+<!-- export sheet -->
+<div class="veil" id="exportVeil" hidden>
+  <div class="sheet glass strong" role="dialog" aria-labelledby="exportTitle">
+    <h2 id="exportTitle">Export</h2>
+    <div class="field"><label>Which photos</label>
+      <div class="toggle" id="exportWhich"><span class="drop"></span><button data-v="current" class="on">This one</button><button data-v="ticked">Ticked <span id="tickCount">0</span></button><button data-v="all">All <span id="allCount">0</span></button></div>
+    </div>
+    <label class="check" id="sameLookRow"><input type="checkbox" id="exportSameLook"> Give them all this photo's look</label>
+    <div class="field"><label>Folder</label>
+      <div class="folder-row"><span id="exportFolder" class="mono">Pictures\Grvty</span><button class="btn ghost small" id="btnFolder">Change</button></div>
+    </div>
+    <div class="field"><label>Quality <span class="mono" id="qualityVal">95</span></label>
+      <div class="slider plain" id="qualitySlider"><span class="trk"></span><span class="fill"></span><span class="lens"></span></div>
+    </div>
+    <div class="progress" id="exportProgress" hidden><div class="bar"><span></span></div><div class="ptext"></div></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="btnExportClose">Close</button>
+      <button class="btn ghost" id="btnOpenFolder" hidden>Open folder</button>
+      <button class="btn solid" id="btnExportGo">Export</button>
+    </div>
+  </div>
+</div>
+
+<!-- preset sheet -->
+<div class="veil" id="presetVeil" hidden>
+  <form class="sheet glass strong" id="presetForm" role="dialog" aria-labelledby="presetTitle">
+    <h2 id="presetTitle">Save as Lightroom preset</h2>
+    <div class="field"><label for="presetName">Name</label><input class="text" id="presetName" maxlength="60" spellcheck="false"></div>
+    <p class="note">It goes into Lightroom's presets, in a group called Grvty. If Lightroom is open, restart it to see the new preset.</p>
+    <div class="sheet-actions">
+      <button class="btn ghost" type="button" id="btnPresetClose">Cancel</button>
+      <button class="btn solid" type="submit">Save preset</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast glass strong" id="toast" hidden></div>
+<input type="file" id="filePicker" multiple hidden>
+<script src="gsap.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

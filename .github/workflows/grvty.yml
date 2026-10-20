@@ -1,0 +1,66 @@
+name: Build Grvty for Windows
+
+on:
+  push:
+    branches: [grvty]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller==6.11.1
+
+      - name: Build the app
+        run: >
+          pyinstaller --noconfirm --clean --windowed --name Grvty
+          --icon assets/grvty.ico
+          --add-data "ui;ui" --add-data "VERSION;."
+          --collect-all rawpy --collect-all webview --collect-submodules clr_loader --hidden-import clr
+          app.py
+
+      - name: Self-test the packaged app
+        shell: pwsh
+        run: |
+          $log = Join-Path $env:RUNNER_TEMP "selftest.txt"
+          $p = Start-Process -FilePath "dist\Grvty\Grvty.exe" -ArgumentList "--selftest", "`"$log`"" -Wait -PassThru
+          if (Test-Path $log) { Get-Content $log }
+          if ($p.ExitCode -ne 0) { Write-Error "Self-test failed"; exit 1 }
+
+      - name: Pack the app into the installer
+        run: python -c "import shutil; shutil.make_archive('installer/payload', 'zip', 'dist/Grvty')"
+
+      - name: Build GrvtySetup.exe
+        run: >
+          pyinstaller --noconfirm --onefile --windowed --name GrvtySetup
+          --icon assets/grvty.ico --splash assets/splash.png
+          --add-data "installer/payload.zip;." --add-data "installer/ui;ui" --add-data "VERSION;."
+          --collect-all webview --collect-submodules clr_loader --hidden-import clr
+          installer/setup.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GrvtySetup
+          path: dist/GrvtySetup.exe
+
+      - name: Publish the download
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete grvty-latest --yes --cleanup-tag 2>$null
+          gh release create grvty-latest dist/GrvtySetup.exe --target grvty --prerelease `
+            --title "Grvty (latest build)" `
+            --notes "Download GrvtySetup.exe, double-click it and press Install."
