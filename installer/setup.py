@@ -45,7 +45,7 @@ def _shortcut_paths():
 class Api:
     def __init__(self, mode):
         self.mode = mode
-        self.window = None
+        self._window = None
         self.state = {"phase": "idle", "progress": 0.0, "message": "", "error": ""}
 
     # ---------- info for the page
@@ -152,12 +152,12 @@ class Api:
             # remove the uninstaller itself and the folder once this window has closed
             subprocess.Popen(f'cmd /c ping 127.0.0.1 -n 3 > nul & rmdir /s /q "{INSTALL_DIR}"',
                              creationflags=NO_WINDOW | 0x00000008, shell=False)
-        if self.window:
-            self.window.destroy()
+        if self._window:
+            self._window.destroy()
 
     def minimize(self):
-        if self.window:
-            self.window.minimize()
+        if self._window:
+            self._window.minimize()
 
 
 def main():
@@ -171,7 +171,7 @@ def main():
     api = Api(mode)
     win = webview.create_window("Grvty Setup", str(HERE / "ui" / "setup.html"), js_api=api, width=560, height=640,
                                 resizable=False, frameless=True, easy_drag=True, background_color="#F3E3EA")
-    api.window = win
+    api._window = win
     webview.start()
 
 

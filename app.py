@@ -9,19 +9,19 @@ class Bridge:
     """Things the window can ask Windows to do (file pickers etc.)."""
 
     def __init__(self):
-        self.window = None
+        self._window = None
 
     def pick_files(self):
         import webview
         from grvty.loader import SUPPORTED
         pats = ";".join(f"*{e}" for e in sorted(SUPPORTED))
-        res = self.window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=True,
+        res = self._window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=True,
                                              file_types=(f"Photos ({pats})", "All files (*.*)"))
         return list(res or [])
 
     def pick_folder(self):
         import webview
-        res = self.window.create_file_dialog(webview.FOLDER_DIALOG)
+        res = self._window.create_file_dialog(webview.FOLDER_DIALOG)
         return res[0] if res else None
 
     def open_folder(self, path):
@@ -84,7 +84,7 @@ def main():
     bridge = Bridge()
     win = webview.create_window("Grvty", url, js_api=bridge, width=1440, height=900,
                                 min_size=(1100, 720), background_color="#F3E3EA", text_select=False)
-    bridge.window = win
+    bridge._window = win
     webview.start(private_mode=False, storage_path=str(server.DATA_DIR / "webview"))
 
 
