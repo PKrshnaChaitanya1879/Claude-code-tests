@@ -27,6 +27,9 @@ DRAG_EDGE = 800
 THUMB_EDGE = 320
 
 
+KEEP_FULL = 4   # photos that keep their big previews in memory (most recently used)
+
+
 class Photo:
     def __init__(self, pid, path, name):
         self.id = pid
@@ -34,21 +37,35 @@ class Photo:
         self.name = name
         self.raw = loader.is_raw(path)
         self.lock = threading.Lock()
-        self.preview = None   # linear float, PREVIEW_EDGE
-        self.drag = None      # linear float, DRAG_EDGE
-        self.grid = None      # linear float, GRID_EDGE
+        self.preview = None   # linear float, PREVIEW_EDGE (only for recent photos)
+        self.drag = None      # linear float, DRAG_EDGE (only for recent photos)
+        self.grid = None      # linear float, GRID_EDGE (always kept; small)
+        self.cache = {"preview": {}, "drag": {}, "grid": {}}
         self.info = None
         self.size = None
 
-    def ensure(self):
+    def ensure(self, need="full"):
+        """need='grid' for thumbnails and look grids; 'full' for the editor."""
         with self.lock:
-            if self.preview is None:
+            if self.grid is None or (need == "full" and self.preview is None):
                 lin, _ = loader.load_linear(self.path, half=True)
                 self.size = (lin.shape[1] * (2 if self.raw else 1), lin.shape[0] * (2 if self.raw else 1))
-                self.preview = loader.resize_long(lin, PREVIEW_EDGE)
-                self.drag = loader.resize_long(self.preview, DRAG_EDGE)
-                self.grid = loader.resize_long(self.drag, GRID_EDGE)
+                prev = loader.resize_long(lin, PREVIEW_EDGE)
+                del lin
+                drag = loader.resize_long(prev, DRAG_EDGE)
+                if self.grid is None:
+                    self.grid = loader.resize_long(drag, GRID_EDGE)
+                if need == "full":
+                    self.preview, self.drag = prev, drag
+        if need == "full":
+            STATE.touch(self)
         return self
+
+    def drop_big(self):
+        with self.lock:
+            self.preview = self.drag = None
+            self.cache["preview"] = {}
+            self.cache["drag"] = {}
 
 
 def read_info(path):
@@ -107,6 +124,18 @@ class State:
         self.tmp = Path(tempfile.mkdtemp(prefix="grvty_"))
         self.loader_pool = ThreadPoolExecutor(max_workers=2)
         self.export_jobs = {}
+        self.recent = []
+        self.recent_lock = threading.Lock()
+
+    def touch(self, ph):
+        with self.recent_lock:
+            if ph.id in self.recent:
+                self.recent.remove(ph.id)
+            self.recent.append(ph.id)
+            while len(self.recent) > KEEP_FULL:
+                old = self.photos.get(self.recent.pop(0))
+                if old:
+                    old.drop_big()
 
     def add(self, path, name=None):
         path = Path(path)
@@ -114,7 +143,7 @@ class State:
         if pid not in self.photos:
             self.photos[pid] = Photo(pid, path, name or path.name)
             self.order.append(pid)
-            self.loader_pool.submit(self.photos[pid].ensure)
+            self.loader_pool.submit(self.photos[pid].ensure, "grid")
         return self.photos[pid]
 
 
@@ -162,11 +191,11 @@ class Handler(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length") or 0)
         return json.loads(self.rfile.read(n) or b"{}")
 
-    def _photo(self, pid):
+    def _photo(self, pid, need="full"):
         ph = STATE.photos.get(pid)
         if not ph:
             raise KeyError("photo not found")
-        return ph.ensure()
+        return ph.ensure(need)
 
     # ---------- routes
     def do_GET(self):
@@ -213,8 +242,8 @@ class Handler(BaseHTTPRequestHandler):
                                     for p in STATE.order])
         m = re.match(r"thumb/(\w+)$", route)
         if m:
-            ph = self._photo(m.group(1))
-            img = engine.render(loader.resize_long(ph.drag, THUMB_EDGE), {}, ph.raw)
+            ph = self._photo(m.group(1), "grid")
+            img = engine.render(loader.resize_long(ph.grid, THUMB_EDGE), {}, ph.raw)
             return self._send(200, loader.to_jpeg_bytes(img, 82), "image/jpeg")
         m = re.match(r"info/(\w+)$", route)
         if m:
@@ -227,7 +256,7 @@ class Handler(BaseHTTPRequestHandler):
         m = re.match(r"original/(\w+)$", route)
         if m:
             ph = self._photo(m.group(1))
-            img = engine.render(ph.preview, {}, ph.raw)
+            img = engine.render(ph.preview, {}, ph.raw, ph.cache["preview"])
             return self._send(200, loader.to_jpeg_bytes(img, 90), "image/jpeg")
         m = re.match(r"export/(\w+)$", route)
         if m:
@@ -271,11 +300,14 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, added)
         if route == "render":
             body = self._json()
-            ph = self._photo(body["id"])
-            size = body.get("size")
-            src = ph.grid if size == "grid" else ph.drag if (body.get("fast") or size == "drag") else ph.preview
-            img = engine.render(src, body.get("params", {}), ph.raw)
-            return self._send(200, loader.to_jpeg_bytes(img, 84 if src is not ph.preview else 92), "image/jpeg")
+            size = body.get("size") or ("drag" if body.get("fast") else "preview")
+            ph = self._photo(body["id"], "grid" if size == "grid" else "full")
+            src = {"grid": ph.grid, "drag": ph.drag, "preview": ph.preview}[size]
+            if src is None:  # evicted between ensure() and here: load again
+                ph = self._photo(body["id"], "full")
+                src = {"grid": ph.grid, "drag": ph.drag, "preview": ph.preview}[size]
+            img = engine.render(src, body.get("params", {}), ph.raw, ph.cache[size])
+            return self._send(200, loader.to_jpeg_bytes(img, 90 if size == "preview" else 84), "image/jpeg")
         if route == "looks":
             body = self._json()
             n = max(1, min(24, int(body.get("count", 12))))

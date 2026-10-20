@@ -206,6 +206,9 @@ def presence(x, p):
     return np.clip(x + (d * (0.35 + 0.65 * mid))[..., None], 0, 1).astype(np.float32)
 
 
+_SKIN = np.exp(-((np.arange(3601) / 10 - 28) / 18) ** 2).astype(np.float32)
+
+
 def vib_sat(x, p):
     vib, sat = p["vibrance"], p["saturation"]
     if not vib and not sat:
@@ -214,15 +217,12 @@ def vib_sat(x, p):
     chroma = x - y
     f = np.full(y.shape, 1 + sat / 100.0, dtype=np.float32)
     if vib:
-        r_, g_, b_ = x[..., 0], x[..., 1], x[..., 2]
-        s = (np.maximum(np.maximum(r_, g_), b_) - np.minimum(np.minimum(r_, g_), b_))[..., None]
-        w = 1 - np.clip(s, 0, 1)
-        w = w * np.sqrt(w)
+        hsv = cv2.cvtColor(np.clip(x, 0, 1), cv2.COLOR_RGB2HSV)
+        w = 1 - hsv[..., 1] * hsv[..., 2]          # 1 - (max - min): how unsaturated a pixel is
+        w = w * np.sqrt(np.maximum(w, 0))
         if vib > 0:  # protect skin tones (orange-ish hues)
-            hsv = cv2.cvtColor(np.clip(x, 0, 1), cv2.COLOR_RGB2HSV)
-            skin = apply_lut(hsv[..., 0], np.exp(-((np.arange(3601) / 10 - 28) / 18) ** 2).astype(np.float32), 360.0)[..., None]
-            w = w * (1 - 0.6 * skin)
-        f = f * (1 + vib / 100.0 * 1.2 * w)
+            w = w * (1 - 0.6 * apply_lut(hsv[..., 0], _SKIN, 360.0))
+        f = f * (1 + vib / 100.0 * 1.2 * w[..., None])
     return np.clip(y + chroma * f, 0, 1).astype(np.float32)
 
 
@@ -255,24 +255,35 @@ def black_white(x, p):
 
 
 def colour_grade(x, p):
+    """Colour grading depends only on each pixel's brightness, so build the
+    added colour and brightness gain as small tables over brightness, then look
+    every pixel up once."""
     g = p["grade"]
     zones = ("shadows", "midtones", "highlights", "global")
     if not any(g[z]["sat"] or g[z]["lum"] for z in zones):
         return x
-    y = luma(x)
+    n = 1024
+    yv = np.linspace(0, 1, n, dtype=np.float32)
     piv = 0.5 - 0.25 * g["balance"] / 100.0
     gam = 1.6 - 1.1 * g["blending"] / 100.0
-    ws = np.clip(1 - y / piv, 0, 1) ** gam
-    wh = np.clip((y - piv) / (1 - piv), 0, 1) ** gam
-    wm = np.clip(1 - ws - wh, 0, 1) * (1 - np.abs(y - piv) * 0.8)
-    W = np.stack([ws, wm, wh, np.ones_like(y)], -1)          # (H, W, 4)
-    vecs = np.stack([hue_vector(g[z]["hue"]) * (g[z]["sat"] / 100.0) * 0.45 for z in zones])
-    lums = np.array([g[z]["lum"] / 100.0 * 0.7 for z in zones], dtype=np.float32)
-    if any(g[z]["sat"] for z in zones):
-        x = x + W @ vecs.astype(np.float32)
-    if lums.any():
-        x = x * np.exp2(W @ lums)[..., None]
-    return np.clip(x, 0, 1).astype(np.float32)
+    ws = np.clip(1 - yv / piv, 0, 1) ** gam
+    wh = np.clip((yv - piv) / (1 - piv), 0, 1) ** gam
+    wm = np.clip(1 - ws - wh, 0, 1) * (1 - np.abs(yv - piv) * 0.8)
+    W = {"shadows": ws, "midtones": wm, "highlights": wh, "global": np.ones_like(yv)}
+    off = np.zeros((n, 3), dtype=np.float32)
+    lg = np.zeros(n, dtype=np.float32)
+    for z in zones:
+        if g[z]["sat"]:
+            off += W[z][:, None] * hue_vector(g[z]["hue"]) * (g[z]["sat"] / 100.0) * 0.45
+        if g[z]["lum"]:
+            lg += W[z] * g[z]["lum"] / 100.0 * 0.7
+    gain = np.exp2(lg).astype(np.float32)
+    iy = (np.clip(luma(x), 0, 1) * (n - 1) + 0.5).astype(np.int32)
+    out = x + off[iy]
+    if lg.any():
+        out *= gain[iy][..., None]
+    np.clip(out, 0, 1, out=out)
+    return out
 
 
 def vignette(x, p):
@@ -305,6 +316,9 @@ def _vignette_mask(h, w, mid, feather):
     return _VIG[key]
 
 
+_GRAIN = {}
+
+
 def grain(x, p, seed=7):
     amt = p["grain"]
     if not amt:
@@ -313,24 +327,77 @@ def grain(x, p, seed=7):
     # grain size is relative to the image, so preview and export match
     cell = (0.0006 + 0.0024 * p["grain_size"] / 100.0) * max(h, w)
     gh, gw = max(2, int(h / cell)), max(2, int(w / cell))
-    rng = np.random.default_rng(seed)
-    n = rng.standard_normal((gh, gw)).astype(np.float32)
-    n = cv2.resize(n, (w, h), interpolation=cv2.INTER_CUBIC)
+    key = (h, w, gh, gw, seed)
+    n = _GRAIN.get(key)
+    if n is None:  # the grain pattern only depends on size, so make it once
+        if len(_GRAIN) > 6:
+            _GRAIN.clear()
+        rng = np.random.default_rng(seed)
+        n = cv2.resize(rng.standard_normal((gh, gw)).astype(np.float32), (w, h), interpolation=cv2.INTER_CUBIC)
+        _GRAIN[key] = n
     y = luma(x)
     strength = amt / 100.0 * 0.075 * np.sqrt(np.clip(1 - np.abs(2 * y - 1), 0, 1) + 0.05)
     return np.clip(x + (n * strength)[..., None], 0, 1).astype(np.float32)
 
 
+# ---------------------------------------------------------------- cached stages
+
+Q_LEVELS = 65535
+
+
+def quantise(lin):
+    """Linear light as 16-bit steps over [0, PRE_HI]; made once per photo size."""
+    return np.minimum(lin * (Q_LEVELS / PRE_HI), Q_LEVELS).astype(np.uint16)
+
+
+def pre_stage(lin, q, temp, tint, ev, is_raw):
+    """White balance + exposure + linear->display in one lookup per channel."""
+    base = pre_lut(is_raw)
+    gains = np.ones(3, dtype=np.float32)
+    if temp or tint:
+        t, g = temp / 100.0, tint / 100.0
+        gains = np.array([2 ** (0.45 * t), 2 ** (-0.32 * g), 2 ** (-0.55 * t)], dtype=np.float32)
+        gains /= float(gains @ LUMA)
+    gains *= 2 ** ev
+    if q is None:
+        q = quantise(np.maximum(lin, 0))
+    xs = np.arange(Q_LEVELS + 1, dtype=np.float32) * (PRE_HI / Q_LEVELS)
+    bx = np.linspace(0, PRE_HI, len(base), dtype=np.float32)
+    out = np.empty(q.shape, dtype=np.float32)
+    for c in range(3):
+        lut = np.interp(np.minimum(xs * gains[c], PRE_HI), bx, base).astype(np.float32)
+        out[..., c] = lut[q[..., c]]
+    return out
+
+
 # ---------------------------------------------------------------- main
 
-def render(lin, params, is_raw=False):
+def render(lin, params, is_raw=False, cache=None):
+    """cache: optional dict kept with one photo at one size. It remembers the
+    quantised photo and the early stages, so dragging a later slider only
+    recomputes from that slider onwards."""
     p = merge(params)
-    x = white_balance(lin, p["temp"], p["tint"])
     ev = p["exposure"] + (RAW_BASELINE_EV if is_raw else 0)
-    if ev:
-        x = x * (2 ** ev)
-    x = apply_lut(np.maximum(x, 0), pre_lut(is_raw), PRE_HI)
-    x = tone_local(x, p)
+    pre_key = (p["temp"], p["tint"], ev, is_raw)
+    if cache is not None:
+        # entries are (key, array) pairs, swapped in one step, so renders running
+        # at the same time can never pick up each other's half-finished stages
+        q = cache.get("q")
+        if q is None:
+            q = cache["q"] = quantise(np.maximum(lin, 0))
+        k, x = cache.get("pre", (None, None))
+        if k != pre_key:
+            x = pre_stage(lin, q, p["temp"], p["tint"], ev, is_raw)
+            cache["pre"] = (pre_key, x)
+        local_key = (pre_key, p["highlights"], p["shadows"])
+        k, xl = cache.get("local", (None, None))
+        if k != local_key:
+            xl = tone_local(x, p)
+            cache["local"] = (local_key, xl)
+        x = xl
+    else:
+        x = pre_stage(lin, None, p["temp"], p["tint"], ev, is_raw)
+        x = tone_local(x, p)
     if any(p[k] for k in ("highlights", "shadows", "whites", "blacks", "contrast")) \
             or p["curve"] != [[0, 0], [255, 255]]:
         x = apply_lut(np.maximum(x, 0), point_lut(p), 1.5)
