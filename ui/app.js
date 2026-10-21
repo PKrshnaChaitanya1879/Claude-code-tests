@@ -11,7 +11,7 @@ const setPath = (o, p, v) => { const ks = p.split("."), last = ks.pop(); ks.redu
 
 const S = {
   schema: null, photos: [], current: null, params: {}, undo: {}, redo: {}, ticked: new Set(),
-  view: "looks", looks: [], sel: -1, count: 12, prompt: "", busy: false, clipboard: null,
+  view: "looks", looks: [], sel: -1, count: 12, prompt: "", busy: false, clipboard: null, engine: "preset",
   info: {}, settings: { theme: "light", folder: "", open: ["light", "colour"] },
 };
 const P = () => S.params[S.current];
@@ -200,7 +200,7 @@ async function grade() {
   S.busy = true; $("#btnGrade").classList.add("busy");
   try {
     S.prompt = $("#promptIn").value.trim();
-    const listP = post("looks", { prompt: S.prompt, count: S.count }).then(renderLooks);
+    const listP = post("looks", { prompt: S.prompt, count: S.count, engine: S.engine, id: S.current }).then(renderLooks);
     const [list] = await Promise.all([listP, fallAway($$("#grid .tile"))]);
     freeLooks(); S.looks = list; S.sel = 0;
     const tiles = buildGrid(); showPick(0);
@@ -238,7 +238,7 @@ async function moreLikeThis() {
   S.busy = true; recordPick();
   const g = $("#grid"), sel = $(".tile.sel", g);
   try {
-    const listP = post("looks", { around: L.params, count: S.count }).then((list) => { list[0].url = L.url; return renderLooks(list.slice(1)).then(() => list); });
+    const listP = post("looks", { around: L.params, count: S.count, engine: L.params.ai ? "ai" : "preset", id: S.current }).then((list) => { list[0].url = L.url; return renderLooks(list.slice(1)).then(() => list); });
     if (sel && anim()) {
       const sr = sel.getBoundingClientRect(), cx = sr.left + sr.width / 2, cy = sr.top + sr.height / 2;
       G.to(sel, { scale: 1.06, duration: .45, ease: "power2.out", yoyo: true, repeat: 1 });
@@ -349,7 +349,9 @@ function row(label, opts, swatch) {
 
 function buildEditPanel() {
   const side = $("#sideEdit"); side.innerHTML = "";
-  side.insertAdjacentHTML("beforeend", `<div style="display:grid;gap:8px"><div class="histo"><canvas id="histo" width="600" height="172"></canvas></div><div class="exif mono" id="exif"></div></div>`);
+  side.insertAdjacentHTML("beforeend", `<div style="display:grid;gap:8px"><div class="histo"><canvas id="histo" width="600" height="172"></canvas></div><div class="exif mono" id="exif"></div></div>
+    <div class="ai-on" id="aiOn" hidden><span class="bubble-ico"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span><div><b>AI grade is on</b><span>Sliders adjust the photo before the AI's colours.</span></div><button class="btn ghost small" id="aiOff">Turn off</button></div>`);
+  setTimeout(() => $("#aiOff").addEventListener("click", () => { beginChange(); P().ai = null; refreshEdit(); changed(false); commitChange(); }), 0);
   for (const sec of SECTIONS) {
     const el = document.createElement("section");
     el.className = "sec" + (S.settings.open.includes(sec.id) ? "" : " closed"); el.dataset.id = sec.id;
@@ -546,6 +548,7 @@ function syncSections() {
 function refreshEdit() {
   if (!P()) return;
   sliders.forEach((s) => s.paint()); syncWheels(); drawCurve(); applyMode(); syncSections(); refreshInfo();
+  const aiOn = $("#aiOn"); if (aiOn) aiOn.hidden = !P().ai;
   $("#btnUndo").disabled = !(S.undo[S.current] || []).length;
   $("#btnRedo").disabled = !(S.redo[S.current] || []).length;
 }
@@ -767,9 +770,11 @@ async function savePreset(e) {
   const name = $("#presetName").value.trim() || "Grvty look";
   try {
     if (S.view === "looks") recordPick();
-    const r = await post("preset", { name, params: presetParams() });
+    const r = await post("preset", { name, params: presetParams(), id: S.current });
     $("#presetVeil").hidden = true;
-    toast(r.files.length ? `Saved “${name}” to Lightroom presets` : "Couldn't save the preset file");
+    toast(!r.files.length ? "Couldn't save the preset file"
+      : r.approximated ? `Saved “${name}”. Lightroom can't run the AI itself, so the preset uses the closest slider settings.`
+      : `Saved “${name}” to Lightroom presets`);
   } catch (err) { toast("Couldn't save the preset: " + err.message); }
 }
 
@@ -798,7 +803,12 @@ async function boot() {
 
   $$("#tabs button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
   $$("#mode button").forEach((b) => b.addEventListener("click", () => { moveDrop($("#mode"), b); setTheme(b.dataset.themePick, b); }));
-  wireSeg($("#engineSeg"), (b) => { if (b.dataset.v === "ai") { toast("AI mode is still training. It arrives in the next update."); return false; } });
+  const aiBtn = $('#engineSeg [data-v="ai"]');
+  if (S.schema.ai) aiBtn.classList.remove("soon");
+  wireSeg($("#engineSeg"), (b) => {
+    if (b.dataset.v === "ai" && !S.schema.ai) { toast("AI mode isn't installed in this version yet."); return false; }
+    S.engine = b.dataset.v; setTimeout(grade, 10);
+  });
   wireSeg($("#countSeg"), (b) => { S.count = +b.dataset.n; setTimeout(grade, 10); });
   $("#promptForm").addEventListener("submit", (e) => { e.preventDefault(); grade(); });
   $$("#chips .chip").forEach((c) => c.addEventListener("click", () => { $("#promptIn").value = c.dataset.p; grade(); }));

@@ -244,6 +244,10 @@ svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-widt
 .curve-wrap { position: relative; margin: 2px 0 6px; aspect-ratio: 1.3; max-width: 100%; border-radius: var(--r-s); background: var(--glass); box-shadow: inset 0 1px 0 var(--glass-edge-2); overflow: hidden; touch-action: none; }
 .curve-wrap canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
 
+.ai-on { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 10px 10px 12px; border-radius: var(--r-m); background: var(--glass-strong); box-shadow: inset 0 1px 0 var(--glass-edge); }
+.ai-on b { display: block; font-size: 13px; }
+.ai-on span { display: block; font-size: 11.5px; color: var(--ink-2); line-height: 1.35; }
+
 /* ── dock ── */
 .dockwrap { display: flex; justify-content: center; min-width: 0; }
 .dock { display: flex; align-items: flex-end; gap: 10px; padding: 10px 12px; border-radius: 26px; max-width: 100%; min-width: 0; }

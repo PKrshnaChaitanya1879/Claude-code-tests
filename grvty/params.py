@@ -49,6 +49,8 @@ DEFAULTS = {
     "vignette_feather": 50,
     "grain": 0,           # 0..100
     "grain_size": 25,     # 0..100
+    # AI mode: blend weights for the learned colour cubes (None = AI off)
+    "ai": None,
 }
 
 # Slider ranges (used by the UI and to clamp values coming from the AI later)
@@ -89,6 +91,11 @@ def merge(params):
         for h in HUES:
             out[group][h] = max(-100, min(100, float(out[group][h])))
     out["bw"] = bool(out["bw"])
+    if out["ai"] is not None:
+        try:
+            out["ai"] = [float(v) for v in out["ai"]][:16]
+        except (TypeError, ValueError):
+            out["ai"] = None
     pts = sorted((max(0, min(255, float(a))), max(0, min(255, float(b))))
                  for a, b in out["curve"] or [[0, 0], [255, 255]])
     out["curve"] = [list(p) for p in pts] if len(pts) >= 2 else [[0, 0], [255, 255]]

@@ -27,7 +27,7 @@ jobs:
         run: >
           pyinstaller --noconfirm --clean --windowed --name Grvty
           --icon assets/grvty.ico
-          --add-data "ui;ui" --add-data "VERSION;."
+          --add-data "ui;ui" --add-data "models;models" --add-data "VERSION;."
           --collect-all rawpy --collect-all webview --collect-submodules clr_loader --hidden-import clr
           --collect-submodules numpy --collect-submodules cv2
           app.py

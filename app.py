@@ -118,6 +118,11 @@ def selftest():
     out = engine.render(img, looks.generate("moody black and white, sepia", 4)[1]["params"], False)
     assert out.shape == img.shape and np.isfinite(out).all()
     assert "<x:xmpmeta" in xmp.preset_xml("test", {})
+    from grvty.ai import GradeAI
+    g = GradeAI()
+    if g.available():
+        graded, w = g.grade(np.clip(img, 0, 1))
+        assert graded.shape == img.shape and np.isfinite(w).all()
     q = multiprocessing.Queue()
     p = multiprocessing.Process(target=engine_process, args=(q, [], os.getpid()), daemon=False)
     p.start()

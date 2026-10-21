@@ -13,7 +13,9 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 import numpy as np
 
-from . import engine, loader, looks, xmp
+from . import engine, fit, loader, looks, xmp
+from .ai import GradeAI
+from .params import merge
 from .params import DEFAULTS, RANGES, HUES
 
 UI_DIR = Path(__file__).resolve().parent.parent / "ui"
@@ -21,6 +23,16 @@ DATA_DIR = Path(os.environ.get("APPDATA") or Path.home() / ".config") / "Grvty"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 SETTINGS = DATA_DIR / "settings.json"
 TASTE = looks.Taste(DATA_DIR)
+AI = GradeAI()
+
+
+def render_look(lin, params, is_raw, cache=None):
+    """The engine, then the AI colour cube on top when the look has one."""
+    img = engine.render(lin, params, is_raw, cache)
+    w = (params or {}).get("ai")
+    if w and AI.available():
+        img = AI.apply(AI.cube(np.asarray(w, dtype=np.float32)), img)
+    return img
 GRID_EDGE = 560
 PREVIEW_EDGE = 1600
 DRAG_EDGE = 800
@@ -154,7 +166,7 @@ def _export_one(args):
     """Full-resolution render, run in a separate process so batches use every core."""
     path, is_raw, params, out_path, quality = args
     lin, _ = loader.load_linear(path, half=False)
-    out = engine.render(lin, params, is_raw)
+    out = render_look(lin, params, is_raw)
     loader.save_image(out, out_path, quality)
     return str(out_path)
 
@@ -231,7 +243,7 @@ class Handler(BaseHTTPRequestHandler):
     def _api_get(self, route, q):
         if route == "schema":
             return self._send(200, {"defaults": DEFAULTS, "ranges": RANGES, "hues": HUES,
-                                    "formats": sorted(loader.SUPPORTED)})
+                                    "formats": sorted(loader.SUPPORTED), "ai": AI.available()})
         if route == "settings":
             try:
                 return self._send(200, json.loads(SETTINGS.read_text(encoding="utf-8")))
@@ -306,11 +318,14 @@ class Handler(BaseHTTPRequestHandler):
             if src is None:  # evicted between ensure() and here: load again
                 ph = self._photo(body["id"], "full")
                 src = {"grid": ph.grid, "drag": ph.drag, "preview": ph.preview}[size]
-            img = engine.render(src, body.get("params", {}), ph.raw, ph.cache[size])
+            img = render_look(src, body.get("params", {}), ph.raw, ph.cache[size])
             return self._send(200, loader.to_jpeg_bytes(img, 90 if size == "preview" else 84), "image/jpeg")
         if route == "looks":
             body = self._json()
             n = max(1, min(24, int(body.get("count", 12))))
+            if body.get("engine") == "ai" and AI.available():
+                ph = self._photo(body["id"], "grid")
+                return self._send(200, ai_looks(ph, body, n))
             if body.get("around"):
                 out = looks.more_like(body["around"], n, TASTE)
             else:
@@ -322,9 +337,17 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, {"ok": True})
         if route == "preset":
             body = self._json()
-            files = xmp.save_preset(body.get("name") or "Grvty look", body.get("params", {}),
+            params = merge(body.get("params", {}))
+            approx = False
+            if params.get("ai") and body.get("id") in STATE.photos:
+                ph = self._photo(body["id"], "grid")
+                small = loader.resize_long(ph.grid, 192)
+                target = render_look(small, params, ph.raw)
+                params, _ = fit.fit(small, target, ph.raw, start=dict(params, ai=None))
+                approx = True
+            files = xmp.save_preset(body.get("name") or "Grvty look", params,
                                     Path.home() / "Pictures" / "Grvty" / "Presets")
-            return self._send(200, {"files": files})
+            return self._send(200, {"files": files, "approximated": approx})
         if route == "settings":
             SETTINGS.write_text(json.dumps(self._json(), indent=1), encoding="utf-8")
             return self._send(200, {"ok": True})
@@ -346,6 +369,57 @@ class Handler(BaseHTTPRequestHandler):
             threading.Thread(target=run_export, args=(job, items, folder, quality), daemon=True).start()
             return self._send(200, {"job": job_id})
         self._send(404, {"error": "unknown"})
+
+
+def _effect_name(base, img):
+    """Describe what an AI variation does, compared with the photo as it was."""
+    def stats(x):
+        y = x @ engine.LUMA
+        return y.mean(), (x.max(-1) - x.min(-1)).mean(), (x[..., 0] - x[..., 2]).mean(), y.std()
+    b, v = stats(base), stats(img)
+    words = []
+    if v[0] - b[0] > .03: words.append("brighter")
+    if v[0] - b[0] < -.03: words.append("darker")
+    if v[2] - b[2] > .02: words.append("warmer")
+    if v[2] - b[2] < -.02: words.append("cooler")
+    if v[1] - b[1] > .02: words.append("richer")
+    if v[1] - b[1] < -.02: words.append("softer colour")
+    if v[3] - b[3] > .015: words.append("more contrast")
+    if v[3] - b[3] < -.015: words.append("gentler contrast")
+    return words
+
+
+def ai_looks(ph, body, n):
+    """AI grades for one photo: the network's own reading first, then variations
+    around it in the space of its learned colour cubes."""
+    rng = np.random.default_rng()
+    base_params = merge(body.get("around") or {})
+    prompt = (body.get("prompt") or "").strip()
+    if not body.get("around") and prompt:
+        base_params, _ = looks.parse(prompt)
+    tiny = loader.resize_long(ph.grid, 96)
+    # name each variation by how it differs from what's on screen now: the pick, or the plain photo
+    shown = render_look(tiny, base_params, ph.raw) if body.get("around") else engine.render(tiny, dict(base_params, ai=None), ph.raw)
+    if body.get("around") and base_params.get("ai"):
+        w0, spread = np.asarray(base_params["ai"], dtype=np.float32), 0.10
+    else:
+        w0, spread = AI.weights(engine.render(ph.grid, {}, ph.raw)), 0.28
+    e0 = np.zeros_like(w0); e0[0] = 1
+    out = []
+    for k in range(n):
+        if k == 0:
+            w, name = w0, ("Your pick" if body.get("around") else "AI pick")
+        else:
+            strength = rng.uniform(0.6, 1.5) if not body.get("around") else rng.uniform(0.85, 1.15)
+            w = e0 + (w0 - e0) * strength + rng.normal(0, spread, size=w0.shape).astype(np.float32) * (w0 != e0)
+            w[0] = w0[0] + rng.normal(0, spread * 0.3)
+            name = None
+        p = dict(base_params, ai=[round(float(v), 4) for v in w])
+        if name is None:
+            words = _effect_name(shown, render_look(tiny, p, ph.raw))
+            name = ("AI · " + ", ".join(words[:2])) if words else "AI variation"
+        out.append({"name": name, "params": merge(p), "tags": ["AI grade"] + looks.describe(merge(p))})
+    return out
 
 
 def run_export(job, items, folder, quality):
