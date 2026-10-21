@@ -295,3 +295,5 @@ svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-widt
 @media (max-width: 1180px) { .main { grid-template-columns: minmax(0, 1fr) 300px; } .toolbar button span { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+.brand .ver{font:500 10px/1 'Geist Mono',ui-monospace,monospace;opacity:.45;margin-left:6px;align-self:center;letter-spacing:.02em}

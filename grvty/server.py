@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import random
 import re
 import tempfile
 import threading
@@ -20,6 +21,10 @@ from .params import DEFAULTS, RANGES, HUES
 
 UI_DIR = Path(__file__).resolve().parent.parent / "ui"
 DATA_DIR = Path(os.environ.get("APPDATA") or Path.home() / ".config") / "Grvty"
+try:
+    VERSION = (UI_DIR.parent / "VERSION").read_text(encoding="utf-8").strip()
+except Exception:
+    VERSION = "dev"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 SETTINGS = DATA_DIR / "settings.json"
 TASTE = looks.Taste(DATA_DIR)
@@ -243,7 +248,7 @@ class Handler(BaseHTTPRequestHandler):
     def _api_get(self, route, q):
         if route == "schema":
             return self._send(200, {"defaults": DEFAULTS, "ranges": RANGES, "hues": HUES,
-                                    "formats": sorted(loader.SUPPORTED), "ai": AI.available()})
+                                    "formats": sorted(loader.SUPPORTED), "ai": AI.available(), "version": VERSION})
         if route == "settings":
             try:
                 return self._send(200, json.loads(SETTINGS.read_text(encoding="utf-8")))
@@ -390,36 +395,39 @@ def _effect_name(base, img):
 
 
 def ai_looks(ph, body, n):
-    """AI grades for one photo: the network's own reading first, then variations
-    around it in the space of its learned colour cubes."""
+    """AI grades for one photo: the network's own reading first (with any look
+    she described laid on top), then clearly different variations: each one
+    moves the learned colour cubes AND two of the editing directions, so no two
+    tiles look alike even when the network itself is confident."""
     rng = np.random.default_rng()
+    pyrng = random.Random(int(rng.integers(1 << 30)))
+    around = bool(body.get("around"))
     base_params = merge(body.get("around") or {})
     prompt = (body.get("prompt") or "").strip()
-    if not body.get("around") and prompt:
-        base_params, _ = looks.parse(prompt)
+    names = []
+    if not around and prompt:
+        base_params, _, names = looks.parse_full(prompt)
     tiny = loader.resize_long(ph.grid, 96)
-    # name each variation by how it differs from what's on screen now: the pick, or the plain photo
-    shown = render_look(tiny, base_params, ph.raw) if body.get("around") else engine.render(tiny, dict(base_params, ai=None), ph.raw)
-    if body.get("around") and base_params.get("ai"):
+    shown = render_look(tiny, base_params, ph.raw) if around else engine.render(tiny, dict(base_params, ai=None), ph.raw)
+    if around and base_params.get("ai"):
         w0, spread = np.asarray(base_params["ai"], dtype=np.float32), 0.22
     else:
         w0, spread = AI.weights(engine.render(ph.grid, {}, ph.raw)), 0.6
     e0 = np.zeros_like(w0); e0[0] = 1
-    out = []
-    for k in range(n):
-        if k == 0:
-            w, name = w0, ("Your pick" if body.get("around") else "AI pick")
-        else:
-            strength = rng.uniform(0.4, 2.0) if not body.get("around") else rng.uniform(0.75, 1.3)
-            w = e0 + (w0 - e0) * strength + rng.normal(0, spread, size=w0.shape).astype(np.float32) * (w0 != e0)
-            w[0] = w0[0] + rng.normal(0, spread * 0.3)
-            name = None
-        p = dict(base_params, ai=[round(float(v), 4) for v in w])
-        if name is None:
-            words = _effect_name(shown, render_look(tiny, p, ph.raw))
-            name = ("AI · " + ", ".join(words[:2])) if words else "AI variation"
-        out.append({"name": name, "params": merge(p), "tags": ["AI grade"] + looks.describe(merge(p))})
-    return out
+    first = "Your pick" if around else ("AI + " + " + ".join(names) if names else "AI pick")
+    out = [{"name": first, "params": merge(dict(base_params, ai=[round(float(v), 4) for v in w0]))}]
+    # slider directions to travel along, a fresh pair per tile
+    lo, hi = (0.6, 1.15) if around else (1.0, 1.9)
+    steps = looks._variations(dict(base_params, ai=None), max(0, n - 1), pyrng, lo, hi)
+    for k, step in enumerate(steps):
+        strength = rng.uniform(0.75, 1.3) if around else rng.uniform(0.4, 2.0)
+        w = e0 + (w0 - e0) * strength + rng.normal(0, spread, size=w0.shape).astype(np.float32) * (w0 != e0)
+        w[0] = w0[0] + rng.normal(0, spread * 0.3)
+        p = dict(step["params"], ai=[round(float(v), 4) for v in w])
+        out.append({"name": "AI · " + step["name"].lower(), "params": merge(p)})
+    for o in out:
+        o["tags"] = ["AI grade"] + looks.describe(o["params"])
+    return out[:n]
 
 
 def run_export(job, items, folder, quality):

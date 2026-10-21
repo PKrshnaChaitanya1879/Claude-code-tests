@@ -796,6 +796,7 @@ function intro() {
 /* ───────────── boot ───────────── */
 async function boot() {
   S.schema = await get("schema");
+  if (S.schema.version) $("#ver").textContent = S.schema.version;
   try { Object.assign(S.settings, await get("settings")); } catch (_) {}
   if (!["light", "dark"].includes(S.settings.theme)) S.settings.theme = "light";
   document.documentElement.dataset.theme = S.settings.theme;
