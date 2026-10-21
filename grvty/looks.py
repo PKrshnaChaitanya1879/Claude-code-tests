@@ -211,8 +211,21 @@ def _known(word):
     return word in _KNOWN or any(word.endswith(x) and word[:-len(x)] in _KNOWN for x in ("s", "es", "er", "est", "ish", "y"))
 
 
+# multi-word names written as one word: "bladerunner", "darkacademia", "oldmoney"
+_NOSPACE = {}
+for _e in _ENTRIES:
+    if " " in _e[0]:
+        _NOSPACE.setdefault(_e[0].replace(" ", ""), _e)
+
+
 def _fuzzy(phrase):
     """Best entry for a possibly misspelt phrase, or None."""
+    if " " not in phrase and len(phrase) >= 5:
+        if phrase in _NOSPACE:
+            return _NOSPACE[phrase]
+        close = difflib.get_close_matches(phrase, list(_NOSPACE), n=1, cutoff=0.86)
+        if close:
+            return _NOSPACE[close[0]]
     best = _fuzzy_raw(phrase)
     if best and " " in phrase:
         # a correctly spelt word we already know must stay itself ("sepia highlights" is not "save highlights")
@@ -307,6 +320,14 @@ def parse_full(prompt):
                 if any(text[a[2]:b[1]].strip() for a, b in zip(group, group[1:])):
                     continue  # only words that sit next to each other
                 e = _fuzzy(" ".join(g[0] for g in group))
+                if e and e[1] == "look":
+                    # "bladerunner 2049": 2049 already found Blade Runner 2049, don't add the neon one too
+                    found = {w for nm in names for w in norm(nm).split() if len(w) >= 4}
+                    if found & {w for w in norm(library.LOOKS[e[2]]["name"]).split() if len(w) >= 4}:
+                        for g in group:
+                            for i in range(g[1], g[2]):
+                                used[i] = True
+                        continue
                 if e:
                     for g in group:
                         for i in range(g[1], g[2]):
