@@ -401,16 +401,16 @@ def ai_looks(ph, body, n):
     # name each variation by how it differs from what's on screen now: the pick, or the plain photo
     shown = render_look(tiny, base_params, ph.raw) if body.get("around") else engine.render(tiny, dict(base_params, ai=None), ph.raw)
     if body.get("around") and base_params.get("ai"):
-        w0, spread = np.asarray(base_params["ai"], dtype=np.float32), 0.10
+        w0, spread = np.asarray(base_params["ai"], dtype=np.float32), 0.22
     else:
-        w0, spread = AI.weights(engine.render(ph.grid, {}, ph.raw)), 0.28
+        w0, spread = AI.weights(engine.render(ph.grid, {}, ph.raw)), 0.6
     e0 = np.zeros_like(w0); e0[0] = 1
     out = []
     for k in range(n):
         if k == 0:
             w, name = w0, ("Your pick" if body.get("around") else "AI pick")
         else:
-            strength = rng.uniform(0.6, 1.5) if not body.get("around") else rng.uniform(0.85, 1.15)
+            strength = rng.uniform(0.4, 2.0) if not body.get("around") else rng.uniform(0.75, 1.3)
             w = e0 + (w0 - e0) * strength + rng.normal(0, spread, size=w0.shape).astype(np.float32) * (w0 != e0)
             w[0] = w0[0] + rng.normal(0, spread * 0.3)
             name = None
