@@ -1,15 +1,21 @@
 """Turning words into looks, and looks into variations.
 
-This version understands photographers' vocabulary with a hand-made
-dictionary (no model needed, works offline, instant). A local language model
-replaces `parse()` later; everything else here stays.
+Words are understood with two hand-made tables (no model, offline, instant):
+  * VOCAB below: photographers' words (moody, faded, split tone...), added together;
+  * library.LOOKS: ~200 named looks (films, Indian cinema, photographers, film
+    stocks, Instagram aesthetics, moods), matched by name, alias or keyword.
+Typos are forgiven ("ghotam" finds Gotham), and when nothing matches exactly the
+closest look is used rather than nothing.
 """
 import copy
+import difflib
 import json
 import random
 import re
+import unicodedata
 from pathlib import Path
 
+from . import library
 from .params import HUES, defaults, merge
 
 # ------------------------------------------------------------------ vocabulary
@@ -138,31 +144,190 @@ def _blend_curves(a, b, t):
     return [[x, round(at(a, x) * (1 - t) + at(b, x) * t)] for x in xs]
 
 
+def norm(text):
+    """Lower case, accents removed, punctuation to spaces ("Amélie" -> "amelie")."""
+    t = unicodedata.normalize("NFKD", text.lower())
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9&]+", " ", t)).strip()
+
+
+def _skeleton(word):
+    """A rough sound-alike key so common misspellings collide: gotham/ghotam -> gotam."""
+    w = re.sub(r"[^a-z]", "", word)
+    if not w:
+        return ""
+    w = w[0] + re.sub(r"(?<=[^aeiou])h", "", w[1:])           # drop h after a consonant
+    w = w[0] + re.sub(r"h(?=[^aeiou]|$)", "", w[1:])           # and before one
+    w = w.replace("c", "k").replace("z", "s").replace("v", "w").replace("ph", "f")
+    w = w[0] + w[1:].replace("y", "i")
+    return re.sub(r"(.)\1+", r"\1", w)                         # collapse doubles
+
+
+# words that carry no look of their own
+FILLER = set("""vibe vibes vibey vibing aesthetic aesthetics style styled look looks looking like feel feels feeling
+type kind of the a an and with in on at to for but or more less some make made it its give me my please grade
+graded edit edited photo photos picture pictures pic pics image images colour color colours colors tone tones
+mood moody-ish movie movies film-like inspired version want something bit lot just please this that these those
+from as is be very really super so too much little slightly shadows highlights midtones blacks whites""".split())
+
+# every phrase we can match: (phrase, kind, payload); kind is "look" (index into LOOKS) or "vocab" (settings)
+_ENTRIES = []
+for _i, _look in enumerate(library.LOOKS):
+    for _a in {norm(_look["name"]), *(norm(a) for a in _look["aliases"])}:
+        if _a:
+            _ENTRIES.append((_a, "look", _i))
+for _words, _settings in VOCAB:
+    for _w in _words:
+        _ENTRIES.append((norm(_w), "vocab", _settings))
+_ENTRIES.sort(key=lambda e: -len(e[0]))  # longest first so "golden hour" beats "golden"
+# one regex per phrase, compiled once ("warm" also catches "warmer", "warms")
+_RX = [re.compile(r"(?<![a-z0-9])" + re.escape(e[0]) + (r"(?:s|es|er|est|ish|y)?" if len(e[0]) >= 4 else "")
+                  + r"(?![a-z0-9])") for e in _ENTRIES]
+_BY_LEN = {}
+for _e in _ENTRIES:
+    _BY_LEN.setdefault(len(_e[0].split()), []).append(_e)
+_SKEL = {}
+for _e in _ENTRIES:
+    _SKEL.setdefault(" ".join(_skeleton(w) for w in _e[0].split()), _e)
+
+
+def _strength(text, start):
+    """'a little' halves a match, 'very' strengthens it, 'no'/'less' reverses it."""
+    before = text[max(0, start - 14):start]
+    scale = 1.0
+    if any(w in before for w in SOFTEN):
+        scale = 0.5
+    if any(w in before for w in STRONG):
+        scale = 1.6
+    if any(before.endswith(w) or (" " + w) in before[-8:] for w in NEGATE):
+        scale = -0.6
+    return scale
+
+
+_KNOWN = {e[0] for e in _ENTRIES if " " not in e[0]}
+
+
+def _known(word):
+    return word in _KNOWN or any(word.endswith(x) and word[:-len(x)] in _KNOWN for x in ("s", "es", "er", "est", "ish", "y"))
+
+
+def _fuzzy(phrase):
+    """Best entry for a possibly misspelt phrase, or None."""
+    best = _fuzzy_raw(phrase)
+    if best and " " in phrase:
+        # a correctly spelt word we already know must stay itself ("sepia highlights" is not "save highlights")
+        for w, c in zip(phrase.split(), best[0].split()):
+            if w != c and _known(w):
+                return None
+    return best
+
+
+def _fuzzy_raw(phrase):
+    n = len(phrase.split())
+    sk = " ".join(_skeleton(w) for w in phrase.split())
+    if sk in _SKEL and len(_SKEL[sk][0].split()) == n and len(phrase.replace(" ", "")) >= 4:
+        return _SKEL[sk]
+    if len(phrase.replace(" ", "")) < 5:
+        return None
+    best, best_r = None, 0.0
+    for e in _BY_LEN.get(n, []):
+        if abs(len(e[0]) - len(phrase)) > 3:
+            continue
+        m = difflib.SequenceMatcher(None, phrase, e[0])
+        if m.real_quick_ratio() < 0.82 or m.quick_ratio() < 0.82:
+            continue
+        r = m.ratio()
+        if r > best_r:
+            best, best_r = e, r
+    return best if best_r >= 0.82 else None
+
+
+def _closest_look(words):
+    """Nothing matched at all: choose the named look whose keywords fit best."""
+    words = [w for w in words if w not in FILLER and len(w) >= 3]
+    if not words:
+        return None
+    best, best_s = None, 0.0
+    for i, look in enumerate(library.LOOKS):
+        keys = look["keys"]
+        s = 0.0
+        for w in words:
+            if w in keys or w.rstrip("sy") in keys:
+                s += 1.0
+            else:
+                r = max((difflib.SequenceMatcher(None, w, k).ratio() for k in keys), default=0)
+                if r >= 0.8:
+                    s += 0.8
+        if s > best_s:
+            best, best_s = i, s
+    return best if best_s >= 0.8 else None
+
+
+def parse_full(prompt):
+    """Words -> (settings, matched words, names of the named looks found)."""
+    text = norm(prompt)
+    text = " " + re.sub(r"\b([a-z]{3,})i(?:er|est)\b", r"\1y", text) + " "   # moodier -> moody
+    p = defaults()
+    hits, names = [], []
+    used = [False] * len(text)
+
+    def apply(kind, payload, scale, label):
+        if kind == "look":
+            look = library.LOOKS[payload]
+            _add(p, look["params"], scale)
+            if scale > 0 and look["name"] not in names:
+                names.append(look["name"])
+        else:
+            _add(p, payload, scale)
+        hits.append(label)
+
+    def exact(multi):
+        for (phrase, kind, payload), rx in zip(_ENTRIES, _RX):
+            if (" " in phrase) != multi or phrase not in text:
+                continue
+            for m in rx.finditer(text):
+                if any(used[m.start():m.end()]):
+                    continue
+                for i in range(m.start(), m.end()):
+                    used[i] = True
+                apply(kind, payload, _strength(text, m.start()), phrase)
+
+    def free_words():
+        mods = {w.strip() for w in SOFTEN + STRONG + NEGATE}
+        return [(m.group(), m.start(), m.end()) for m in re.finditer(r"[a-z0-9&]+", text)
+                if not any(used[m.start():m.end()]) and m.group() not in FILLER and m.group() not in mods]
+
+    def fuzzy(sizes):
+        free = free_words()
+        for n in sizes:
+            for j in range(len(free) - n + 1):
+                group = free[j:j + n]
+                if any(used[g[1]] for g in group):
+                    continue
+                if any(text[a[2]:b[1]].strip() for a, b in zip(group, group[1:])):
+                    continue  # only words that sit next to each other
+                e = _fuzzy(" ".join(g[0] for g in group))
+                if e:
+                    for g in group:
+                        for i in range(g[1], g[2]):
+                            used[i] = True
+                    apply(e[1], e[2], _strength(text, group[0][1]), e[0])
+
+    exact(True)        # 1. names of two or more words ("dark academia", "golden hour")
+    fuzzy((3, 2))      # 2. misspelt names of two or more words ("dark acadamia")
+    exact(False)       # 3. single words ("gotham", "moody")
+    fuzzy((1,))        # 4. misspelt single words ("ghotam", "bansali")
+    if not hits:       # 5. still nothing: the closest named look by its keywords
+        i = _closest_look([m.group() for m in re.finditer(r"[a-z0-9&]+", text)])
+        if i is not None:
+            apply("look", i, 1.0, library.LOOKS[i]["name"].lower())
+    return merge(p), hits, names
+
+
 def parse(prompt):
     """Words -> (settings, list of matched words)."""
-    text = " " + re.sub(r"[^a-z0-9&\-\s]", " ", prompt.lower()) + " "
-    p = defaults()
-    hits = []
-    used = [False] * len(text)
-    # longest phrases first so "golden hour" beats "golden"
-    entries = sorted(((ph, s) for words, s in VOCAB for ph in words), key=lambda e: -len(e[0]))
-    for phrase, settings in entries:
-        for m in re.finditer(r"(?<![a-z])" + re.escape(phrase) + r"(?![a-z])", text):
-            if any(used[m.start():m.end()]):
-                continue
-            for i in range(m.start(), m.end()):
-                used[i] = True
-            before = text[max(0, m.start() - 14):m.start()]
-            scale = 1.0
-            if any(w in before for w in SOFTEN):
-                scale = 0.5
-            if any(w in before for w in STRONG):
-                scale = 1.6
-            if any(before.endswith(w) or (" " + w) in before[-8:] for w in NEGATE):
-                scale = -0.6
-            _add(p, settings, scale)
-            hits.append(phrase)
-    return merge(p), hits
+    params, hits, _ = parse_full(prompt)
+    return params, hits
 
 
 # ------------------------------------------------------------------ variations
@@ -322,12 +487,12 @@ def generate(prompt, count, taste=None, seed=None):
             looks += _variations(src["params"], 1, rng, 1.0, 1.8, src["name"] + ", ")
         return [dict(l, tags=describe(l["params"])) for l in looks]
 
-    base, hits = parse(prompt)
+    base, hits, names = parse_full(prompt)
     if not hits:  # nothing recognised: fall back to the signature looks
         return generate("", count, taste, seed)
     if taste:
         base = taste.lean(base)
-    looks = [{"name": "Closest match", "params": base}]
+    looks = [{"name": " + ".join(names) if names else "Closest match", "params": base}]
     if count >= 4:
         looks.append({"name": "Bolder", "params": scale_look(base, 1.55)})
     if count >= 6:
