@@ -29,6 +29,12 @@ namespace Verne
         public Color surfaceAmbient = new Color(0.18f, 0.32f, 0.34f);
         [Range(0f, 0.95f)] public float forwardScatter = 0.6f;   // Henyey-Greenstein g: shafts glow when looked into
         public float sunShafts = 1f;
+        [Tooltip("Light in the water that does not come from the surface (night glow, light scattered many times). From the browser build's uAmbFloor.")]
+        public Color ambientFloor = Color.black;
+        [Tooltip("A distant glow scattered through the water (the volcano): rgb, and the distance over which it fades.")]
+        public Color glowColor = Color.black;
+        public Vector3 glowPosition;
+        public float glowRange = 120f;
 
         [Header("March")]
         public float maxDistance = 45f;
@@ -99,6 +105,7 @@ namespace Verne
         {
             float d = Mathf.Max(0f, surfaceY - y);
             var c = new Color(surfaceAmbient.r * Mathf.Exp(-kd.r * d), surfaceAmbient.g * Mathf.Exp(-kd.g * d), surfaceAmbient.b * Mathf.Exp(-kd.b * d));
+            c += ambientFloor;
             return new Color(c.r * scatterAlbedo.r, c.g * scatterAlbedo.g, c.b * scatterAlbedo.b);
         }
 

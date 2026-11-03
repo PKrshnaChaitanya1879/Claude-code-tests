@@ -27,6 +27,9 @@ Shader "Hidden/Verne/Underwater"
         float4 _VerneLampColArr[4];    // rgb * intensity, w cos(inner half-angle)
         int _VerneLampCount;
         float4x4 _VernePrevVP;
+        float4 _VerneAmbientFloor;     // light in the water that is not daylight (night, scattered glow)
+        float4 _VerneGlowPos;          // xyz, w = range: a distant glow scattered many times (the volcano)
+        float4 _VerneGlowCol;
         float4 _VerneSunRaw;           // the sun before VerneWater tints it for the eye's depth (w = 1 when set)
         TEXTURE2D(_VerneHistory);
         TEXTURE2D(_VerneScatterTex);
@@ -40,6 +43,12 @@ Shader "Hidden/Verne/Underwater"
         }
 
         float3 Daylight(float y) { return exp(-_VerneKd.rgb * max(0.0, _VerneSurface.x - y)); }
+        // the water's own light at p besides the sun: the floor ambient and the glow, art-directed as in the browser build
+        float3 WaterGlow(float3 p)
+        {
+            float3 g = p - _VerneGlowPos.xyz;
+            return _VerneAmbientFloor.rgb + _VerneGlowCol.rgb / (1.0 + dot(g, g) / (_VerneGlowPos.w * _VerneGlowPos.w));
+        }
 
         // eye ray to the opaque surface under uv; far plane = open water
         void EyeRay(float2 uv, out float3 ro, out float3 rd, out float dist)
@@ -85,7 +94,7 @@ Shader "Hidden/Verne/Underwater"
                     float t = (k + jitter) * dt;
                     float3 p = ro + rd * t;
                     float3 day = Daylight(p.y);
-                    float3 Lin = _VerneSurfaceAmbient.rgb * day;                         // diffuse sky light, isotropic
+                    float3 Lin = _VerneSurfaceAmbient.rgb * day + WaterGlow(p);          // diffuse sky light, isotropic
                     float sh = MainLightRealtimeShadow(TransformWorldToShadowCoord(p));   // real shafts through the scene
                     float3 sunCol = _VerneSunRaw.w > 0.5 ? _VerneSunRaw.rgb : sun.color;   // daylight is applied per sample, once
                     Lin += sunCol * day * sh * phaseSun;
@@ -175,7 +184,7 @@ Shader "Hidden/Verne/Underwater"
                 // beyond the march: the analytic far field, lit by daylight at that depth
                 float3 Tm = exp(-sigT * tMax);
                 float3 farP = ro + rd * tMax;
-                float3 Lfar = _VerneSurfaceAmbient.rgb * Daylight(farP.y);
+                float3 Lfar = _VerneSurfaceAmbient.rgb * Daylight(farP.y) + WaterGlow(farP);
                 float3 Sfar = Tm * Lfar * _VerneAlbedo.rgb * (1.0 - exp(-sigT * max(0.0, dist - tMax)));
                 float3 T = exp(-sigT * dist);
                 float3 col = scene.rgb * T + S + Sfar;

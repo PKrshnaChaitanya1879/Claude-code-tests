@@ -17,7 +17,7 @@ namespace Verne.EditorTools
         const string Fbx = VerneBootstrap.Root + "/Models/Atlantis/Atlantis.fbx";
         // the summit 50 m up; the far side falls twice that to the city. The crevice's lips sit on the sea floor's 2 m grid
         // (z = 98 and 106, the trench between), on a level shelf (z 90-114); a second shelf is the first platform (z 122-134).
-        public const float SummitZ = 150f, SummitH = 50f, CityY = -50f, CrevZ0 = 98f, CrevZ1 = 106f;
+        public const float SummitZ = 150f, SummitH = 38f, CityY = -50f, CrevZ0 = 98f, CrevZ1 = 106f;
         public const float VolcanoScaleY = 1.6f;
         // "In fact, the mountain was a volcano": its crater opens on the far flank beside the summit, "fifty feet above the peak",
         // as in im079, where the fire stands right behind the two men; the city spreads below and beyond it, lit "like an immense torch"
@@ -29,22 +29,87 @@ namespace Verne.EditorTools
         static System.Random s_R;
         static Transform s_Root;
 
-        /// <summary>The sea floor's shape (metres): flat plain, the climb, a crevice across the way, the peak, the sheer fall to the city.</summary>
+        /// <summary>
+        /// The sea floor's shape (metres), after the browser build GUM liked (src/mission2.js): not a ramp but a mountain.
+        /// The stony plain; foothills through the copse; the crevice shelf; then a narrow ledge cut into the slope between
+        /// rising walls of ridged rock, the first platform, a last steep pull to the crown; the mountain body steepens toward
+        /// its peak so its silhouette stands against the glow; beyond, the sheer fall to the city. The way itself (|x| under
+        /// its half-width) follows PathY exactly, so the walk stays under the controller's 42° everywhere.
+        /// </summary>
         public static float Height(float x, float z)
         {
+            float py = PathY(z);
             float side = Mathf.Exp(-(x / 75f) * (x / 75f));
-            // the climb measured along the way with the two shelves taken out (under 38 degrees before noise: the visitor manages 42)
-            float ze = z < 90f ? z : z < 114f ? 90f : z < 122f ? z - 24f : z < 134f ? 98f : z - 36f;
-            float up = z <= SummitZ ? SummitH * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(15f, SummitZ - 36f, ze))
-                                    : SummitH * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SummitZ, SummitZ + 26f, z)));
-            float h = up * side + (z > SummitZ ? CityY * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SummitZ, SummitZ + 34f, z)) : 0f);
+            float h;
+            if (z <= SummitZ)
+            {
+                // the mountain's mass: a peak with flanks falling every way (not a ramp), steepening toward the top
+                float rr = new Vector2(x * 1.15f, z - SummitZ).magnitude;
+                float body = SummitH * 1.3f * Mathf.Pow(Mathf.Max(0f, 1f - rr / 118f), 1.5f);
+                float w = HalfWidth(z);
+                float wall = Mathf.Max(0f, Mathf.Abs(x) - w);
+                // crags at the scale of crags (the first try's fine noise came out as blocks on the 2.5 m grid)
+                float rock = Mathf.Min(wall * wall * 0.05f, 10f) + Ridge(x * 0.035f, z * 0.035f) * Mathf.Min(10f, wall * 0.5f);
+                float taper = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(12f, 30f, z));
+                float bank = Mathf.Lerp(py, Mathf.Max(body, py), Mathf.Clamp01(wall / 6f));   // on the way: exactly PathY
+                float cut = bank + rock * taper;                                        // the way cut into the mountain
+                float reach = Mathf.Exp(-(x / 70f) * (x / 70f));
+                h = Mathf.Lerp(Mathf.Max(body, 0f), cut, reach);
+                // nothing stands higher than the crown near the top (the peak is the peak)
+                float sd = new Vector2(x, z - SummitZ).magnitude;
+                if (z > SummitZ - 30f) h = Mathf.Min(h, SummitH + 4f + 0.9f * Mathf.Max(0f, sd - 6f));
+            }
+            else
+            {
+                h = SummitH * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SummitZ, SummitZ + 22f, z))) * side
+                  + CityY * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SummitZ, SummitZ + 34f, z))
+                  + Ridge(x * 0.05f, z * 0.05f) * 7f * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SummitZ + 4f, SummitZ + 20f, z)) * Mathf.SmoothStep(1f, 0f, Mathf.InverseLerp(SummitZ + 30f, SummitZ + 50f, z));
+            }
             // the crevice: 14 m deep between the lips (the grid points z = 100, 102, 104 drop)
             if (z > CrevZ0 + 0.5f && z < CrevZ1 - 0.5f && Mathf.Abs(x) < 120f)
                 h -= 14f * Mathf.Clamp01((120f - Mathf.Abs(x)) / 6f);
-            // the summit: a small flat platform ("a circle of ten yards")
+            // the summit: a small flat crown ("a circle of ten yards")
             float r = new Vector2(x, z - SummitZ).magnitude;
-            if (r < 6f) h = Mathf.Max(h, SummitH * side - 0.3f);
+            if (r < 6f) h = SummitH - 0.3f;
             return h;
+        }
+
+        /// <summary>The height of the way along z: foothills, the crevice shelf, a short climb, the first platform, the last pull, the crown.</summary>
+        public static float PathY(float z)
+        {
+            if (z < 15f) return 0f;
+            if (z < 90f) return 26f * Ease(15f, 90f, z);
+            if (z < 114f) return 26f;
+            if (z < 122f) return 26f + 4f * Ease(114f, 122f, z);
+            if (z < 132f) return 30f;
+            if (z < SummitZ - 5f) return 30f + (SummitH - 30f) * Ease(132f, SummitZ - 5f, z);
+            return SummitH;
+        }
+        // mostly linear, a little eased at the ends: the steepest pitch stays near rise/run (under 36° on the last pull)
+        static float Ease(float a, float b, float z) { float t = Mathf.InverseLerp(a, b, z); return Mathf.Lerp(t, t * t * (3f - 2f * t), 0.3f); }
+
+        /// <summary>Half-width of the open ground along the way: open on the plain, the copse and the two shelves, a narrow ledge on the climbs.</summary>
+        static float HalfWidth(float z)
+        {
+            float w = 60f;
+            w = Mathf.Lerp(w, 26f, Mathf.InverseLerp(40f, 55f, z));      // the copse
+            w = Mathf.Lerp(w, 18f, Mathf.InverseLerp(86f, 92f, z));      // the crevice shelf
+            w = Mathf.Lerp(w, 3.6f, Mathf.InverseLerp(112f, 115f, z));   // the ledge
+            w = Mathf.Lerp(w, 20f, Mathf.InverseLerp(120f, 123f, z));    // the first platform
+            w = Mathf.Lerp(w, 3.6f, Mathf.InverseLerp(131f, 134f, z));   // the last pull
+            w = Mathf.Lerp(w, 7f, Mathf.InverseLerp(SummitZ - 6f, SummitZ - 3f, z));
+            return w;
+        }
+
+        static float Ridge(float x, float z)
+        {
+            float s = 0f, a = 0.5f, f = 1f;
+            for (int i = 0; i < 4; i++)
+            {
+                float n = 1f - Mathf.Abs(Mathf.PerlinNoise(x * f + 31.7f + i * 7.3f, z * f + 11.1f + i * 3.9f) * 2f - 1f);
+                s += a * n * n; f *= 2.03f; a *= 0.5f;
+            }
+            return s;
         }
 
         public static bool Place(Transform parent, System.Func<Vector3, float> groundAt)
@@ -169,7 +234,7 @@ namespace Verne.EditorTools
             // the lava's own light on the city (the crater light is built by the scene, at CraterGlow)
             var go = new GameObject("Lava light on the city"); go.transform.SetParent(s_Root, false);
             go.transform.position = VolcanoBase + new Vector3(-50f, 30f, 40f);   // above the city, clear of the mountain
-            var l = go.AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(1f, 0.32f, 0.1f); l.intensity = 2.5f; l.range = 260f; l.shadows = LightShadows.None;
+            var l = go.AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(1f, 0.62f, 0.38f); l.intensity = 1.6f; l.range = 260f; l.shadows = LightShadows.None;
         }
 
         static float Rf(float a, float b) => Mathf.Lerp(a, b, (float)s_R.NextDouble());
@@ -202,8 +267,8 @@ namespace Verne.EditorTools
                 {
                     if (mats[i] == null) continue;
                     string m = mats[i].name;
-                    if (m.StartsWith("M_lava_crust")) mats[i] = Materials.Emissive("LavaCrust", new Color(0.12f, 0.05f, 0.03f), new Color(0.32f, 0.06f, 0.012f));
-                    else if (m.StartsWith("M_lava")) mats[i] = Materials.Emissive("LavaRun", new Color(1f, 0.4f, 0.1f), new Color(6f, 1.7f, 0.35f));
+                    if (m.StartsWith("M_lava_crust")) mats[i] = Materials.Emissive("LavaCrust", new Color(0.08f, 0.06f, 0.05f), new Color(0.09f, 0.045f, 0.02f));
+                    else if (m.StartsWith("M_lava")) mats[i] = Materials.Emissive("LavaRun", new Color(0.9f, 0.6f, 0.35f), new Color(2.6f, 1.25f, 0.5f));   // GUM 3 Nov: "way too red": amber fire, as the browser build
                     else if (name == "summit" || name == "volcano") mats[i] = Materials.Get("Basalt");   // tour 3: "a rock of black basalt": a silhouette rimmed red, not a flat orange slab
                     else if (m.StartsWith("M_pennatule")) mats[i] = Materials.Emissive("Pennatule", new Color(0.32f, 0.3f, 0.28f), new Color(0.03f, 0.07f, 0.06f));
                 }

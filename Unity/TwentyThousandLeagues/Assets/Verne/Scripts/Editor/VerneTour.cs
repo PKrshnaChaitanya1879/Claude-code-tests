@@ -30,8 +30,9 @@ namespace Verne.EditorTools
                     V("m1_start", 0f, G, 12f, 0f, 2f, true), V("divers_a", 0f, G, 0f, 0f, 6f, true), V("divers_b", 0f, G, 0f, 0f, 6f, true), V("m1_forest", 0f, G, 40f, 0f, 2f, true),
                     V("m1_coral", 0f, G, 70f, 0f, 0f, true), V("m1_cemetery", 0f, G, 96f, 0f, 4f, true) };
                 case "Mission2": return new[] {
-                    V("m2_plain", 0f, G, 22f, 0f, 0f), V("m2_copse", 0f, G, 70f, 0f, 0f), V("m2_trunk", 0f, G, 95f, 0f, 8f),
-                    V("m2_platform", 0f, G, 128f, 0f, -2f), V("m2_summit", 0f, G, 149f, 0f, 12f) };
+                    V("m2_plain", 0f, G, 22f, 0f, 6f), V("m2_copse", 0f, G, 70f, 0f, 4f), V("m2_trunk", 0f, G, 95f, 0f, 8f),
+                    V("m2_ledge", 0f, G, 116f, 0f, 14f), V("m2_platform", 0f, G, 128f, 0f, 4f), V("m2_climb", 0f, G, 136f, 0f, 16f),
+                    V("m2_summit", 0f, G, 149f, 0f, 2f), V("m2_back", 0f, G, 147f, 180f, -14f) };
                 default: return new[] { V("title", 0f, 0.05f, 0f, 0f) };
             }
         }
@@ -61,7 +62,7 @@ namespace Verne.EditorTools
                 {
                     var go = new GameObject("Tour capture");
                     var t = go.AddComponent<TourCapture>();
-                    t.scene = cur; t.views = ViewsFor(cur);
+                    t.scene = cur; t.views = ViewsFor(cur); t.walkTest = cur.StartsWith("Mission");
                     t.onDone = () => EditorApplication.ExitPlaymode();
                 }
                 else if (s == PlayModeStateChange.EnteredEditMode)

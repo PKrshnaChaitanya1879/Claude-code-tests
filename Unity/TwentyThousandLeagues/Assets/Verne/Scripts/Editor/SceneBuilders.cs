@@ -790,11 +790,18 @@ namespace Verne.EditorTools
                 case "Mission1":    // Crespo: five fathoms, clear and vibrant near the surface, darker down the slope
                     // tuned with Source/tools/preview_water_mock.py (Source/previews/m3_water_mock_Mission1.png): grey-green luminous fog,
                     // stems as silhouettes, red kept at five fathoms (Kd red 0.12) so the sand stays warm where the sun lands
-                    w.surfaceY = 9f; w.extinction = new Color(0.15f, 0.088f, 0.078f); w.scatterAlbedo = new Color(0.2f, 0.4f, 0.5f);   // tour 1: was a flat teal haze; now it falls into dark like INSIDE   // the browser build's σa+σs, σs/σt (GUM: "INSIDE, not Subnautica")
-                    w.kd = new Color(0.12f, 0.045f, 0.04f); w.surfaceAmbient = new Color(0.02f, 0.042f, 0.05f); w.sunShafts = 3.4f; w.heroGain = 3f; w.forwardScatter = 0.65f; w.maxDistance = 50f; break;
+                    // GUM 3 Nov, with INSIDE's water beside it: luminous grey-cyan water that the things in it go dark against.
+                    // Nearly grey extinction (the colour is in the light, not the water), a high scattering albedo so the
+                    // water glows, things gone to silhouette within ~15 m
+                    w.surfaceY = 9f; w.extinction = new Color(0.125f, 0.1f, 0.095f); w.scatterAlbedo = new Color(0.86f, 0.9f, 0.92f);
+                    w.kd = new Color(0.11f, 0.075f, 0.068f); w.surfaceAmbient = new Color(0.72f, 0.8f, 0.82f); w.sunShafts = 1.8f; w.heroGain = 0.5f; w.forwardScatter = 0.8f; w.maxDistance = 45f; break;   // round 7: brighter above, darker toward the floor (INSIDE's gradient)
                 case "Mission2":    // 150 fathoms at midnight: no daylight; the volcano's red glow is the only light (art-directed so red carries)
-                    w.surfaceY = 274f; w.extinction = new Color(0.012f, 0.014f, 0.016f); w.scatterAlbedo = new Color(0.28f, 0.35f, 0.40f);   // cold scatter: warm albedo made the whole night an orange-brown haze
-                    w.kd = new Color(0.3f, 0.07f, 0.05f); w.surfaceAmbient = Color.black; w.sunShafts = 0f; w.maxDistance = 90f; w.heroGain = 130f; w.forwardScatter = 0.72f; break;   // GUM: the browser look: the glow lives toward the volcano and dies into black
+                    // GUM 3 Nov: the browser build: a dark umber water that the volcano's glow warms as you near it; the
+                    // fire is amber, the rock is seen; things fall to silhouette against the glow
+                    w.surfaceY = 274f; w.extinction = new Color(0.034f, 0.036f, 0.04f); w.scatterAlbedo = new Color(0.82f, 0.8f, 0.78f);
+                    w.kd = new Color(0.002f, 0.002f, 0.002f); w.surfaceAmbient = Color.black; w.sunShafts = 0.7f; w.maxDistance = 80f; w.heroGain = 18f; w.forwardScatter = 0.7f;   // the "sun" here is the volcano's glow, not daylight: no depth fade
+                    w.ambientFloor = new Color(0.03f, 0.026f, 0.024f);
+                    w.glowColor = new Color(0.55f, 0.32f, 0.17f); w.glowPosition = AtlantisKit.CraterGlow; w.glowRange = 90f; break;
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
             if (w.sunShafts > 0f)
@@ -951,7 +958,7 @@ namespace Verne.EditorTools
         }
 
         // ------------------------------------------------------------------ sea floor
-        static Mesh SeabedMesh(string key, float size, float step, float amp, float freq, int seed, System.Func<float, float, float> extra = null, float centreZ = 0f)
+        static Mesh SeabedMesh(string key, float size, float step, float amp, float freq, int seed, System.Func<float, float, float> extra = null, float centreZ = 0f, bool faceted = false)
         {
             string path = VerneBootstrap.Generated + "/Meshes/seabed_" + key + ".asset";
             var old = AssetDatabase.LoadAssetAtPath<Mesh>(path);
@@ -963,6 +970,11 @@ namespace Verne.EditorTools
                 for (int i = 0; i < n; i++)
                 {
                     float x = -size * 0.5f + i * step, z = centreZ - size * 0.5f + j * step;
+                    if (faceted && i > 0 && j > 0 && i < n - 1 && j < n - 1)
+                    {   // jitter the grid in xz (the hand-made low-poly look of the browser build); heights follow the jittered spot
+                        x += (Mathf.PerlinNoise(i * 0.731f + 3.1f, j * 0.613f) - 0.5f) * step * 0.45f;
+                        z += (Mathf.PerlinNoise(i * 0.517f, j * 0.829f + 7.7f) - 0.5f) * step * 0.45f;
+                    }
                     float y = (Mathf.PerlinNoise(ox + x * freq, oz + z * freq) - 0.5f) * amp
                             + (Mathf.PerlinNoise(ox + x * freq * 4f, oz + z * freq * 4f) - 0.5f) * amp * 0.2f;
                     if (extra != null) y += extra(x, z);
@@ -977,18 +989,24 @@ namespace Verne.EditorTools
                     int a = j * n + i, b = a + 1, c = a + n, d = c + 1;
                     t[k++] = a; t[k++] = c; t[k++] = b; t[k++] = b; t[k++] = c; t[k++] = d;
                 }
-            var m = new Mesh { name = "seabed_" + key, indexFormat = n * n > 65000 ? IndexFormat.UInt32 : IndexFormat.UInt16 };
+            if (faceted)
+            {   // every facet its own normal: rock reads as rock, not a smooth ramp
+                var fv = new Vector3[t.Length]; var fuv = new Vector2[t.Length]; var ft = new int[t.Length];
+                for (int q = 0; q < t.Length; q++) { fv[q] = v[t[q]]; fuv[q] = uv[t[q]]; ft[q] = q; }
+                v = fv; uv = fuv; t = ft;
+            }
+            var m = new Mesh { name = "seabed_" + key, indexFormat = v.Length > 65000 ? IndexFormat.UInt32 : IndexFormat.UInt16 };
             m.vertices = v; m.uv = uv; m.triangles = t;
             m.RecalculateNormals(); m.RecalculateTangents(); m.RecalculateBounds();
             AssetDatabase.CreateAsset(m, path);
             return m;
         }
 
-        static GameObject Seabed(Transform parent, float size, float step, float amp, float freq, string mat, int seed, System.Func<float, float, float> extra = null, string key = null, float centreZ = 0f)
+        static GameObject Seabed(Transform parent, float size, float step, float amp, float freq, string mat, int seed, System.Func<float, float, float> extra = null, string key = null, float centreZ = 0f, bool faceted = false)
         {
             var go = new GameObject("Sea floor");
             go.transform.SetParent(parent, false);
-            var mesh = SeabedMesh(key ?? (mat + seed), size, step, amp, freq, seed, extra, centreZ);
+            var mesh = SeabedMesh(key ?? (mat + seed), size, step, amp, freq, seed, extra, centreZ, faceted);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>().sharedMaterial = Materials.Get(mat);
             go.AddComponent<MeshCollider>().sharedMesh = mesh;
@@ -1160,8 +1178,8 @@ namespace Verne.EditorTools
         {
             var s = NewScene("Mission1");
             // shallows at ~9 m: bright, green-blue far field (M3 replaces fog with the physical water model)
-            Ambient(new Color(0.07f, 0.15f, 0.17f), new Color(0.03f, 0.07f, 0.08f), new Color(0.01f, 0.02f, 0.025f));
-            Fog(true, new Color(0.03f, 0.09f, 0.10f), 0.03f);
+            Ambient(new Color(0.09f, 0.11f, 0.115f), new Color(0.05f, 0.06f, 0.064f), new Color(0.015f, 0.018f, 0.02f));   // dark against the luminous water (INSIDE)
+            Fog(true, new Color(0.3f, 0.37f, 0.39f), 0.05f);
             var sun = Sun("Sun (refracted)", new Vector3(58, 200, 0), new Color(0.9f, 0.97f, 0.92f), 1.8f);   // from ahead along the route: shafts and silhouettes
             Caustics(sun, 7f);
             var root = new GameObject("Crespo").transform;
@@ -1257,12 +1275,12 @@ namespace Verne.EditorTools
         {
             var s = NewScene("Mission2");
             // midnight at 150 fathoms; the only light is the volcano's red glow, two miles off
-            Ambient(new Color(0.02f, 0.009f, 0.006f), new Color(0.014f, 0.0065f, 0.005f), new Color(0.004f, 0.002f, 0.0015f));   // tour 5: only the volcano lights this night: the faint fill is its ember, not a blue-grey haze
+            Ambient(new Color(0.17f, 0.132f, 0.105f), new Color(0.11f, 0.087f, 0.07f), new Color(0.04f, 0.032f, 0.026f));   // GUM 3 Nov: the browser's umber night, where you can see the rock   // tour 5: only the volcano lights this night: the faint fill is its ember, not a blue-grey haze
             Fog(true, new Color(0.012f, 0.014f, 0.02f), 0.012f);   // fallback only; thin enough that the glow and the city still show from the summit
             var root = new GameObject("Atlantis approach").transform;
             // (M5, started in Part 3) the stony plain → the climb through the petrified copse → the crevice → the first platform →
             // the summit (z 150, 60 m up) → the far side falling sheer, twice the height, to the drowned city (II.IX)
-            Seabed(root, 520f, 2f, 2f, 0.03f, "Rock2", 31, AtlantisKit.Height, "Mission2", 140f);
+            Seabed(root, 520f, 2.5f, 1.4f, 0.03f, "Rock2", 31, AtlantisKit.Height, "Mission2", 140f, true);   // faceted rock, the browser's mountain
             Rocks(root, 90, 120f, 32, "Basalt", 1.4f, p => Mathf.Abs(p.x) < 4f && p.z > 0f && p.z < 160f);   // the way and the crevice's approach kept clear
             bool kit = AtlantisKit.Place(root, GroundAt);
             if (!kit) KelpStand(root, new Vector3(0, 0, 70), 90, 22f, 33, "Basalt", 3f, 9f);   // greybox copse if the FBX is missing
@@ -1270,7 +1288,12 @@ namespace Verne.EditorTools
             glow.transform.SetParent(root, false);
             glow.transform.position = AtlantisKit.CraterGlow;
             var l = glow.AddComponent<Light>();
-            l.type = LightType.Point; l.color = new Color(1f, 0.34f, 0.12f); l.intensity = 4f; l.range = 400f;   // tour 1: 12 painted the crags flat orange l.shadows = LightShadows.None;
+            l.type = LightType.Point; l.color = new Color(1f, 0.6f, 0.36f); l.intensity = 3f; l.range = 400f;   // GUM 3 Nov: amber, not red
+            l.shadows = LightShadows.None;
+            // the browser's second volcano light: from the crater back over the ridge toward the plain, so the mountain casts
+            // its shadow down the way and the water shows rays where the glow passes the crags (the march's main light)
+            var over = Sun("The volcano's glow over the ridge", new Vector3(34f, 192.7f, 0f), new Color(1f, 0.62f, 0.4f), 0.85f);   // round 8: steep enough to reach the ground under your feet
+            over.transform.SetParent(root, true);
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);
             // Captain Nemo with his iron-pointed stick, no lamps ("They will be useless"), leading toward the red glow

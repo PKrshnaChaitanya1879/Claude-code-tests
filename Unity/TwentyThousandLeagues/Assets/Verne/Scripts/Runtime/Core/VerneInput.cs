@@ -23,10 +23,14 @@ namespace Verne
 
         static bool Legacy => true;
 
+        /// <summary>Development: the walk test drives the player through this (null in play).</summary>
+        public static Vector2? AutoMove;
+
         public static Vector2 Move
         {
             get
             {
+                if (AutoMove.HasValue) return AutoMove.Value;
                 if (GameplayBlocked) return Vector2.zero;
                 Vector2 v = Vector2.zero;
                 if (Legacy)

@@ -267,14 +267,16 @@ namespace Verne.EditorTools
             // aboard: a hand-coloured 1870s engraving: umber shadows, ivory lights, oxblood and verdigris, nothing pure white
             Grade("Nautilus", exposure: 0.25f, contrast: 18f, saturation: -10f, bloom: 0.45f, vignette: 0.3f, tint: new Color(1.04f, 0.98f, 0.88f),
                   splitShadows: new Color(0.32f, 0.26f, 0.2f), splitHighlights: new Color(0.62f, 0.55f, 0.42f));
-            Grade("Mission1", exposure: -0.3f, contrast: 34f, saturation: 8f, bloom: 0.75f, vignette: 0.34f, tint: new Color(0.92f, 1.0f, 1.04f),
-                  splitShadows: new Color(0.16f, 0.34f, 0.40f), splitHighlights: new Color(0.52f, 0.60f, 0.62f));
-            Grade("Mission2", exposure: -0.35f, contrast: 26f, saturation: -10f, bloom: 0.9f, vignette: 0.38f, tint: new Color(0.95f, 0.98f, 1.04f),
-                  splitShadows: new Color(0.14f, 0.18f, 0.30f), splitHighlights: new Color(0.70f, 0.48f, 0.34f));
+            // GUM 3 Nov: INSIDE's water is nearly monochrome: grey-cyan, soft contrast, a wide glow around every light
+            Grade("Mission1", exposure: -0.15f, contrast: 16f, saturation: -26f, bloom: 0.9f, vignette: 0.32f, tint: new Color(0.95f, 1.0f, 1.01f),
+                  splitShadows: new Color(0.30f, 0.38f, 0.40f), splitHighlights: new Color(0.55f, 0.57f, 0.56f), bloomThreshold: 0.75f, bloomScatter: 0.85f, grain: 0.22f);
+            // the browser's Atlantis: sepia umber, the glow amber, nothing saturated
+            Grade("Mission2", exposure: 0.35f, contrast: 10f, saturation: -38f, bloom: 1.0f, vignette: 0.36f, tint: new Color(1.02f, 0.98f, 0.93f),
+                  splitShadows: new Color(0.30f, 0.27f, 0.24f), splitHighlights: new Color(0.62f, 0.52f, 0.42f), bloomThreshold: 0.7f, bloomScatter: 0.85f, grain: 0.25f);
         }
 
         public static VolumeProfile Grade(string scene, float exposure, float contrast, float saturation, float bloom, float vignette, Color tint,
-                                          Color splitShadows = default, Color splitHighlights = default)
+                                          Color splitShadows = default, Color splitHighlights = default, float bloomThreshold = 1f, float bloomScatter = 0.65f, float grain = 0f)
         {
             string path = VerneBootstrap.Generated + "/Profiles/Grade_" + scene + ".asset";
             var old = AssetDatabase.LoadAssetAtPath<VolumeProfile>(path);
@@ -283,12 +285,13 @@ namespace Verne.EditorTools
             AssetDatabase.CreateAsset(p, path);
 
             var tm = Add<Tonemapping>(p); tm.mode.Override(TonemappingMode.Neutral);
-            var b = Add<Bloom>(p); b.threshold.Override(1.0f); b.intensity.Override(bloom); b.scatter.Override(0.65f); b.highQualityFiltering.Override(false);
+            var b = Add<Bloom>(p); b.threshold.Override(bloomThreshold); b.intensity.Override(bloom); b.scatter.Override(bloomScatter); b.highQualityFiltering.Override(false);
             var ca = Add<ColorAdjustments>(p); ca.postExposure.Override(exposure); ca.contrast.Override(contrast); ca.saturation.Override(saturation); ca.colorFilter.Override(tint);
             if (splitShadows.maxColorComponent > 0f)
             {
                 var st = Add<SplitToning>(p); st.shadows.Override(splitShadows); st.highlights.Override(splitHighlights); st.balance.Override(-10f);
             }
+            if (grain > 0f) { var fg = Add<FilmGrain>(p); fg.type.Override(FilmGrainLookup.Thin1); fg.intensity.Override(grain); fg.response.Override(0.8f); }
             var v = Add<Vignette>(p); v.intensity.Override(vignette); v.smoothness.Override(0.45f); v.color.Override(new Color(0.02f, 0.025f, 0.035f));
             AssetDatabase.SaveAssets();
             return p;

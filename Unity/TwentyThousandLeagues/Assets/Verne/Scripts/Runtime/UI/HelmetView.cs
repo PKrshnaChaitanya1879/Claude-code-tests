@@ -36,7 +36,9 @@ namespace Verne
             canvas.GetComponent<GraphicRaycaster>().enabled = false;
             m_Group = canvas.gameObject.AddComponent<CanvasGroup>();
             m_Group.alpha = 0f; m_Group.blocksRaycasts = false; m_Group.interactable = false;
-            m_Fog = Layer(canvas.transform, "Breath fog", Resources.Load<Texture2D>("VerneUI/helmet_fog"));
+            // GUM 3 Nov: the breath fog on the glass was the grey cloud over every frame (and nothing like INSIDE): the
+            // Rouquayrol is heard, not seen
+            m_Fog = Layer(canvas.transform, "Breath fog", null);
             Layer(canvas.transform, "Port", Resources.Load<Texture2D>("VerneUI/helmet_port"));
         }
 
