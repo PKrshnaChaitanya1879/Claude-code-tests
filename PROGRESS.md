@@ -241,3 +241,13 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 - Her Fathom copy differs from the repo only in the folder name `Assets/Verne/Code` (repo: `Scripts`). Copy changed files across with that mapping.
 - **Next**: GUM's bug list first; then the Mission II grey haze (source not found, very faint); Mission I colour under the lamp; divers closer to the engravings; flora (Crespo forest) and the petrified forest of Atlantis; engine room's electro-magnets and levers per I.XIII.
 - 20:30 IST: gallery walls and arch legs fixed (audit clear at 105/106); Ruhmkorff lamp intensity restored. Next: coral density in the coral kingdom.
+
+### 2026-11-03 · live with GUM · the outside redone (her Prompt_1.pdf, in reference/feedback/)
+- Her verdict: interiors splendid, outside a nightmare: not INSIDE's water, the volcano too red, the trunk can't be crossed, the mountain a slope. Reference: an INSIDE underwater frame.
+- **Water (Mission I)**: INSIDE's luminous grey-cyan water: nearly grey extinction, scattering albedo ~0.9, brighter above and darker toward the floor; grade desaturated (-26) and soft, wide bloom, film grain. The near world goes to silhouette against the water.
+- **The grey cloud in every frame** was the helmet's breath-fog image: removed (the Rouquayrol is heard, not seen).
+- **Atlantis (Mission II)**: the browser build's model ported: VerneWater.ambientFloor + a scattered glow point (the volcano) in the march and far field; umber water, amber fire (lava, crater light, city light), a directional "glow over the ridge" so the mountain throws rays and shadow down the way; ambient raised so the rock underfoot shows.
+- **The mountain**: AtlantisKit.Height rewritten after the browser's mission2.js: foothills, crevice shelf, a 3.6 m ledge cut between ridged crags, the first platform, a last pull to the crown; a peaked massif around it; faceted, jittered rock (SeabedMesh faceted). Steepest pitch of the way 35°. Summit 38 m.
+- **New: walk test** in Verne → Capture Tour: the player walks the guide's route on the movement input and logs where it sticks (Logs/tour/<scene>_walk.txt).
+- **Verified in Unity on her laptop**: Mission II WALK OK, whole way including the trunk and the summit; Mission I one brief hang on a slope near z 33 (recovers). Frames: Source/previews/tour/round8_mission1.jpg, round9_mission2.jpg.
+- **Next**: Mission I flora colour under the lamp; that z 33 step; the summit view framing (the slab stands in front of the city).
