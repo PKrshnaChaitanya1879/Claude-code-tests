@@ -49,6 +49,7 @@ namespace Verne
         void LateUpdate()
         {
             if (m_PS == null) return;
+            if (m_P == null || m_P.Length < m_PS.main.maxParticles) m_P = new ParticleSystem.Particle[m_PS.main.maxParticles];   // survives a script reload in play
             int n = m_PS.GetParticles(m_P);
             var c = Eye();
             var w = VerneWater.Active;

@@ -271,7 +271,7 @@ namespace Verne.EditorTools
             Grade("Mission1", exposure: -0.15f, contrast: 16f, saturation: -26f, bloom: 0.9f, vignette: 0.32f, tint: new Color(0.95f, 1.0f, 1.01f),
                   splitShadows: new Color(0.30f, 0.38f, 0.40f), splitHighlights: new Color(0.55f, 0.57f, 0.56f), bloomThreshold: 0.75f, bloomScatter: 0.85f, grain: 0.22f);
             // the browser's Atlantis: sepia umber, the glow amber, nothing saturated
-            Grade("Mission2", exposure: 0.35f, contrast: 10f, saturation: -38f, bloom: 1.0f, vignette: 0.36f, tint: new Color(1.02f, 0.98f, 0.93f),
+            Grade("Mission2", exposure: 0.6f, contrast: 18f, saturation: -38f, bloom: 1.0f, vignette: 0.36f, tint: new Color(1.02f, 0.98f, 0.93f),
                   splitShadows: new Color(0.30f, 0.27f, 0.24f), splitHighlights: new Color(0.62f, 0.52f, 0.42f), bloomThreshold: 0.7f, bloomScatter: 0.85f, grain: 0.25f);
         }
 

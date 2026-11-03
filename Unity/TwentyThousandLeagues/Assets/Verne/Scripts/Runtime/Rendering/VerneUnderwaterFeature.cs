@@ -114,6 +114,7 @@ namespace Verne
                 m_Mat.SetColor("_VerneAmbientFloor", wtr.ambientFloor);
                 m_Mat.SetVector("_VerneGlowPos", new Vector4(wtr.glowPosition.x, wtr.glowPosition.y, wtr.glowPosition.z, Mathf.Max(1f, wtr.glowRange)));
                 m_Mat.SetColor("_VerneGlowCol", wtr.glowColor);
+                m_Mat.SetVector("_VerneShaft", new Vector4(wtr.shaftScale, wtr.shaftBreakup, Time.time, 0f));
                 m_Mat.SetVector(ID_LowSize, new Vector4(w, h, 1f / w, 1f / h));
                 int n = 0;
                 foreach (var l in wtr.heroLights)

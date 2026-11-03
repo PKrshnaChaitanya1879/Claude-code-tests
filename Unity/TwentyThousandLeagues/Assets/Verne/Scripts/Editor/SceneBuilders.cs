@@ -793,15 +793,15 @@ namespace Verne.EditorTools
                     // GUM 3 Nov, with INSIDE's water beside it: luminous grey-cyan water that the things in it go dark against.
                     // Nearly grey extinction (the colour is in the light, not the water), a high scattering albedo so the
                     // water glows, things gone to silhouette within ~15 m
-                    w.surfaceY = 9f; w.extinction = new Color(0.125f, 0.1f, 0.095f); w.scatterAlbedo = new Color(0.86f, 0.9f, 0.92f);
-                    w.kd = new Color(0.11f, 0.075f, 0.068f); w.surfaceAmbient = new Color(0.72f, 0.8f, 0.82f); w.sunShafts = 1.8f; w.heroGain = 0.5f; w.forwardScatter = 0.8f; w.maxDistance = 45f; break;   // round 7: brighter above, darker toward the floor (INSIDE's gradient)
+                    w.surfaceY = 9f; w.extinction = new Color(0.075f, 0.06f, 0.056f);   // GUM 3 Nov pm: "less foggy": twice the reach w.scatterAlbedo = new Color(0.86f, 0.9f, 0.92f);
+                    w.kd = new Color(0.11f, 0.075f, 0.068f); w.surfaceAmbient = new Color(0.4f, 0.46f, 0.48f); w.sunShafts = 7f; w.shaftScale = 0.12f; w.shaftBreakup = 0.75f; w.heroGain = 0.5f; w.forwardScatter = 0.82f; w.maxDistance = 60f; w.shadowDistance = 70f; break;   // god rays through the kelp   // round 7: brighter above, darker toward the floor (INSIDE's gradient)
                 case "Mission2":    // 150 fathoms at midnight: no daylight; the volcano's red glow is the only light (art-directed so red carries)
                     // GUM 3 Nov: the browser build: a dark umber water that the volcano's glow warms as you near it; the
                     // fire is amber, the rock is seen; things fall to silhouette against the glow
-                    w.surfaceY = 274f; w.extinction = new Color(0.034f, 0.036f, 0.04f); w.scatterAlbedo = new Color(0.82f, 0.8f, 0.78f);
-                    w.kd = new Color(0.002f, 0.002f, 0.002f); w.surfaceAmbient = Color.black; w.sunShafts = 0.7f; w.maxDistance = 80f; w.heroGain = 18f; w.forwardScatter = 0.7f;   // the "sun" here is the volcano's glow, not daylight: no depth fade
-                    w.ambientFloor = new Color(0.03f, 0.026f, 0.024f);
-                    w.glowColor = new Color(0.55f, 0.32f, 0.17f); w.glowPosition = AtlantisKit.CraterGlow; w.glowRange = 90f; break;
+                    w.surfaceY = 274f; w.extinction = new Color(0.018f, 0.019f, 0.021f);   // GUM 3 Nov pm: less fog w.scatterAlbedo = new Color(0.82f, 0.8f, 0.78f);
+                    w.kd = new Color(0.002f, 0.002f, 0.002f); w.surfaceAmbient = Color.black; w.sunShafts = 9f; w.shaftScale = 0.07f; w.shaftBreakup = 0.85f; w.maxDistance = 110f; w.heroGain = 20f; w.forwardScatter = 0.8f; w.shadowDistance = 170f;   // the volcano's light as rays: the mountain's shadow carves them   // the "sun" here is the volcano's glow, not daylight: no depth fade
+                    w.ambientFloor = new Color(0.016f, 0.013f, 0.012f);   // a dark night: the rays and the glow stand out of it
+                    w.glowColor = new Color(0.14f, 0.07f, 0.03f); w.glowPosition = AtlantisKit.CraterGlow; w.glowRange = 90f; break;
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
             if (w.sunShafts > 0f)
@@ -1275,7 +1275,7 @@ namespace Verne.EditorTools
         {
             var s = NewScene("Mission2");
             // midnight at 150 fathoms; the only light is the volcano's red glow, two miles off
-            Ambient(new Color(0.17f, 0.132f, 0.105f), new Color(0.11f, 0.087f, 0.07f), new Color(0.04f, 0.032f, 0.026f));   // GUM 3 Nov: the browser's umber night, where you can see the rock   // tour 5: only the volcano lights this night: the faint fill is its ember, not a blue-grey haze
+            Ambient(new Color(0.11f, 0.085f, 0.067f), new Color(0.072f, 0.055f, 0.044f), new Color(0.026f, 0.02f, 0.016f));   // night: the rock is seen, barely   // GUM 3 Nov: the browser's umber night, where you can see the rock   // tour 5: only the volcano lights this night: the faint fill is its ember, not a blue-grey haze
             Fog(true, new Color(0.012f, 0.014f, 0.02f), 0.012f);   // fallback only; thin enough that the glow and the city still show from the summit
             var root = new GameObject("Atlantis approach").transform;
             // (M5, started in Part 3) the stony plain → the climb through the petrified copse → the crevice → the first platform →
@@ -1292,7 +1292,8 @@ namespace Verne.EditorTools
             l.shadows = LightShadows.None;
             // the browser's second volcano light: from the crater back over the ridge toward the plain, so the mountain casts
             // its shadow down the way and the water shows rays where the glow passes the crags (the march's main light)
-            var over = Sun("The volcano's glow over the ridge", new Vector3(34f, 192.7f, 0f), new Color(1f, 0.62f, 0.4f), 0.85f);   // round 8: steep enough to reach the ground under your feet
+            var over = Sun("The volcano's glow over the ridge", new Vector3(16f, 192.7f, 0f), new Color(1f, 0.6f, 0.36f), 0.2f);   // GUM: "looks like broad daylight": low over the ridge, faint on the rock, strong in the water
+            over.shadowStrength = 1f;   // round 8: steep enough to reach the ground under your feet
             over.transform.SetParent(root, true);
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);

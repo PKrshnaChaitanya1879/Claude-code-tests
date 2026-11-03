@@ -36,6 +36,15 @@ namespace Verne
         public Vector3 glowPosition;
         public float glowRange = 120f;
 
+        [Tooltip("How far the main light's shadows reach in this scene (0 = the quality tier's own). God rays are the shadows of things\n" +
+                 "in the water: past this distance nothing blocks the light and it falls evenly, like daylight.")]
+        public float shadowDistance = 0f;
+
+        [Tooltip("God rays: the main light's beams broken into streaks by a slowly drifting pattern in the light's own plane (the browser\n" +
+                 "build's uwShaft, INSIDE's light cookies). Scale = streaks per metre; breakup 0 = even light, 1 = only the streaks.")]
+        public float shaftScale = 0.1f;
+        [Range(0f, 1f)] public float shaftBreakup = 0f;
+
         [Header("March")]
         public float maxDistance = 45f;
         [Tooltip("The beams to march through: Ruhmkorff lamps, the volcano. Up to four.")]
@@ -49,9 +58,12 @@ namespace Verne
         static readonly int ID_Sigma = Shader.PropertyToID("_VerneSigma"), ID_Water = Shader.PropertyToID("_VerneWater"),
             ID_Ambient = Shader.PropertyToID("_VerneAmbient"), ID_SunRaw = Shader.PropertyToID("_VerneSunRaw");
 
+        float m_OldShadowDist = -1f;
         void OnEnable()
         {
             Active = this; m_SceneFog = RenderSettings.fog; PushGlobals();
+            if (Application.isPlaying && shadowDistance > 0f && UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline is UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urp)
+            { m_OldShadowDist = urp.shadowDistance; urp.shadowDistance = shadowDistance; }
             if (Application.isPlaying)
             {
                 m_Sun = RenderSettings.sun; if (m_Sun != null) m_SunBase = m_Sun.color;
@@ -62,6 +74,8 @@ namespace Verne
         void OnDisable()
         {
             if (Active == this) Active = null;
+            if (m_OldShadowDist >= 0f && UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline is UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urp)
+            { urp.shadowDistance = m_OldShadowDist; m_OldShadowDist = -1f; }
             if (Application.isPlaying)
             {
                 RenderSettings.fog = m_SceneFog;

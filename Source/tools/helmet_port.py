@@ -29,7 +29,8 @@ for _ in range(6):
     sm += np.exp(-(((x - px) / (s * 2.2)) ** 2 + ((y - py) / s) ** 2))
 sm = np.clip(sm, 0, 1) * (r < 1)
 col += sm[..., None] * np.array([0.5, 0.55, 0.55]) * 0.25
-a = np.maximum(a, sm * 0.05)
+# GUM 3 Nov: the smear read as a grey cloud over every night frame: the glass stays clear
+# a = np.maximum(a, sm * 0.05)
 img = np.dstack([np.clip(col, 0, 1) ** (1 / 2.2), a])
 Image.fromarray((img * 255).astype(np.uint8), 'RGBA').save(f'{out}/helmet_port.png')
 # breath fog: a soft bloom on the lower glass, mottled

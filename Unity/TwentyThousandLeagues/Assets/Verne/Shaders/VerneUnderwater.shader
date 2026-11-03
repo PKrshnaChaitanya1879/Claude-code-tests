@@ -30,6 +30,7 @@ Shader "Hidden/Verne/Underwater"
         float4 _VerneAmbientFloor;     // light in the water that is not daylight (night, scattered glow)
         float4 _VerneGlowPos;          // xyz, w = range: a distant glow scattered many times (the volcano)
         float4 _VerneGlowCol;
+        float4 _VerneShaft;            // x streaks per metre, y breakup (0..1), z time
         float4 _VerneSunRaw;           // the sun before VerneWater tints it for the eye's depth (w = 1 when set)
         TEXTURE2D(_VerneHistory);
         TEXTURE2D(_VerneScatterTex);
@@ -42,6 +43,23 @@ Shader "Hidden/Verne/Underwater"
             return (1.0 - g2) / (4.0 * PI * pow(max(1e-3, 1.0 + g2 - 2.0 * g * c), 1.5));
         }
 
+        float Hash2(float2 p) { p = frac(p * float2(123.34, 456.21)); p += dot(p, p + 45.32); return frac(p.x * p.y); }
+        float VNoise(float2 p)
+        {
+            float2 i = floor(p), f = frac(p); f = f * f * (3.0 - 2.0 * f);
+            return lerp(lerp(Hash2(i), Hash2(i + float2(1, 0)), f.x), lerp(Hash2(i + float2(0, 1)), Hash2(i + float2(1, 1)), f.x), f.y);
+        }
+        // the beams: a pattern fixed in the light's own plane, so it stretches into streaks along the light (god rays)
+        float ShaftMask(float3 p, float3 toLight)
+        {
+            if (_VerneShaft.y <= 0.0) return 1.0;
+            float3 t1 = normalize(cross(toLight, abs(toLight.y) > 0.95 ? float3(1, 0, 0) : float3(0, 1, 0)));
+            float3 t2 = cross(toLight, t1);
+            float2 q = float2(dot(p, t1), dot(p, t2)) * _VerneShaft.x;
+            float n = VNoise(q + _VerneShaft.z * float2(0.021, 0.013)) * 0.65 + VNoise(q * 2.3 - _VerneShaft.z * float2(0.017, -0.011)) * 0.35;
+            float beams = smoothstep(0.42, 0.78, n);
+            return lerp(1.0, beams * 2.4, _VerneShaft.y);
+        }
         float3 Daylight(float y) { return exp(-_VerneKd.rgb * max(0.0, _VerneSurface.x - y)); }
         // the water's own light at p besides the sun: the floor ambient and the glow, art-directed as in the browser build
         float3 WaterGlow(float3 p)
@@ -97,7 +115,7 @@ Shader "Hidden/Verne/Underwater"
                     float3 Lin = _VerneSurfaceAmbient.rgb * day + WaterGlow(p);          // diffuse sky light, isotropic
                     float sh = MainLightRealtimeShadow(TransformWorldToShadowCoord(p));   // real shafts through the scene
                     float3 sunCol = _VerneSunRaw.w > 0.5 ? _VerneSunRaw.rgb : sun.color;   // daylight is applied per sample, once
-                    Lin += sunCol * day * sh * phaseSun;
+                    Lin += sunCol * day * sh * phaseSun * ShaftMask(p, sun.direction);
                     [loop] for (int j = 0; j < 4; j++)
                     {
                         if (j >= _VerneLampCount) break;

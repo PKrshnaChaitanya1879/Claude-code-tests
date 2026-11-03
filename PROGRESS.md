@@ -251,3 +251,12 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 - **New: walk test** in Verne → Capture Tour: the player walks the guide's route on the movement input and logs where it sticks (Logs/tour/<scene>_walk.txt).
 - **Verified in Unity on her laptop**: Mission II WALK OK, whole way including the trunk and the summit; Mission I one brief hang on a slope near z 33 (recovers). Frames: Source/previews/tour/round8_mission1.jpg, round9_mission2.jpg.
 - **Next**: Mission I flora colour under the lamp; that z 33 step; the summit view framing (the slab stands in front of the city).
+
+### 2026-11-03 afternoon · GUM: "less foggy, volumetric god rays; the volcano looks like broad daylight"
+- Cause: the main light's shadows reached only 25–50 m (quality tier), so beyond them nothing blocked the light and it fell evenly; the water's isotropic glow drowned the rest.
+- VerneWater.shadowDistance (per scene, at play: Mission I 70 m, Mission II 170 m) so the mountain and the kelp carve the light.
+- God rays: the march now breaks the main light into drifting streaks fixed in the light's plane (ShaftMask: the browser build's uwShaft / INSIDE's cookies); shaftScale, shaftBreakup per scene.
+- Mission I: extinction ~halved, sky in-scatter lowered, shafts 7. Mission II: a dark night (ambientFloor 0.016, glow 0.14), shafts 9 from the volcano over the ridge, the directional on the rock down to 0.2, exposure 0.6.
+- The grey cloud in night frames was the helmet glass's painted smear (5% alpha): cleared (Source/tools/helmet_port.py too).
+- MarineSnow survives a script reload in play.
+- Verified on her laptop: frames round11 (Mission I) and round12 (Mission II); walk tests OK.
