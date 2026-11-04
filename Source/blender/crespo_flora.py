@@ -21,10 +21,13 @@ M = {
     'coral_white': mat('M_coral_white', (0.88, 0.86, 0.80), rough=0.7),
     'coral_teal': mat('M_coral_teal', (0.16, 0.56, 0.54), rough=0.6),
     'coral_stone': mat('M_coral_stone', (0.58, 0.52, 0.46), rough=0.9),
+    'coral_bubble': mat('M_coral_bubble', (0.78, 0.26, 0.30), rough=0.65),     # bubblegum coral (NOAA photographs)
+    'coral_bubble_knob': mat('M_coral_bubble_knob', (0.92, 0.48, 0.50), rough=0.6),
+    'black_coral': mat('M_black_coral', (0.78, 0.80, 0.62), rough=0.6),        # living black coral: pale cream-green
     'isis_white': mat('M_isis_white', (0.92, 0.88, 0.78), rough=0.5),
     'isis_gold': mat('M_isis_gold', (0.75, 0.55, 0.22), metal=0.2, rough=0.45),
     'polyp': mat('M_polyp', (0.97, 0.95, 0.9), rough=0.5),
-    'kelp': mat('M_kelp', (0.36, 0.40, 0.12), rough=0.7),
+    'kelp': mat('M_kelp', (0.46, 0.38, 0.11), rough=0.7),            # gold-olive (giant kelp photographs)
     'kelp_dark': mat('M_kelp_dark', (0.20, 0.22, 0.08), rough=0.7),
     'algae_red': mat('M_algae_red', (0.62, 0.10, 0.12), rough=0.7),
     'algae_brown': mat('M_algae_brown', (0.45, 0.30, 0.10), rough=0.7),
@@ -116,8 +119,63 @@ def laminaria(bm, h=4.4, seed=1):
         hh = h * r.uniform(0.75, 1.0)
         ribbon(bm, (math.cos(a) * 0.15, math.sin(a) * 0.15, 0.45), a + math.pi / 2 + r.uniform(-0.5, 0.5), r.uniform(0.22, 0.32), hh, 16,
                (MI['kelp'], MI['algae_brown'], MI['kelp_dark'])[k % 3], ruffle=0.11, lean=0.7, seed=seed * 10 + k)
-prop('laminaria_a', lambda bm: laminaria(bm, 4.4, 1), smooth=40)
-prop('laminaria_b', lambda bm: laminaria(bm, 3.4, 2), smooth=40)
+def giant_kelp(bm, h=10.0, seed=1, stipes=4):
+    """GUM 4 Nov, from the photographs (reference/underwater/giant_kelp_*): Macrocystis, the trees of Verne's forest
+    ("their stems rose perpendicularly"). A tangled holdfast; a few thin stipes rising straight to the surface; along each,
+    every half metre or so, a long ruffled blade on a small gas bladder, alternating sides and angled up; the last metre and
+    a half bends over and lies along the surface as the canopy the sun comes through. Low-poly: blades are 3-segment
+    two-sided strips, bladders tetrahedra."""
+    r = random.Random(seed)
+    # holdfast: a squat tangle of root-like haptera
+    for k in range(9):
+        a = k * 0.7 + r.uniform(-0.2, 0.2); L = r.uniform(0.25, 0.45)
+        tube(bm, [(0, 0, 0.18), (math.cos(a) * L * 0.6, math.sin(a) * L * 0.6, 0.1), (math.cos(a) * L, math.sin(a) * L, -0.02)], [0.05, 0.04, 0.025], 4, MI['kelp_dark'])
+    lathe(bm, [(0.0, 0.0), (0.2, 0.0), (0.12, 0.2), (0.05, 0.3)], 6, (0, 0, 0), MI['kelp_dark'])
+    for sidx in range(stipes):
+        a0 = sidx * 2 * math.pi / stipes + r.uniform(-0.4, 0.4)
+        hh = h * r.uniform(0.82, 1.0)
+        lean = Vector((math.cos(a0), math.sin(a0), 0)) * r.uniform(0.8, 1.8)
+        canopy_dir = Vector((math.cos(a0 + r.uniform(-0.6, 0.6)), math.sin(a0 + r.uniform(-0.6, 0.6)), 0)).normalized()
+        cl = r.uniform(2.0, 3.2)                               # canopy length along the surface
+        def at(t):                                             # the stipe as a curve: straight up, then laid over at the top
+            if t <= 1.0: return Vector((0, 0, 0.25)) + lean * t * t + Vector((0, 0, t * (hh - 0.25))) + Vector((math.sin(t * 9 + sidx) * 0.06, math.cos(t * 7 + sidx) * 0.06, 0))
+            u = t - 1.0
+            return at(1.0) + canopy_dir * u * cl + Vector((0, 0, -0.15 * u))
+        pts = [at(i / 14) for i in range(15)] + [at(1.0 + i / 4) for i in range(1, 5)]
+        tube(bm, [tuple(p) for p in pts], [0.035] * len(pts), 4, MI['kelp_dark'], cap=False)
+        nblades = int(hh / 0.42)
+        for b in range(nblades + 6):
+            t = (b + 0.6) / nblades if b < nblades else 1.0 + (b - nblades + 0.5) / 6
+            p0 = at(t); side = 1 if b % 2 == 0 else -1
+            up = (at(min(t + 0.02, 2.0)) - at(max(t - 0.02, 0.0))).normalized()
+            ax = up.cross(Vector((0, 0, 1)) if abs(up.z) < 0.9 else Vector((1, 0, 0))).normalized()
+            ang = a0 + side * 1.4 + r.uniform(-0.4, 0.4)
+            out = Vector((math.cos(ang), math.sin(ang), 0))
+            # the gas bladder
+            bl = p0 + out * 0.06
+            tv = [bm.verts.new(bl + Vector(d) * 0.05) for d in ((1, 0, -0.4), (-0.5, 0.87, -0.4), (-0.5, -0.87, -0.4), (0, 0, 1.1))]
+            for fv in ((0, 1, 2), (0, 3, 1), (1, 3, 2), (2, 3, 0)):
+                f = bm.faces.new([tv[i] for i in fv]); f.material_index = MI['algae_brown']
+            # the blade: long, narrow, ruffled, angled up from the bladder (in the canopy it trails along the surface)
+            L = r.uniform(1.0, 1.6); W = r.uniform(0.09, 0.15)
+            dirv = (out * 0.55 + up * 0.85).normalized() if t <= 1.0 else (canopy_dir * 0.8 + out * 0.4).normalized()
+            wv = dirv.cross(out).normalized() if abs(dirv.dot(out)) < 0.95 else ax
+            prev = None
+            sway = Vector((0.55 + r.uniform(-0.2, 0.2), r.uniform(-0.25, 0.25), -0.15 if t > 1.0 else 0.0))   # a gentle current toward +X
+            for i in range(5):
+                tt = i / 4
+                c = bl + dirv * L * tt + (sway - dirv * 0.35 * (1 if t <= 1.0 else 0)) * tt * tt * L   # blades bend and flow
+                ww = W * (math.sin(min(1.0, tt * 1.1 + 0.15) * math.pi) * 0.9 + 0.1)
+                ruf = out * 0.025 * math.sin(i * 2.5 + b)
+                cur = (c - wv * ww + ruf, c + wv * ww - ruf)
+                if prev:
+                    q = [prev[0], prev[1], cur[1], cur[0]]
+                    mi = MI['kelp'] if (b + sidx) % 3 else MI['algae_brown']
+                    f = bm.faces.new([bm.verts.new(v) for v in q]); f.material_index = mi
+                    f = bm.faces.new([bm.verts.new(v) for v in q[::-1]]); f.material_index = mi
+                prev = cur
+prop('laminaria_a', lambda bm: giant_kelp(bm, 10.5, 1, 7), smooth=40, recalc=False)   # the names Unity places stay; the plants are giant kelp
+prop('laminaria_b', lambda bm: giant_kelp(bm, 8.0, 2, 5), smooth=40, recalc=False)
 def alaria(bm, seed=3):
     """Alariae: 'blades ... like arrows', tall straight leaves in a sheaf."""
     r = random.Random(seed)
@@ -301,19 +359,51 @@ def shells(bm, seed=21):
 prop('shells', shells, smooth=40)
 
 # ------------------------------------------------------------ the coral cemetery (I.XXIII)
-def coral_tree(bm, seed=31, base=0.35, length=2.2, spread=0.75):
-    """'Enormous petrified trees ... joined by garlands of elegant sea-bindweed', red coral at the tips."""
-    branching(bm, MI['coral_stone'], 4, base, length, spread, seed, tips=MI['coral_red'])
-    jitter(bm, 0.02, seed)
-prop('coral_tree', coral_tree, smooth=40)
-prop('coral_tree2', lambda bm: coral_tree(bm, 37, 0.28, 1.8, 0.95), smooth=40)
-def garland(bm, seed=15):
-    """Sea-bindweed garlands hanging between the coral trees (a sagging rope of fronds, 4 m)."""
+def paragorgia(bm, seed=31, h=3.0, mi=None, knob=None):
+    """GUM 4 Nov, from the NOAA photographs (reference/underwater/bubblegum_coral_*): Verne's "enormous petrified trees" at
+    300 yards are bubblegum coral, the one coral that grows into real trees deep down. A thick short trunk; stout branches
+    that divide again and again but stay mostly in one plane (a fan-shaped tree facing the current); every tip, and
+    knots along the branches, swollen into round knobs ("bubblegum"); thick to the end, never twiggy."""
+    mi = MI['coral_bubble'] if mi is None else mi; knob = MI['coral_bubble_knob'] if knob is None else knob
     r = random.Random(seed)
-    pts = [(-2.0 + 4.0 * i / 8, 0, -0.9 * math.sin(math.pi * i / 8)) for i in range(9)]
-    tube(bm, pts, 0.025, 4, MI['algae_brown'], cap=False)
-    for (x, _, z) in pts[1:-1]:
-        blade(bm, (x, 0, z - 0.25), r.uniform(0, 6.28), 0.04, 0.3, 3, MI['kelp'])
+    def grow(p, d, rad, L, k):
+        q = p + d * L
+        mid = p + d * L * 0.5 + Vector((r.uniform(-1, 1), r.uniform(-0.25, 0.25), r.uniform(-0.4, 0.4))) * L * 0.1
+        tube(bm, [p, mid, q], [rad, rad * 0.95, rad * 0.9], 5 if k < 3 else (4 if k < 5 else 3), mi, cap=False)
+        if k >= 3 and r.random() < 0.35: ico(bm, mid, rad * 1.5, 0, knob)              # knots along the branch
+        if k >= 7 or (k >= 5 and r.random() < 0.18):
+            ico(bm, q, max(rad * 1.9, 0.022), 0, knob, scale=(1, 1, 1.2))               # the bubblegum knob
+            return
+        n = 2 if k < 5 else r.choice((1, 2, 2))
+        for i in range(n):
+            side = (-1 if i == 0 else 1) * r.uniform(0.22, 0.5) * (1.0 if k < 4 else 0.75)
+            nd = (d + Vector((side, r.uniform(-0.1, 0.1), 0))).normalized()           # in the X-Z plane: a fan
+            nd = (nd + Vector((0, 0, 0.35 if k < 4 else 0.45))).normalized()
+            grow(q, nd, max(rad * 0.74, 0.008), L * r.uniform(0.74, 0.86), k + 1)
+    trunk = h * 0.2
+    tube(bm, [(0, 0, -0.1), (0, 0, trunk * 0.5), (r.uniform(-0.05, 0.05), 0, trunk)], [0.075 * h / 3, 0.062 * h / 3, 0.055 * h / 3], 6, mi)
+    lathe(bm, [(0.0, -0.05), (0.2 * h / 3, -0.05), (0.08 * h / 3, 0.12)], 6, (0, 0, 0), mi)            # its foot on the rock
+    for i, side in enumerate((-0.55, -0.18, 0.18, 0.55)):
+        grow(Vector((0, 0, trunk)), Vector((side, r.uniform(-0.08, 0.08), 1)).normalized(), 0.042 * h / 3, h * 0.2, 1)
+    jitter(bm, 0.006, seed)
+prop('coral_tree', lambda bm: paragorgia(bm, 31, 3.0), smooth=40)                                                  # pink-red
+prop('coral_tree2', lambda bm: paragorgia(bm, 37, 2.4, MI['coral_white'], MI['polyp']), smooth=40)               # the white form
+def garland(bm, seed=15):
+    """"Garlands of elegant sea-bindweed" between the trees: black coral (reference/underwater/black_coral_*), a long
+    thin whip sagging between two trees and twisting as it goes, with fine feathery side shoots; the living tissue pale
+    cream-green (the skeleton that gives it its name is black inside). 4 m, stretched in Unity to the gap."""
+    r = random.Random(seed)
+    pts = []
+    for i in range(17):
+        t = i / 16
+        pts.append(Vector((-2.0 + 4.0 * t, 0.12 * math.sin(t * 13), -0.9 * math.sin(math.pi * t) + 0.08 * math.cos(t * 11))))
+    tube(bm, [tuple(p) for p in pts], 0.018, 4, MI['black_coral'], cap=False)
+    for i in range(1, 16):
+        p = pts[i]
+        for k in range(2):
+            a = r.uniform(0, 6.28); d = Vector((math.cos(a) * 0.4, math.sin(a), r.uniform(-0.6, 0.2))).normalized()
+            L = r.uniform(0.15, 0.32)
+            tube(bm, [tuple(p), tuple(p + d * L * 0.5 + Vector((0, 0, -0.03))), tuple(p + d * L)], [0.008, 0.006, 0.004], 3, MI['black_coral'], cap=False)
 prop('bindweed_garland', garland)
 def pendant(bm, seed=14):
     """Pendants 'disposed like lustres', hanging from the gallery's vault."""

@@ -249,43 +249,109 @@ def summit(bm):
     merge_into(bm, t)
 prop('summit', summit)
 
+# GUM 4 Nov: "the volcano looks like an ice-cream inverted". Rebuilt from the NOAA footage of West Mata erupting
+# (reference/underwater/a_real_submarine_eruption_0.jpg) and Verne's words: no smooth cone, no flames. A heap of black
+# scoria and broken blocks, a ragged crater with several vents, lava glowing only in fissures and in tongues that break
+# into blocks as they cool ("torrents of lava ... slid to the bottom of the mountain"), boulders thrown out and lying on
+# the flanks ("a rain of stones and scoriae"). The vapour is a particle plume in Unity. Real size: radius 48 m, the
+# crater rim about 110 m up, placed at scale 1.
+VR, VH, CR = 110.0, 110.0, 17.0         # base radius, rim height, crater radius: ~30° scoria flanks
+def v_height(x, y):
+    """A scoria cone as it really is: lumpy outline, a shallow bowl crater with a sharp rim, the rim breached toward
+    the city (+X) where the lava pours out, a collapse scar on one flank, gullies, and no point on top."""
+    r = math.hypot(x, y); a = math.atan2(y, x)
+    vr = VR * (1.0 + 0.22 * noise.noise(Vector((math.cos(a) * 1.3, math.sin(a) * 1.3, 4.2))))   # lobed outline
+    if r >= vr: return -2.0
+    breach = math.exp(-((a - (-0.35)) / 0.32) ** 2)                 # the notch the lava pours through
+    rim = VH - 10.0 * breach
+    if r < CR:
+        h = rim - 16.0 * (1.0 - (r / CR) ** 2) * (1.0 - 0.45 * breach)   # the bowl
+    else:
+        t = (r - CR) / (vr - CR)
+        h = rim * (1.0 - t) ** 1.1
+        scar = math.exp(-((a - 2.3) / 0.35) ** 2) * math.exp(-((t - 0.4) / 0.22) ** 2) * 14.0   # an old collapse
+        h -= scar
+        h += abs(noise.noise(Vector((a * 3.1, t * 2.0, 6.6)))) * -9.0 * t * (1 - t) * 3        # gullies
+    n = noise.noise(Vector((x * 0.05, y * 0.05, 3.1))) * 5.0 + noise.noise(Vector((x * 0.17, y * 0.17, 8.7))) * 2.0
+    return h + n * min(1.0, r / CR)
+def v_fissure(x, y):
+    """How hot the ground is: high in the crater and along a few fissures running down the flank toward the city (+X)."""
+    r = math.hypot(x, y); a = math.atan2(y, x)
+    hot = max(0.0, 1.0 - r / (CR * 0.65)) * 0.8                 # only the crater floor glows; its walls are black
+    for k, a0 in enumerate((-0.35, 0.05, 0.5, 2.6)):
+        da = (a - a0 + math.pi) % (2 * math.pi) - math.pi
+        wob = noise.noise(Vector((r * 0.06, k * 3.3, 0.5))) * 0.22
+        width = 0.035 + 0.02 * noise.noise(Vector((r * 0.15, k, 2.0)))
+        reach = (VR * 0.95) if k < 3 else VR * 0.45
+        if r < reach: hot = max(hot, max(0.0, 1.0 - abs(da - wob) / width) * (1.0 - r / reach) ** 0.5)
+    return hot
 def volcano(bm):
-    """'At fifty feet above the peak ... a large crater was vomiting forth torrents of lava which fell in a cascade
-    of fire': a broad cone with a broken crater rim; the lava runs are a separate piece (emissive)."""
-    t = bmesh.new()
-    prof = [(0, 0), (90, 0), (70, 18), (45, 42), (24, 64), (18, 70), (14, 66), (6, 58), (0, 58)]
-    lathe(t, [(r_, z) for r_, z in prof], 28, (0, 0, 0), MI['scoria'])
-    bmesh.ops.subdivide_edges(t, edges=[e for e in t.edges if e.calc_length() > 12], cuts=1)
-    for v in t.verts:
-        rr = Vector((v.co.x, v.co.y, 0)).length
-        if rr > 1: v.co += Vector((v.co.x / rr, v.co.y / rr, 0)) * noise.noise(v.co * 0.05) * 6.0 + Vector((0, 0, noise.noise(v.co * 0.08) * 2.0))
-    bm2 = t
-    for f in bm2.faces:
-        if f.calc_center_median().z > 56: f.material_index = MI['lava_crust']
-    merge_into(bm, bm2)
+    rnd = random.Random(1869)
+    step = 3.0; n = int(VR * 2 / step) + 1
+    vs = {}
+    for i in range(n):
+        for j in range(n):
+            x = -VR + i * step + rnd.uniform(-0.45, 0.45); y = -VR + j * step + rnd.uniform(-0.45, 0.45)
+            vs[i, j] = bm.verts.new((x, y, v_height(x, y)))
+    for i in range(n - 1):
+        for j in range(n - 1):
+            q = [vs[i, j], vs[i + 1, j], vs[i + 1, j + 1], vs[i, j + 1]]
+            c = sum((v.co for v in q), Vector()) / 4
+            if math.hypot(c.x, c.y) > VR + 1: continue
+            for tri in ((q[0], q[1], q[2]), (q[0], q[2], q[3])):
+                f = bm.faces.new(tri); cc = f.calc_center_median()
+                heat = v_fissure(cc.x, cc.y)
+                f.material_index = MI['lava'] if heat > 0.55 else (MI['lava_crust'] if heat > 0.2 else MI['scoria'])
+    # blocks and bombs on the flanks, thicker near the top ("a rain of stones and scoriae")
+    for k in range(420):
+        r = CR * 0.8 + (VR - CR) * (rnd.random() ** 1.8) * 0.9; a = rnd.uniform(0, 2 * math.pi)
+        x, y = math.cos(a) * r, math.sin(a) * r
+        s = rnd.uniform(0.8, 3.2) * (1.4 - r / VR)
+        t = bmesh.new(); bmesh.ops.create_icosphere(t, subdivisions=1, radius=s)
+        for v in t.verts: v.co.x *= rnd.uniform(0.8, 1.4); v.co.z *= rnd.uniform(0.5, 0.9)
+        jitter(t, s * 0.25, k)
+        hot = v_fissure(x, y) > 0.3
+        for f in t.faces: f.material_index = MI['lava_crust'] if hot else MI['scoria']
+        merge_into(bm, t, Matrix.Translation((x, y, v_height(x, y) + s * 0.3)) @ Matrix.Rotation(rnd.uniform(0, 6.28), 4, 'Z'))
 prop('volcano', volcano)
 
 def lava_runs(bm):
-    """Torrents of lava down the cone toward the city: glowing ribbons, a crust darkening at their edges."""
-    r = random.Random(71)
-    for k in range(5):
-        a = math.radians(-60 + k * 30 + r.uniform(-8, 8))
-        pts = []
-        for i in range(10):
-            t = i / 9
-            rr = 16 + t * 72; z = 66 - 60 * (t ** 0.8)
-            pts.append(Vector((math.cos(a) * rr + math.sin(t * 7 + k) * 2.0, math.sin(a) * rr, z + 0.6)))
-        w0 = r.uniform(1.6, 3.0)
-        for i in range(9):
-            p0, p1 = pts[i], pts[i + 1]
-            d = (p1 - p0).normalized(); s = Vector((-d.y, d.x, 0)).normalized()
-            w = w0 * (1 - 0.5 * i / 9)
-            q = [p0 - s * w, p0 + s * w, p1 + s * w * 0.9, p1 - s * w * 0.9]
-            f = bm.faces.new([bm.verts.new(v) for v in q]); f.material_index = MI['lava']
-            q2 = [p0 - s * w * 1.5 - Vector((0, 0, 0.2)), p0 - s * w, p1 - s * w * 0.9, p1 - s * w * 1.4 - Vector((0, 0, 0.2))]
-            f = bm.faces.new([bm.verts.new(v) for v in q2]); f.material_index = MI['lava_crust']
-            q3 = [p0 + s * w, p0 + s * w * 1.5 - Vector((0, 0, 0.2)), p1 + s * w * 1.4 - Vector((0, 0, 0.2)), p1 + s * w * 0.9]
-            f = bm.faces.new([bm.verts.new(v) for v in q3]); f.material_index = MI['lava_crust']
+    """The fire itself, so the light comes from lava and not from a glowing ball (GUM 4 Nov): a lava lake in the crater
+    bowl broken into dark crust plates with molten seams between them, molten rock spattering up from the vents, and a
+    lip of lava spilling through the breach toward the city (+X), breaking into glowing blocks as it falls."""
+    rnd = random.Random(71)
+    # the lake: a disc just under the rim's inner floor, molten
+    lake_z = VH - 16.0 * 0.95 + 1.2
+    t = bmesh.new(); bmesh.ops.create_circle(t, cap_ends=True, segments=24, radius=CR * 0.82)
+    bmesh.ops.triangulate(t, faces=t.faces)
+    for f in t.faces: f.material_index = MI['lava']
+    merge_into(bm, t, Matrix.Translation((0, 0, lake_z)))
+    # crust plates floating on it, with molten seams showing between them
+    for k in range(26):
+        rr = CR * 0.75 * math.sqrt(rnd.random()); aa = rnd.uniform(0, 2 * math.pi)
+        px, py = math.cos(aa) * rr, math.sin(aa) * rr
+        t = bmesh.new(); bmesh.ops.create_circle(t, cap_ends=True, segments=rnd.choice((5, 6, 7)), radius=rnd.uniform(1.4, 3.2))
+        for v in t.verts: v.co.x *= rnd.uniform(0.7, 1.3); v.co += Vector((0, 0, rnd.uniform(0.0, 0.25)))
+        ext = bmesh.ops.extrude_face_region(t, geom=t.faces[:])
+        for v in [e for e in ext['geom'] if isinstance(e, bmesh.types.BMVert)]: v.co.z += 0.35
+        for f in t.faces: f.material_index = MI['lava_crust']
+        merge_into(bm, t, Matrix.Translation((px, py, lake_z + 0.05)) @ Matrix.Rotation(rnd.uniform(0, 6.28), 4, 'Z'))
+    # spatter: molten clots thrown up from three vents, hanging in the water in arcs
+    for vx, vy, n in ((0.0, 0.0, 22), (5.5, -3.0, 12), (-4.5, 4.0, 10)):
+        for k in range(n):
+            h = rnd.uniform(1.0, 16.0); spread = 0.25 * h
+            x = vx + rnd.uniform(-spread, spread); y = vy + rnd.uniform(-spread, spread)
+            sz = rnd.uniform(0.25, 0.9) * (1.2 - h / 20)
+            t = bmesh.new(); bmesh.ops.create_icosphere(t, subdivisions=1, radius=sz); jitter(t, sz * 0.35, 500 + k)
+            for f in t.faces: f.material_index = MI['lava'] if h < 9 or rnd.random() < 0.5 else MI['lava_crust']
+            merge_into(bm, t, Matrix.Translation((x, y, lake_z + h)))
+    for k in range(70):   # molten blocks tumbling down the main fissure
+        r = CR + rnd.random() ** 0.7 * VR * 0.8; a = -0.35 + noise.noise(Vector((r * 0.06, 0, 0.5))) * 0.22 + rnd.uniform(-0.04, 0.04)
+        x, y = math.cos(a) * r, math.sin(a) * r
+        s = rnd.uniform(0.4, 1.5) * (1.2 - r / VR)
+        t = bmesh.new(); bmesh.ops.create_icosphere(t, subdivisions=1, radius=s); jitter(t, s * 0.3, 900 + k)
+        for f in t.faces: f.material_index = MI['lava'] if rnd.random() < 0.55 else MI['lava_crust']
+        merge_into(bm, t, Matrix.Translation((x, y, v_height(x, y) + s * 0.5)))
 prop('lava_runs', lava_runs)
 
 def scoria(bm, seed=81):
