@@ -801,7 +801,7 @@ namespace Verne.EditorTools
                     w.surfaceY = 274f; w.extinction = new Color(0.05f, 0.02f, 0.016f); w.scatterAlbedo = new Color(0.55f, 0.8f, 0.95f);   // GUM Prompt_3: the brown was wrong. Open-ocean water absorbs red first: the volcano is orange near and cools to blue with distance   // GUM 3 Nov pm: less fog
                     w.kd = new Color(0.002f, 0.002f, 0.002f); w.surfaceAmbient = Color.black; w.sunShafts = 9f; w.maxDistance = 110f; w.heroGain = 3f; w.forwardScatter = 0.8f; w.shadowDistance = 200f; w.sampleSpread = 1.25f;   // no orb: the crater light sits inside the rim and the lit cloud does the lighting; the mountain's shadow carves the rays
                     w.ambientFloor = new Color(0.008f, 0.02f, 0.034f);   // tour 13: the plain was black   // a dark night: the rays and the glow stand out of it
-                    w.glowColor = new Color(0.2f, 0.1f, 0.045f); w.glowPosition = AtlantisKit.CraterGlow + new Vector3(0f, 25f, 0f); w.glowRange = 240f;   // "it did light our way, vaguely": the glow reaches the plain break;   // the glowing cloud over the crater
+                    w.glowColor = new Color(0.2f, 0.1f, 0.045f); w.glowPosition = AtlantisKit.CraterGlow + new Vector3(0f, 25f, 0f); w.glowRange = 240f; break;   // "it did light our way, vaguely": the glow reaches the plain;   // the glowing cloud over the crater
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
             if (w.sunShafts > 0f)
