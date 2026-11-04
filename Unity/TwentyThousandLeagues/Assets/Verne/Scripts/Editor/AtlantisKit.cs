@@ -119,6 +119,8 @@ namespace Verne.EditorTools
             if (fbx == null) { VerneBootstrap.Note("Atlantis.fbx missing: Mission II keeps its greybox."); return false; }
             s_Src.Clear();
             foreach (var t in fbx.GetComponentsInChildren<Transform>(true)) if (t.GetComponent<MeshFilter>() != null) s_Src[t.name] = t.gameObject;
+            var rocks = AssetDatabase.LoadAssetAtPath<GameObject>(VerneBootstrap.Root + "/Models/Seabed/Seabed_Rocks.fbx");   // the faceted boulders for the mountain's rubble
+            if (rocks != null) foreach (var t in rocks.GetComponentsInChildren<Transform>(true)) if (t.GetComponent<MeshFilter>() != null && !s_Src.ContainsKey(t.name)) s_Src[t.name] = t.gameObject;
             s_Ground = groundAt; s_R = new System.Random(1869);
             s_Root = new GameObject("Atlantis (Blender kit)").transform; s_Root.SetParent(parent, false);
             int n0 = s_Root.childCount;
@@ -166,8 +168,10 @@ namespace Verne.EditorTools
             for (int i = 0; i < 10; i++) Put(i % 3 == 0 ? "col_drum" : (i % 2 == 0 ? "col_broken_a" : "col_broken_b"), Rnd(-18, 18, 122, 134, 3f), Yaw(), 1f);
             // 6. the summit and the rock of black basalt
             // two crags of black basalt flank the platform, as in im079 (the platform itself stays open ground to stand on)
-            var c1 = Put("summit", new Vector3(11f, 0, SummitZ - 3f), 160f, 1f); if (c1 != null) c1.transform.localScale = new Vector3(0.45f, 0.4f, 0.45f);
-            var c2 = Put("summit", new Vector3(-11f, 0, SummitZ - 1f), 20f, 1f); if (c2 != null) c2.transform.localScale = new Vector3(0.38f, 0.3f, 0.38f);
+            // (pushed out and lowered: the right-hand crag filled the summit view and hid the city)
+            var c1 = Put("summit", new Vector3(17f, 0, SummitZ - 6f), 160f, 1f); if (c1 != null) c1.transform.localScale = new Vector3(0.32f, 0.26f, 0.32f);
+            var c2 = Put("summit", new Vector3(-15f, 0, SummitZ - 4f), 20f, 1f); if (c2 != null) c2.transform.localScale = new Vector3(0.3f, 0.24f, 0.3f);
+            Rubble();
             // 7. the city below, lit only by the volcano
             float y = CityY;
             PutAt("acropolis", new Vector3(-70f, y, 255f), 12f, 1f, true);
@@ -302,6 +306,95 @@ namespace Verne.EditorTools
             }
             var er = root.AddComponent<VolcanoEruption>(); er.plume = plume; er.blast = blast; er.cloudLights = lights;
             LastEruption = er;
+        }
+
+        /// <summary>
+        /// GUM Prompt_3: "you call that a mountain?" The browser build she preferred climbed through heaps of black rubble
+        /// with lava glowing in the cracks between. The flanks of the climb (crevice to summit) are piled with faceted basalt
+        /// boulders, big crags stand further out against the glow, and thin seams of lava run down between them. The ledge
+        /// itself stays clear to walk.
+        /// </summary>
+        static void Rubble()
+        {
+            string[] small = { "rock_boulder_a", "rock_boulder_b", "rock_boulder_c", "rock_slab_a", "rock_slab_b" };
+            string[] big = { "rock_outcrop_a", "rock_outcrop_b", "rock_boulder_c" };
+            if (!s_Src.ContainsKey("rock_boulder_a")) { VerneBootstrap.Note("Seabed_Rocks.fbx missing: the mountain has no rubble."); return; }
+            var basalt = Materials.Get("Basalt");
+            int placed = 0;
+            for (int i = 0; i < 260; i++)
+            {
+                float z = Rf(CrevZ1 + 2f, SummitZ + 4f);
+                float hw = HalfWidth(z) + 0.8f;
+                float off = hw + Mathf.Pow(Rf(0f, 1f), 1.6f) * 26f;              // crowded near the ledge, thinning outward
+                float x = (s_R.Next(2) == 0 ? -1f : 1f) * off;
+                float sc = Rf(0.7f, 1.6f) + (off - hw) * Rf(0.03f, 0.1f);       // bigger further out
+                var go = Put(small[s_R.Next(small.Length)], new Vector3(x, 0, z), Yaw(), sc, off - hw < 9f);
+                if (go == null) continue;
+                go.transform.position += Vector3.down * sc * Rf(0.15f, 0.4f);    // half-sunk, as rubble lies
+                go.transform.rotation = Quaternion.Euler(Rf(-25f, 25f), 0f, Rf(-25f, 25f)) * go.transform.rotation;
+                Recolour(go, basalt); placed++;
+            }
+            for (int i = 0; i < 46; i++)                                          // crags: the silhouettes against the glow
+            {
+                float z = Rf(CrevZ1 - 6f, SummitZ + 2f);
+                float x = (s_R.Next(2) == 0 ? -1f : 1f) * (HalfWidth(z) + Rf(10f, 44f));
+                var go = Put(big[s_R.Next(big.Length)], new Vector3(x, 0, z), Yaw(), Rf(3.5f, 8f), false);
+                if (go == null) continue;
+                go.transform.position += Vector3.down * Rf(0.5f, 2f);
+                Recolour(go, basalt); placed++;
+            }
+            LavaSeams();
+            VerneBootstrap.Note($"Mission II: {placed} rubble boulders and crags on the mountain, lava seams between.");
+        }
+
+        static void Recolour(GameObject go, Material m)
+        {
+            var mr = go.GetComponent<MeshRenderer>(); if (mr == null || m == null) return;
+            var mats = mr.sharedMaterials; for (int i = 0; i < mats.Length; i++) mats[i] = m; mr.sharedMaterials = mats;
+        }
+
+        /// <summary>Thin seams of lava wandering down the flanks between the rubble: a ribbon laid on the ground, emissive.</summary>
+        static void LavaSeams()
+        {
+            var mat = Materials.Emissive("LavaSeam", new Color(0.5f, 0.3f, 0.2f), new Color(2.6f, 0.85f, 0.2f));
+            var verts = new List<Vector3>(); var uvs = new List<Vector2>(); var tris = new List<int>();
+            for (int c = 0; c < 18; c++)
+            {
+                float z = Rf(CrevZ1 + 6f, SummitZ - 2f);
+                float side = s_R.Next(2) == 0 ? -1f : 1f;
+                var p = new Vector3(side * (HalfWidth(z) + Rf(3f, 10f)), 0f, z);
+                float heading = side > 0 ? Rf(-40f, 40f) : 180f + Rf(-40f, 40f);    // outward and down the flank
+                int segs = 18 + s_R.Next(22);
+                float w0 = Rf(0.18f, 0.5f);
+                int start = verts.Count;
+                for (int k = 0; k <= segs; k++)
+                {
+                    heading += Rf(-28f, 28f);
+                    var dir = Quaternion.Euler(0f, heading, 0f) * Vector3.right;
+                    var nrm = new Vector3(-dir.z, 0f, dir.x);
+                    float w = w0 * (1f - 0.75f * k / segs) * Rf(0.7f, 1.3f);
+                    var a = p + nrm * w; var b = p - nrm * w;
+                    a.y = s_Ground(a) + 0.05f; b.y = s_Ground(b) + 0.05f;
+                    verts.Add(a); verts.Add(b); uvs.Add(new Vector2(0f, k)); uvs.Add(new Vector2(1f, k));
+                    if (k > 0) { int i0 = start + (k - 1) * 2; tris.AddRange(new[] { i0, i0 + 2, i0 + 1, i0 + 1, i0 + 2, i0 + 3 }); }
+                    p += dir * Rf(0.8f, 1.6f);
+                }
+            }
+            var mesh = new Mesh { name = "Lava seams", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+            mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
+            string path = VerneBootstrap.Generated + "/Meshes/LavaSeams.asset";
+            System.IO.Directory.CreateDirectory(VerneBootstrap.Generated + "/Meshes");
+            AssetDatabase.DeleteAsset(path); AssetDatabase.CreateAsset(mesh, path);
+            var go = new GameObject("Lava seams"); go.transform.SetParent(s_Root, false);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr = go.AddComponent<MeshRenderer>(); mr.sharedMaterial = mat; mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // a few small lights so the seams light the rock around them (no shadows: cheap)
+            for (int i = 0; i < verts.Count; i += Mathf.Max(2, verts.Count / 7) & ~1)
+            {
+                var l = new GameObject("Seam glow").AddComponent<Light>(); l.transform.SetParent(go.transform, false);
+                l.transform.position = verts[i] + Vector3.up * 0.8f;
+                l.type = LightType.Point; l.color = new Color(1f, 0.5f, 0.22f); l.intensity = 1.4f; l.range = 9f; l.shadows = LightShadows.None;
+            }
         }
 
         static void Glow()
