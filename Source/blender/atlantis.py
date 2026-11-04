@@ -345,6 +345,39 @@ def lava_runs(bm):
             t = bmesh.new(); bmesh.ops.create_icosphere(t, subdivisions=1, radius=sz); jitter(t, sz * 0.35, 500 + k)
             for f in t.faces: f.material_index = MI['lava'] if h < 9 or rnd.random() < 0.5 else MI['lava_crust']
             merge_into(bm, t, Matrix.Translation((x, y, lake_z + h)))
+    # GUM 4 Nov, from the West Mata accounts: "huge, glowing lava bubbles several feet across" rising from the vent
+    # (seawater flashing to steam inside a skin of lava), and "low-level, nearly continuous fire fountains"
+    for k in range(9):
+        h = rnd.uniform(2.0, 14.0); rad = rnd.uniform(0.35, 1.0) * (1.1 - h / 20)
+        t = bmesh.new(); bmesh.ops.create_icosphere(t, subdivisions=2, radius=rad); jitter(t, rad * 0.08, 300 + k)
+        for f in t.faces: f.material_index = MI['lava'] if h < 7 else MI['lava_crust']
+        merge_into(bm, t, Matrix.Translation((rnd.uniform(-1.5, 1.5), rnd.uniform(-1.5, 1.5), lake_z + h)))
+    for vx, vy, n in ((0.0, 0.0, 5), (5.5, -3.0, 4), (-4.5, 4.0, 3)):           # fountains: arcs of molten clots
+        for f_ in range(n):
+            az = rnd.uniform(0, 2 * math.pi); v0 = rnd.uniform(6, 11); el = math.radians(rnd.uniform(55, 80))
+            for i in range(1, 9):
+                tt = i * 0.16
+                x = vx + math.cos(az) * v0 * math.cos(el) * tt; y = vy + math.sin(az) * v0 * math.cos(el) * tt
+                z = lake_z + v0 * math.sin(el) * tt - 0.5 * 9.0 * tt * tt * 0.6          # slowed by the water
+                if z < lake_z: break
+                sz = 0.32 - i * 0.025
+                t = bmesh.new(); bmesh.ops.create_icosphere(t, subdivisions=1, radius=max(sz, 0.08)); jitter(t, sz * 0.3, 700 + f_ * 10 + i)
+                for f in t.faces: f.material_index = MI['lava'] if i < 6 else MI['lava_crust']
+                merge_into(bm, t, Matrix.Translation((x, y, z)))
+    # "bands of superheated pillow lava flowing down the volcano's slope": glowing lobes, each crusting as it cools
+    for k, a0 in enumerate((-0.35, 0.05, 0.5)):
+        r = CR * 1.2
+        while r < VR * 0.85:
+            a = a0 + noise.noise(Vector((r * 0.06, k * 3.3, 0.5))) * 0.22
+            x, y = math.cos(a) * r, math.sin(a) * r
+            L = rnd.uniform(2.2, 3.6); rad = rnd.uniform(0.7, 1.2) * (1.15 - r / VR)
+            d = Vector((math.cos(a), math.sin(a), 0))
+            p0 = Vector((x, y, v_height(x, y) + rad * 0.6)); p1 = p0 + d * L
+            p1.z = v_height(p1.x, p1.y) + rad * 0.6
+            t = bmesh.new()
+            tube(t, [tuple(p0), tuple(p0.lerp(p1, 0.5) + Vector((0, 0, rad * 0.15))), tuple(p1)], [rad * 0.7, rad, rad * 0.7], 7, MI['lava'] if r < VR * 0.55 else MI['lava_crust'])
+            merge_into(bm, t)
+            r += L * 0.9
     for k in range(70):   # molten blocks tumbling down the main fissure
         r = CR + rnd.random() ** 0.7 * VR * 0.8; a = -0.35 + noise.noise(Vector((r * 0.06, 0, 0.5))) * 0.22 + rnd.uniform(-0.04, 0.04)
         x, y = math.cos(a) * r, math.sin(a) * r
