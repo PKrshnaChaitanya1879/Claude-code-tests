@@ -326,9 +326,9 @@ namespace Verne.EditorTools
                 var fr = fgo.GetComponent<ParticleSystemRenderer>(); fr.sharedMaterial = fmat; fr.renderMode = ParticleSystemRenderMode.Stretch;
                 fr.velocityScale = 0.22f; fr.lengthScale = 1.5f; fr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 var m = fountain.main; m.loop = true; m.prewarm = true; m.duration = 5f; m.simulationSpace = ParticleSystemSimulationSpace.World;
-                m.startLifetime = new ParticleSystem.MinMaxCurve(3f, 5.5f); m.startSpeed = new ParticleSystem.MinMaxCurve(16f, 30f);
-                m.startSize = new ParticleSystem.MinMaxCurve(0.6f, 1.6f); m.gravityModifier = 0.9f; m.maxParticles = 600;
-                var e = fountain.emission; e.rateOverTime = 70f;
+                m.startLifetime = new ParticleSystem.MinMaxCurve(3.5f, 6f); m.startSpeed = new ParticleSystem.MinMaxCurve(20f, 38f);
+                m.startSize = new ParticleSystem.MinMaxCurve(1f, 2.4f); m.gravityModifier = 0.9f; m.maxParticles = 900;
+                var e = fountain.emission; e.rateOverTime = 95f;
                 e.SetBursts(new[] { new ParticleSystem.Burst(0f, 30, 60, 3, 1.4f) });                       // the pulses of a fountain
                 var shp = fountain.shape; shp.shapeType = ParticleSystemShapeType.Cone; shp.angle = 26f; shp.radius = 4f;
                 var lim = fountain.limitVelocityOverLifetime; lim.enabled = true; lim.limit = 40f; lim.dampen = 0.03f;   // the water's drag
@@ -360,7 +360,7 @@ namespace Verne.EditorTools
             int placed = 0;
             for (int i = 0; i < 260; i++)
             {
-                float z = Rf(CrevZ1 + 2f, SummitZ + 4f);
+                float z = Rf(CrevZ1 + 2f, SummitZ - 2f);
                 float hw = HalfWidth(z) + 0.8f;
                 float off = hw + Mathf.Pow(Rf(0f, 1f), 1.6f) * 26f;              // crowded near the ledge, thinning outward
                 float x = (s_R.Next(2) == 0 ? -1f : 1f) * off;
@@ -373,7 +373,7 @@ namespace Verne.EditorTools
             }
             for (int i = 0; i < 46; i++)                                          // crags: the silhouettes against the glow
             {
-                float z = Rf(CrevZ1 - 6f, SummitZ + 2f);
+                float z = Rf(CrevZ1 - 6f, SummitZ - 14f);                          // tour 13: none near the summit, where they hid the view
                 float x = (s_R.Next(2) == 0 ? -1f : 1f) * (HalfWidth(z) + Rf(10f, 44f));
                 var go = Put(big[s_R.Next(big.Length)], new Vector3(x, 0, z), Yaw(), Rf(3.5f, 8f), false);
                 if (go == null) continue;
@@ -393,7 +393,7 @@ namespace Verne.EditorTools
         /// <summary>Thin seams of lava wandering down the flanks between the rubble: a ribbon laid on the ground, emissive.</summary>
         static void LavaSeams()
         {
-            var mat = Materials.Emissive("LavaSeam", new Color(0.5f, 0.3f, 0.2f), new Color(2.6f, 0.85f, 0.2f));
+            var mat = Materials.Emissive("LavaSeam2", new Color(0.12f, 0.05f, 0.03f), new Color(1.5f, 0.32f, 0.05f));
             var verts = new List<Vector3>(); var uvs = new List<Vector2>(); var tris = new List<int>();
             for (int c = 0; c < 18; c++)
             {
@@ -402,7 +402,7 @@ namespace Verne.EditorTools
                 var p = new Vector3(side * (HalfWidth(z) + Rf(3f, 10f)), 0f, z);
                 float heading = side > 0 ? Rf(-40f, 40f) : 180f + Rf(-40f, 40f);    // outward and down the flank
                 int segs = 18 + s_R.Next(22);
-                float w0 = Rf(0.18f, 0.5f);
+                float w0 = Rf(0.1f, 0.26f);
                 int start = verts.Count;
                 for (int k = 0; k <= segs; k++)
                 {
@@ -411,7 +411,7 @@ namespace Verne.EditorTools
                     var nrm = new Vector3(-dir.z, 0f, dir.x);
                     float w = w0 * (1f - 0.75f * k / segs) * Rf(0.7f, 1.3f);
                     var a = p + nrm * w; var b = p - nrm * w;
-                    a.y = s_Ground(a) + 0.05f; b.y = s_Ground(b) + 0.05f;
+                    a.y = s_Ground(a) + 0.02f; b.y = s_Ground(b) + 0.02f;
                     verts.Add(a); verts.Add(b); uvs.Add(new Vector2(0f, k)); uvs.Add(new Vector2(1f, k));
                     if (k > 0) { int i0 = start + (k - 1) * 2; tris.AddRange(new[] { i0, i0 + 2, i0 + 1, i0 + 1, i0 + 2, i0 + 3 }); }
                     p += dir * Rf(0.8f, 1.6f);
@@ -430,7 +430,7 @@ namespace Verne.EditorTools
             {
                 var l = new GameObject("Seam glow").AddComponent<Light>(); l.transform.SetParent(go.transform, false);
                 l.transform.position = verts[i] + Vector3.up * 0.8f;
-                l.type = LightType.Point; l.color = new Color(1f, 0.5f, 0.22f); l.intensity = 1.4f; l.range = 9f; l.shadows = LightShadows.None;
+                l.type = LightType.Point; l.color = new Color(1f, 0.42f, 0.16f); l.intensity = 1.1f; l.range = 8f; l.shadows = LightShadows.None;
             }
         }
 

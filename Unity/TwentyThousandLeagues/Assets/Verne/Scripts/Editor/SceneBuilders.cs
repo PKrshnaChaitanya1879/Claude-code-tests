@@ -800,8 +800,8 @@ namespace Verne.EditorTools
                     // fire is amber, the rock is seen; things fall to silhouette against the glow
                     w.surfaceY = 274f; w.extinction = new Color(0.05f, 0.02f, 0.016f); w.scatterAlbedo = new Color(0.55f, 0.8f, 0.95f);   // GUM Prompt_3: the brown was wrong. Open-ocean water absorbs red first: the volcano is orange near and cools to blue with distance   // GUM 3 Nov pm: less fog
                     w.kd = new Color(0.002f, 0.002f, 0.002f); w.surfaceAmbient = Color.black; w.sunShafts = 9f; w.maxDistance = 110f; w.heroGain = 3f; w.forwardScatter = 0.8f; w.shadowDistance = 200f; w.sampleSpread = 1.25f;   // no orb: the crater light sits inside the rim and the lit cloud does the lighting; the mountain's shadow carves the rays
-                    w.ambientFloor = new Color(0.004f, 0.012f, 0.022f);   // a dark night: the rays and the glow stand out of it
-                    w.glowColor = new Color(0.14f, 0.07f, 0.03f); w.glowPosition = AtlantisKit.CraterGlow + new Vector3(0f, 25f, 0f); w.glowRange = 150f; break;   // the glowing cloud over the crater
+                    w.ambientFloor = new Color(0.008f, 0.02f, 0.034f);   // tour 13: the plain was black   // a dark night: the rays and the glow stand out of it
+                    w.glowColor = new Color(0.2f, 0.1f, 0.045f); w.glowPosition = AtlantisKit.CraterGlow + new Vector3(0f, 25f, 0f); w.glowRange = 240f;   // "it did light our way, vaguely": the glow reaches the plain break;   // the glowing cloud over the crater
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
             if (w.sunShafts > 0f)
@@ -1275,7 +1275,7 @@ namespace Verne.EditorTools
         {
             var s = NewScene("Mission2");
             // midnight at 150 fathoms; the only light is the volcano's red glow, two miles off
-            Ambient(new Color(0.05f, 0.09f, 0.13f), new Color(0.03f, 0.055f, 0.08f), new Color(0.012f, 0.02f, 0.028f));   // GUM Prompt_3: cold night water; the lava does the warm   // GUM 4 Nov: see the ground at your feet   // night: the rock is seen, barely   // GUM 3 Nov: the browser's umber night, where you can see the rock   // tour 5: only the volcano lights this night: the faint fill is its ember, not a blue-grey haze
+            Ambient(new Color(0.09f, 0.14f, 0.2f), new Color(0.055f, 0.085f, 0.12f), new Color(0.025f, 0.035f, 0.045f));   // GUM Prompt_3: cold night water; the lava does the warm   // GUM 4 Nov: see the ground at your feet   // night: the rock is seen, barely   // GUM 3 Nov: the browser's umber night, where you can see the rock   // tour 5: only the volcano lights this night: the faint fill is its ember, not a blue-grey haze
             Fog(true, new Color(0.012f, 0.014f, 0.02f), 0.012f);   // fallback only; thin enough that the glow and the city still show from the summit
             var root = new GameObject("Atlantis approach").transform;
             // (M5, started in Part 3) the stony plain → the climb through the petrified copse → the crevice → the first platform →
