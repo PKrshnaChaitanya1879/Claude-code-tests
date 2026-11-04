@@ -188,6 +188,10 @@ Shader "Verne/Flora"
                 Light sun = GetMainLight(id.shadowCoord, i.positionWS, id.shadowMask);
                 half back = saturate(-dot(n, sun.direction) + _Wrap) / (1.0 + _Wrap);
                 col.rgb += sd.albedo * sun.color * sun.shadowAttenuation * back * _Wrap * 0.6;
+                // looking toward the sun through a blade: kelp glows gold, as in the photographs (light through a thin leaf)
+                half3 V = normalize(GetWorldSpaceViewDir(i.positionWS));
+                half through = pow(saturate(dot(V, -sun.direction)), 4.0);
+                col.rgb += sd.albedo * sun.color * sun.shadowAttenuation * through * _Wrap * 2.2;
                 col.rgb = MixFog(col.rgb, id.fogCoord);
                 return half4(col.rgb, 1);
             }

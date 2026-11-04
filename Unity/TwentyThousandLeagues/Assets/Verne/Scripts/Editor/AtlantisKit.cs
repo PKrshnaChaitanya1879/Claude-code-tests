@@ -18,12 +18,13 @@ namespace Verne.EditorTools
         // the summit 50 m up; the far side falls twice that to the city. The crevice's lips sit on the sea floor's 2 m grid
         // (z = 98 and 106, the trench between), on a level shelf (z 90-114); a second shelf is the first platform (z 122-134).
         public const float SummitZ = 150f, SummitH = 38f, CityY = -50f, CrevZ0 = 98f, CrevZ1 = 106f;
-        public const float VolcanoScaleY = 1.6f;
-        // "In fact, the mountain was a volcano": its crater opens on the far flank beside the summit, "fifty feet above the peak",
-        // as in im079, where the fire stands right behind the two men; the city spreads below and beyond it, lit "like an immense torch"
-        public static readonly Vector3 VolcanoBase = new Vector3(40f, CityY + 2f, 178f);
-        public const float VolcanoScaleXZ = 0.45f;
-        public static Vector3 CraterGlow => VolcanoBase + new Vector3(0f, 70f * VolcanoScaleY - 2f, 0f);   // some fifty feet above the peak (II.IX)
+        // GUM 4 Nov: the volcano rebuilt from West Mata (Source/blender/atlantis.py): a scoria cone at its real size, radius
+        // 110 m, the crater rim 110 m up, placed at scale 1. Moved out beside the summit (east of it) so its flanks don't bury
+        // the city, its crater still well above the peak ("fifty feet above"), its breach and lava flows turned toward the city.
+        public const float VolcanoScaleY = 1f, VolcanoScaleXZ = 1f;
+        public static readonly Vector3 VolcanoBase = new Vector3(118f, CityY + 2f, 212f);
+        public const float VolcanoYaw = -90f;                                  // the model's flows (+X in Blender) face the city (-X here)
+        public static Vector3 CraterGlow => VolcanoBase + new Vector3(0f, 99f, 0f);   // just above the lava lake, below the rim: the rim hides the source
         static readonly Dictionary<string, GameObject> s_Src = new Dictionary<string, GameObject>();
         static System.Func<Vector3, float> s_Ground;
         static System.Random s_R;
@@ -188,9 +189,10 @@ namespace Verne.EditorTools
             }
             for (int i = 0; i < 16; i++) PutAt(i % 4 == 0 ? "col_drum" : "col_tuscan", new Vector3(-62f + i * 3.6f, y, 202f + Rf(-1f, 1f)), Yaw(), 1.2f, false);   // a colonnade, as in im079
             // 8. the volcano: crater, lava runs, scoriae in the water
-            var vol = PutAt("volcano", VolcanoBase, 0f, 1f, true); if (vol != null) vol.transform.localScale = new Vector3(VolcanoScaleXZ, VolcanoScaleY, VolcanoScaleXZ);
+            var vol = PutAt("volcano", VolcanoBase, VolcanoYaw, 1f, true);
             // the runs pour down the face toward the summit and the city ("fell in a cascade of fire into the bosom of the liquid mass")
-            var runs = PutAt("lava_runs", VolcanoBase, 39f, 1f, false); if (runs != null) runs.transform.localScale = new Vector3(VolcanoScaleXZ, VolcanoScaleY, VolcanoScaleXZ);
+            PutAt("lava_runs", VolcanoBase, VolcanoYaw, 1f, false);
+            Eruption(VolcanoBase, CraterGlow);
             Scoria.AtlantisCrater = CraterGlow;
             for (int i = 0; i < 40; i++)
                 PutAt("scoria", CraterGlow + new Vector3(Rf(-20f, 20f), Rf(2f, 30f), Rf(-20f, 20f)), Yaw(), Rf(2f, 6f), false);
@@ -229,11 +231,84 @@ namespace Verne.EditorTools
             w.moon = moon;
         }
 
+        public static VolcanoEruption LastEruption;
+        /// <summary>
+        /// The eruption in motion (GUM 4 Nov, after the West Mata footage): a cloud of milky-yellow gas and steam billowing up
+        /// from the crater and spreading, soft lit particles so the lava's lights inside it make the cloud glow and light the
+        /// area; steam explosions now and then (a flash, a blast of steam); two lights inside the cloud.
+        /// </summary>
+        static void Eruption(Vector3 baseP, Vector3 crater)
+        {
+            var root = new GameObject("The eruption (West Mata)"); root.transform.SetParent(s_Root, false); root.transform.position = crater;
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(VerneBootstrap.Root + "/Textures/smoke_puff.png");
+            var sh = Shader.Find("Universal Render Pipeline/Particles/Lit") ?? Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            string mp = VerneBootstrap.Generated + "/Materials/M_EruptionCloud.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(mp);
+            if (mat == null) { mat = new Material(sh); AssetDatabase.CreateAsset(mat, mp); }
+            mat.shader = sh;
+            mat.SetTexture("_BaseMap", tex); mat.SetColor("_BaseColor", new Color(0.93f, 0.89f, 0.72f, 1f));     // milky yellow-white
+            mat.SetFloat("_Surface", 1f); mat.SetFloat("_Blend", 0f);
+            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha); mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha); mat.SetFloat("_ZWrite", 0f);
+            mat.SetFloat("_SoftParticlesEnabled", 1f); mat.SetVector("_SoftParticleFadeParams", new Vector4(0f, 4f, 0f, 0f));
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); mat.EnableKeyword("_SOFTPARTICLES_ON");
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent; mat.SetOverrideTag("RenderType", "Transparent");
+            EditorUtility.SetDirty(mat);
+
+            ParticleSystem Cloud(string name, bool loop)
+            {
+                var go = new GameObject(name); go.transform.SetParent(root.transform, false);
+                go.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+                var ps = go.AddComponent<ParticleSystem>();
+                var r = go.GetComponent<ParticleSystemRenderer>(); r.sharedMaterial = mat; r.renderMode = ParticleSystemRenderMode.Billboard;
+                r.sortMode = ParticleSystemSortMode.Distance; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                var main = ps.main; main.loop = loop; main.simulationSpace = ParticleSystemSimulationSpace.World;
+                main.startRotation = new ParticleSystem.MinMaxCurve(0f, 6.28f);
+                var col = ps.colorOverLifetime; col.enabled = true;
+                var g = new Gradient();
+                g.SetKeys(new[] { new GradientColorKey(new Color(1f, 0.95f, 0.8f), 0f), new GradientColorKey(new Color(0.85f, 0.82f, 0.72f), 1f) },
+                          new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.12f), new GradientAlphaKey(0.7f, 0.6f), new GradientAlphaKey(0f, 1f) });
+                col.color = g;
+                var rot = ps.rotationOverLifetime; rot.enabled = true; rot.z = new ParticleSystem.MinMaxCurve(-0.15f, 0.15f);
+                return ps;
+            }
+            // the billowing cloud: always there, rising and spreading as it goes
+            var plume = Cloud("Gas and steam cloud", true);
+            { var m = plume.main; m.duration = 10f; m.prewarm = true; m.startLifetime = new ParticleSystem.MinMaxCurve(22f, 32f);
+              m.startSpeed = new ParticleSystem.MinMaxCurve(2.5f, 4.5f); m.startSize = new ParticleSystem.MinMaxCurve(12f, 22f); m.maxParticles = 140;
+              m.startColor = new Color(1f, 1f, 1f, 0.32f);
+              var e = plume.emission; e.rateOverTime = 4.5f;
+              var sh2 = plume.shape; sh2.shapeType = ParticleSystemShapeType.Cone; sh2.angle = 16f; sh2.radius = 7f;
+              var v = plume.velocityOverLifetime; v.enabled = true; v.space = ParticleSystemSimulationSpace.World; v.x = new ParticleSystem.MinMaxCurve(-0.9f, -0.3f); v.y = new ParticleSystem.MinMaxCurve(0.6f, 1.4f); v.z = new ParticleSystem.MinMaxCurve(-0.3f, 0.3f);
+              var lim = plume.limitVelocityOverLifetime; lim.enabled = true; lim.limit = 3.2f; lim.dampen = 0.08f;
+              var sz = plume.sizeOverLifetime; sz.enabled = true; sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 0.5f, 1f, 2.6f));
+              var n = plume.noise; n.enabled = true; n.strength = 1.6f; n.frequency = 0.08f; n.scrollSpeed = 0.05f; n.damping = true; }
+            // the steam explosions: emitted in bursts by VolcanoEruption
+            var blast = Cloud("Steam blasts", false);
+            { var m = blast.main; m.duration = 1f; m.playOnAwake = false; m.startLifetime = new ParticleSystem.MinMaxCurve(5f, 9f);
+              m.startSpeed = new ParticleSystem.MinMaxCurve(7f, 15f); m.startSize = new ParticleSystem.MinMaxCurve(6f, 13f); m.maxParticles = 80;
+              m.startColor = new Color(1f, 1f, 0.95f, 0.45f);
+              var e = blast.emission; e.rateOverTime = 0f;
+              var sh2 = blast.shape; sh2.shapeType = ParticleSystemShapeType.Cone; sh2.angle = 45f; sh2.radius = 3f;
+              var lim = blast.limitVelocityOverLifetime; lim.enabled = true; lim.limit = 2f; lim.dampen = 0.25f;     // water stops a blast fast
+              var sz = blast.sizeOverLifetime; sz.enabled = true; sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 0.4f, 1f, 2.2f)); }
+            // lights inside the cloud: the lava below lights it, and it lights the area
+            var lights = new Light[2];
+            for (int i = 0; i < 2; i++)
+            {
+                var lg = new GameObject("Light in the cloud " + (i + 1)); lg.transform.SetParent(root.transform, false);
+                lg.transform.position = crater + new Vector3(-6f * i, 18f + 24f * i, 0f);
+                var l = lg.AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(1f, 0.56f, 0.28f); l.intensity = i == 0 ? 3.2f : 2f; l.range = 170f; l.shadows = LightShadows.None;
+                lights[i] = l;
+            }
+            var er = root.AddComponent<VolcanoEruption>(); er.plume = plume; er.blast = blast; er.cloudLights = lights;
+            LastEruption = er;
+        }
+
         static void Glow()
         {
             // the lava's own light on the city (the crater light is built by the scene, at CraterGlow)
             var go = new GameObject("Lava light on the city"); go.transform.SetParent(s_Root, false);
-            go.transform.position = VolcanoBase + new Vector3(-50f, 30f, 40f);   // above the city, clear of the mountain
+            go.transform.position = VolcanoBase + new Vector3(-90f, 45f, 0f);   // the glowing cloud's light over the city
             var l = go.AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(1f, 0.62f, 0.38f); l.intensity = 1.6f; l.range = 260f; l.shadows = LightShadows.None;
         }
 
@@ -267,8 +342,8 @@ namespace Verne.EditorTools
                 {
                     if (mats[i] == null) continue;
                     string m = mats[i].name;
-                    if (m.StartsWith("M_lava_crust")) mats[i] = Materials.Emissive("LavaCrust", new Color(0.08f, 0.06f, 0.05f), new Color(0.09f, 0.045f, 0.02f));
-                    else if (m.StartsWith("M_lava")) mats[i] = Materials.Emissive("LavaRun", new Color(0.9f, 0.6f, 0.35f), new Color(2.6f, 1.25f, 0.5f));   // GUM 3 Nov: "way too red": amber fire, as the browser build
+                    if (m.StartsWith("M_lava_crust")) mats[i] = Materials.Emissive("LavaCrust", new Color(0.08f, 0.06f, 0.05f), new Color(0.55f, 0.16f, 0.04f));   // cooling crust: an ember glow
+                    else if (m.StartsWith("M_lava")) mats[i] = Materials.Emissive("LavaRun", new Color(0.9f, 0.6f, 0.35f), new Color(4.2f, 1.7f, 0.5f));   // molten: bright enough to bloom   // GUM 3 Nov: "way too red": amber fire, as the browser build
                     else if (name == "summit" || name == "volcano") mats[i] = Materials.Get("Basalt");   // tour 3: "a rock of black basalt": a silhouette rimmed red, not a flat orange slab
                     else if (m.StartsWith("M_pennatule")) mats[i] = Materials.Emissive("Pennatule", new Color(0.32f, 0.3f, 0.28f), new Color(0.03f, 0.07f, 0.06f));
                 }

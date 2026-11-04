@@ -81,7 +81,18 @@ namespace Verne
                 {
                     var p = v.pos;
                     float yawV = v.yaw;
-                    if (v.name.StartsWith("divers"))
+                    if (v.name.StartsWith("diversfront"))
+                    {   // in front of the first diver, looking back at him as he walks toward the camera (his feet and helmet port)
+                        var d = Object.FindAnyObjectByType<DiverPuppet>();
+                        if (d != null)
+                        {
+                            var dp = d.transform.position; var f = d.transform.forward;
+                            p = dp + f * 3.2f; p.y = -9999f;
+                            var look = dp - p; look.y = 0f;
+                            yawV = Mathf.Atan2(look.x, look.z) * Mathf.Rad2Deg;
+                        }
+                    }
+                    else if (v.name.StartsWith("divers"))
                     {   // stand beside the first diver of the party, looking at him walking
                         var d = Object.FindAnyObjectByType<DiverPuppet>();
                         if (d != null)

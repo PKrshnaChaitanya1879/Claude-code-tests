@@ -40,11 +40,17 @@ namespace Verne
             m_Rain = gameObject.AddComponent<AudioSource>();
             m_Rain.loop = true; m_Rain.spatialBlend = 0f; m_Rain.playOnAwake = false; m_Rain.volume = 0f;
             m_Rain.clip = Resources.Load<AudioClip>("VerneAudio/loops/rain_below");
-            HelmetView.Inhale += () => Breath(m_In, 0.45f);
-            HelmetView.Exhale += () => Breath(m_Out, 0.55f);
-            SceneManager.activeSceneChanged += (a, b) => Choose(b.name);
+            HelmetView.Inhale += OnInhale;
+            HelmetView.Exhale += OnExhale;
+            SceneManager.activeSceneChanged += OnScene;
             Choose(SceneManager.GetActiveScene().name);
         }
+
+        void OnInhale() => Breath(m_In, 0.45f);
+        void OnExhale() => Breath(m_Out, 0.55f);
+        void OnScene(Scene a, Scene b) => Choose(b.name);
+        // a destroyed Ambience must not stay subscribed (it threw on every scene change after leaving play mode)
+        void OnDestroy() { HelmetView.Inhale -= OnInhale; HelmetView.Exhale -= OnExhale; SceneManager.activeSceneChanged -= OnScene; }
 
         void Breath(AudioClip[] set, float vol)
         {
@@ -54,6 +60,7 @@ namespace Verne
 
         void Choose(string scene)
         {
+            if (this == null || m_Bed == null) return;
             var clip = scene == SceneFlow.Nautilus ? m_Hull : (scene == SceneFlow.Mission1 || scene == SceneFlow.Mission2 || scene == SceneFlow.Title) ? m_Water : null;
             m_BedTarget = clip == null ? 0f : (scene == SceneFlow.Nautilus ? 0.55f : 0.7f);
             if (clip != null && m_Bed.clip != clip) { m_Bed.clip = clip; m_Bed.time = Random.Range(0f, Mathf.Max(0f, clip.length - 1f)); m_Bed.Play(); }

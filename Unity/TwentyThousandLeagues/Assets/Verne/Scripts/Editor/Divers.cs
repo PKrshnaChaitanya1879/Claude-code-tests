@@ -16,7 +16,10 @@ namespace Verne.EditorTools
             var go = Object.Instantiate(src.gameObject, parent);
             go.name = name;
             go.transform.localPosition = local;
-            go.transform.localRotation = src.localRotation;
+            // GUM 4 Nov: "the feet are backwards but they are moving forward". The parts are modelled facing Blender -Y, which
+            // this pipeline's export brings in along +X (as for the Nautilus: Unity x = -Blender y), while the rig walks along +Z.
+            // A quarter turn about each joint puts the toes, the helmet's front port and the chest forward.
+            go.transform.localRotation = Quaternion.Euler(0f, -90f, 0f) * src.localRotation;
             go.transform.localScale = Vector3.one;
             return go;
         }

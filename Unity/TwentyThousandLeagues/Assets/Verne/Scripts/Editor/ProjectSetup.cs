@@ -268,7 +268,7 @@ namespace Verne.EditorTools
             Grade("Nautilus", exposure: 0.25f, contrast: 18f, saturation: -10f, bloom: 0.45f, vignette: 0.3f, tint: new Color(1.04f, 0.98f, 0.88f),
                   splitShadows: new Color(0.32f, 0.26f, 0.2f), splitHighlights: new Color(0.62f, 0.55f, 0.42f));
             // GUM 3 Nov: INSIDE's water is nearly monochrome: grey-cyan, soft contrast, a wide glow around every light
-            Grade("Mission1", exposure: -0.15f, contrast: 16f, saturation: -26f, bloom: 0.9f, vignette: 0.32f, tint: new Color(0.95f, 1.0f, 1.01f),
+            Grade("Mission1", exposure: 0.1f, contrast: 14f, saturation: -8f, bloom: 0.9f, vignette: 0.32f, tint: new Color(0.95f, 1.0f, 1.01f),
                   splitShadows: new Color(0.30f, 0.38f, 0.40f), splitHighlights: new Color(0.55f, 0.57f, 0.56f), bloomThreshold: 0.75f, bloomScatter: 0.85f, grain: 0.22f);
             // the browser's Atlantis: sepia umber, the glow amber, nothing saturated
             Grade("Mission2", exposure: 0.6f, contrast: 18f, saturation: -38f, bloom: 1.0f, vignette: 0.36f, tint: new Color(1.02f, 0.98f, 0.93f),

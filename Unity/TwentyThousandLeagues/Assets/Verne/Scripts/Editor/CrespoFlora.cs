@@ -45,7 +45,7 @@ namespace Verne.EditorTools
             Scatter(new[] { "red_algae", "padina", "acetabularia" }, 110, -20, 20, 22, 48, 1.1f, 2.0f);   // the prairie in colour (look-dev: 70 small ones read bare)
             Scatter(new[] { "fucus" }, 14, -18, 18, 32, 50, 0.9f, 1.3f, lane: 2.2f);
             // 3. the forest (z 44–96): laminaries and alariae, a walkable lane kept clear down the middle
-            Scatter(new[] { "laminaria_a", "laminaria_b" }, 130, -26, 26, 44, 96, 0.85f, 1.25f, lane: 2.2f);
+            Scatter(new[] { "laminaria_a", "laminaria_b" }, 80, -26, 26, 44, 96, 0.8f, 1.05f, lane: 2.2f);   // GUM 4 Nov: giant kelp, 8–11 m to the surface; fewer, much bigger plants
             Scatter(new[] { "alaria", "fucus" }, 50, -24, 24, 44, 96, 0.85f, 1.3f, lane: 2.2f);
             Scatter(new[] { "red_algae", "padina" }, 40, -24, 24, 44, 96, 1f, 1.6f);
             // 4. the coral gallery (z 96–106): "a dark gallery" vaulted over, with ragged skylights the sun falls through in shafts;
