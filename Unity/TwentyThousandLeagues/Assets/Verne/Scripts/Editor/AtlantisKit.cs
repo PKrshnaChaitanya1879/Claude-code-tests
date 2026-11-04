@@ -304,7 +304,44 @@ namespace Verne.EditorTools
                 var l = lg.AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(1f, 0.56f, 0.28f); l.intensity = i == 0 ? 3.2f : 2f; l.range = 170f; l.shadows = LightShadows.None;
                 lights[i] = l;
             }
-            var er = root.AddComponent<VolcanoEruption>(); er.plume = plume; er.blast = blast; er.cloudLights = lights;
+            // the fire fountains (GUM Prompt_3, the Atlantis painting; West Mata's "low-level, nearly continuous fire fountains"):
+            // incandescent lava flung up out of the crater in fanning streaks, white-yellow as it leaves, cooling orange to
+            // dull red as the water quenches it and it falls back. Additive, stretched along its flight, so each clot is a streak.
+            string fp = VerneBootstrap.Generated + "/Materials/M_FireFountain.mat";
+            var fsh = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            var fmat = AssetDatabase.LoadAssetAtPath<Material>(fp);
+            if (fmat == null && fsh != null) { fmat = new Material(fsh); AssetDatabase.CreateAsset(fmat, fp); }
+            ParticleSystem fountain = null;
+            if (fmat != null)
+            {
+                fmat.shader = fsh;
+                fmat.SetTexture("_BaseMap", tex); fmat.SetColor("_BaseColor", new Color(4.5f, 2.4f, 1.0f, 1f));   // HDR: blooms
+                fmat.SetFloat("_Surface", 1f); fmat.SetFloat("_Blend", 2f);
+                fmat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha); fmat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One); fmat.SetFloat("_ZWrite", 0f);
+                fmat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); fmat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent + 10; fmat.SetOverrideTag("RenderType", "Transparent");
+                EditorUtility.SetDirty(fmat);
+                var fgo = new GameObject("Fire fountains"); fgo.transform.SetParent(root.transform, false);
+                fgo.transform.localPosition = new Vector3(0f, -2f, 0f); fgo.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+                fountain = fgo.AddComponent<ParticleSystem>();
+                var fr = fgo.GetComponent<ParticleSystemRenderer>(); fr.sharedMaterial = fmat; fr.renderMode = ParticleSystemRenderMode.Stretch;
+                fr.velocityScale = 0.22f; fr.lengthScale = 1.5f; fr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                var m = fountain.main; m.loop = true; m.prewarm = true; m.duration = 5f; m.simulationSpace = ParticleSystemSimulationSpace.World;
+                m.startLifetime = new ParticleSystem.MinMaxCurve(3f, 5.5f); m.startSpeed = new ParticleSystem.MinMaxCurve(16f, 30f);
+                m.startSize = new ParticleSystem.MinMaxCurve(0.6f, 1.6f); m.gravityModifier = 0.9f; m.maxParticles = 600;
+                var e = fountain.emission; e.rateOverTime = 70f;
+                e.SetBursts(new[] { new ParticleSystem.Burst(0f, 30, 60, 3, 1.4f) });                       // the pulses of a fountain
+                var shp = fountain.shape; shp.shapeType = ParticleSystemShapeType.Cone; shp.angle = 26f; shp.radius = 4f;
+                var lim = fountain.limitVelocityOverLifetime; lim.enabled = true; lim.limit = 40f; lim.dampen = 0.03f;   // the water's drag
+                var col = fountain.colorOverLifetime; col.enabled = true;
+                var g = new Gradient();
+                g.SetKeys(new[] { new GradientColorKey(new Color(1f, 0.97f, 0.85f), 0f), new GradientColorKey(new Color(1f, 0.62f, 0.25f), 0.25f),
+                                  new GradientColorKey(new Color(0.75f, 0.18f, 0.06f), 0.65f), new GradientColorKey(new Color(0.2f, 0.04f, 0.02f), 1f) },
+                          new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0.9f, 0.5f), new GradientAlphaKey(0f, 1f) });
+                col.color = g;
+                var sz = fountain.sizeOverLifetime; sz.enabled = true; sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0.45f));
+            }
+            else VerneBootstrap.Note("URP Particles/Unlit missing: no fire fountains.");
+            var er = root.AddComponent<VolcanoEruption>(); er.plume = plume; er.blast = blast; er.cloudLights = lights; er.fountain = fountain;
             LastEruption = er;
         }
 

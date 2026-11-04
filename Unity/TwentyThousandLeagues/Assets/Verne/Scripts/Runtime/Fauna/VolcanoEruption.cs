@@ -10,7 +10,7 @@ namespace Verne
     /// </summary>
     public class VolcanoEruption : MonoBehaviour
     {
-        public ParticleSystem plume, blast;
+        public ParticleSystem plume, blast, fountain;
         public Light crater;
         public Light[] cloudLights;
         public float burstMin = 8f, burstMax = 18f;
@@ -33,6 +33,7 @@ namespace Verne
                 m_Next = t + Random.Range(burstMin, burstMax);
                 m_Flash = 1f;
                 if (blast != null) blast.Emit(Random.Range(18, 32));
+                if (fountain != null) fountain.Emit(Random.Range(90, 160));   // the blast throws a sheaf of molten rock with it
                 if (m_Blast == null) m_Blast = Resources.Load<AudioClip>("VerneAudio/sfx/steam_blast");
                 if (m_Blast != null) VerneAudio.PlayAt(m_Blast, transform.position, 0.85f, 0.1f, 0.35f);   // heard from afar: water carries the low thump
             }
