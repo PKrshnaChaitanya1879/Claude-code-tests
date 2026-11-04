@@ -40,12 +40,9 @@ namespace Verne
                  "in the water: past this distance nothing blocks the light and it falls evenly, like daylight.")]
         public float shadowDistance = 0f;
 
-        [Tooltip("God rays: the main light's beams broken into streaks by a slowly drifting pattern in the light's own plane (the browser\n" +
-                 "build's uwShaft, INSIDE's light cookies). Scale = streaks per metre; breakup 0 = even light, 1 = only the streaks.")]
-        public float shaftScale = 0.1f;
-        [Range(0f, 1f)] public float shaftBreakup = 0f;
-
         [Header("March")]
+        [Tooltip("How the samples spread along the eye ray: 1 = evenly (distant rays, the volcano), 2 = packed near the eye (the kelp).")]
+        [Range(1f, 2.5f)] public float sampleSpread = 2f;
         public float maxDistance = 45f;
         [Tooltip("The beams to march through: Ruhmkorff lamps, the volcano. Up to four.")]
         public List<Light> heroLights = new List<Light>();

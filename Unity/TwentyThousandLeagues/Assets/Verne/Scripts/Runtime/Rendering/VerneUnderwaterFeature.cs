@@ -16,7 +16,7 @@ namespace Verne
     ///     and blends, so a handful of steps reads as smooth light.
     ///  3. Composite (full resolution): scene colour × per-channel transmittance + depth-aware upsampled
     ///     in-scattering + the analytic far field, dithered against banding.
-    /// Quality: Light = 1/4 res and 6 steps; Balanced = 1/2 res and 10; Full = 1/2 res and 16.
+    /// Quality: Light = 1/4 res and 14 steps; Balanced = 1/2 res and 20; Full = 1/2 res and 32 (quadratic spacing).
     /// Only runs where a VerneWater exists and only for game cameras.
     /// </summary>
     public class VerneUnderwaterFeature : ScriptableRendererFeature
@@ -86,7 +86,7 @@ namespace Verne
             static void Quality(out int down, out int steps)
             {
                 int q = QualitySettings.GetQualityLevel();
-                if (q <= 0) { down = 4; steps = 6; } else if (q == 1) { down = 2; steps = 10; } else { down = 2; steps = 16; }
+                if (q <= 0) { down = 4; steps = 14; } else if (q == 1) { down = 2; steps = 20; } else { down = 2; steps = 32; }   // enough samples to resolve real shadow edges (rays)
             }
 
             void Ensure(int w, int h)
@@ -109,12 +109,11 @@ namespace Verne
                 m_Mat.SetVector(ID_Albedo, (Vector4)wtr.scatterAlbedo);
                 m_Mat.SetVector(ID_Kd, (Vector4)wtr.kd);
                 var amb = wtr.surfaceAmbient;
-                m_Mat.SetVector(ID_Surface, new Vector4(wtr.surfaceY, wtr.forwardScatter, wtr.sunShafts, 0f));
+                m_Mat.SetVector(ID_Surface, new Vector4(wtr.surfaceY, wtr.forwardScatter, wtr.sunShafts, wtr.sampleSpread));
                 m_Mat.SetColor("_VerneSurfaceAmbient", amb);
                 m_Mat.SetColor("_VerneAmbientFloor", wtr.ambientFloor);
                 m_Mat.SetVector("_VerneGlowPos", new Vector4(wtr.glowPosition.x, wtr.glowPosition.y, wtr.glowPosition.z, Mathf.Max(1f, wtr.glowRange)));
                 m_Mat.SetColor("_VerneGlowCol", wtr.glowColor);
-                m_Mat.SetVector("_VerneShaft", new Vector4(wtr.shaftScale, wtr.shaftBreakup, Time.time, 0f));
                 m_Mat.SetVector(ID_LowSize, new Vector4(w, h, 1f / w, 1f / h));
                 int n = 0;
                 foreach (var l in wtr.heroLights)
