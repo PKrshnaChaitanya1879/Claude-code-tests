@@ -7,6 +7,14 @@ from PIL import Image
 
 PRESETS = {
     'Mission1': dict(surfaceY=9.0, sig=(0.16, 0.06, 0.056), alb=(0.42, 0.5, 0.52), kd=(0.12, 0.045, 0.04), amb=(0.06, 0.11, 0.12), g=0.65, shafts=2.5, maxd=50.0, exposure=0.3, sat=1.12, sun=(58, 200)),
+    'M1art':  dict(surfaceY=9.0, sig=(0.075,0.03,0.036), alb=(0.62,0.9,0.86), kd=(0.16,0.06,0.075), amb=(0.26,0.5,0.47), g=0.82, shafts=7, maxd=60.0, exposure=0.3, sat=1.0, sun=(58,200)),
+    'M1phys': dict(surfaceY=9.0, sig=(np.float64(0.3857), np.float64(0.1062), np.float64(0.0838)), alb=(np.float64(0.1189), np.float64(0.5097), np.float64(0.7398)), kd=(np.float64(0.3681), np.float64(0.0579), np.float64(0.0261)), amb=(0.26*1.7,0.5*1.7,0.47*1.7), g=0.82, shafts=7, maxd=60.0, exposure=0.3, sat=1.0, sun=(58,200), ms=0.6),
+    'V1': dict(surfaceY=9.0, sig=(0.4558, 0.1941, 0.1995), alb=(0.2423, 0.6593, 0.7218), kd=(0.3751, 0.0742, 0.0637), amb=(0.62, 0.66, 0.64), g=0.82, shafts=7, maxd=60.0, exposure=0.3, sat=1.0, sun=(58,200), ms=0.6),
+    'V2': dict(surfaceY=9.0, sig=(0.4939, 0.2404, 0.2598), alb=(0.2956, 0.6935, 0.7145), kd=(0.3785, 0.0831, 0.0846), amb=(0.62, 0.66, 0.64), g=0.82, shafts=7, maxd=60.0, exposure=0.3, sat=1.0, sun=(58,200), ms=0.6),
+    'V3': dict(surfaceY=9.0, sig=(0.4274, 0.1638, 0.169), alb=(0.1936, 0.5894, 0.6469), kd=(0.3739, 0.075, 0.0677), amb=(0.744, 0.792, 0.768), g=0.82, shafts=7, maxd=60.0, exposure=0.3, sat=1.0, sun=(58,200), ms=0.6),
+    'W1': dict(surfaceY=9.0, sig=(0.3704, 0.0923, 0.074), alb=(0.0814, 0.4032, 0.5948), kd=(0.3682, 0.0609, 0.0347), amb=(0.45, 0.45, 0.45), g=0.82, shafts=7, maxd=60.0, exposure=0.3, sat=1.0, sun=(58,200), ms=0.6, adapt=0.6),
+    'W2': dict(surfaceY=9.0, sig=(0.3822, 0.1078, 0.0959), alb=(0.107, 0.456, 0.5946), kd=(0.3696, 0.0649, 0.0445), amb=(0.45, 0.45, 0.45), g=0.82, shafts=7, maxd=60.0, exposure=0.3, sat=1.0, sun=(58,200), ms=0.6, adapt=0.75),
+    'W3': dict(surfaceY=9.0, sig=(0.363, 0.0823, 0.0598), alb=(0.0651, 0.3564, 0.5843), kd=(0.3673, 0.0585, 0.029), amb=(0.4, 0.4, 0.4), g=0.82, shafts=7, maxd=60.0, exposure=0.3, sat=1.0, sun=(58,200), ms=0.6, adapt=0.7),
     'Title':    dict(surfaceY=24.0, sig=(0.28, 0.072, 0.062), alb=(0.5, 0.75, 0.8), kd=(0.3, 0.065, 0.05), amb=(0.28, 0.5, 0.52), g=0.6, shafts=1.3, maxd=60.0, exposure=0.2, sat=0.94),
 }
 name = sys.argv[1] if len(sys.argv) > 1 else 'Mission1'
@@ -87,7 +95,8 @@ for k in range(steps):
     t = (k + jit) * dt
     p = cam + d * t[:, None]
     dy = day(p[:, 1])
-    Lin = amb * dy + sunc * dy * (shadow(p) * phase)[:, None]
+    alb2 = alb * alb
+    Lin = amb * dy * (1 + P.get('ms', 0) * alb2) + sunc * dy * (shadow(p) * phase)[:, None]
     stepT = np.exp(-sig[None] * dt[:, None])
     S += T * Lin * sigS * (1 - stepT) / sig
     T *= stepT
@@ -95,6 +104,9 @@ Tm = np.exp(-sig[None] * tMax[:, None])
 farP = cam + d * tMax[:, None]
 Sfar = Tm * amb * day(farP[:, 1]) * alb * (1 - np.exp(-sig[None] * np.maximum(0, dist - tMax)[:, None]))
 col = scene * np.exp(-sig[None] * dist[:, None]) + S + Sfar
+wcol = np.array(P['amb']) * np.exp(-np.array(P['kd']) * max(0, P['surfaceY'] - cam[1])) * np.array(P['alb'])
+if P.get('adapt', 0) > 0:
+    wb = wcol / max(wcol.mean(), 1e-6); col = col / (1 + (wb - 1) * P['adapt'])[None]
 col *= 2 ** P['exposure']
 lum = col @ np.array([0.2126, 0.7152, 0.0722]); col = lum[:, None] + (col - lum[:, None]) * P['sat']
 col = col / (1 + col)  # neutral-ish tonemap

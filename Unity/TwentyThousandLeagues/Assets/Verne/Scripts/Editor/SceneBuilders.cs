@@ -51,9 +51,11 @@ namespace Verne.EditorTools
             string path = VerneBootstrap.Root + "/Textures/caustics_cookie.png";
             var ti = AssetImporter.GetAtPath(path) as TextureImporter;
             if (ti == null) { Notes.Add("Caustics cookie missing."); return; }
-            if (ti.textureType != TextureImporterType.Cookie || ti.wrapMode != TextureWrapMode.Repeat)
+            // 5 Nov 2026: sampled by the water pass itself (depth-blurred via mips), so a plain linear repeating texture
+            if (ti.textureType != TextureImporterType.Default || ti.wrapMode != TextureWrapMode.Repeat || ti.sRGBTexture || !ti.mipmapEnabled)
             {
-                ti.textureType = TextureImporterType.Cookie; ti.wrapMode = TextureWrapMode.Repeat; ti.sRGBTexture = false; ti.mipmapEnabled = true;
+                ti.textureType = TextureImporterType.Default; ti.wrapMode = TextureWrapMode.Repeat; ti.sRGBTexture = false; ti.mipmapEnabled = true;
+                ti.filterMode = FilterMode.Trilinear; ti.textureCompression = TextureImporterCompression.CompressedHQ;
                 ti.SaveAndReimport();
             }
             var c = sun.gameObject.AddComponent<CausticCookie>();
@@ -786,7 +788,8 @@ namespace Verne.EditorTools
             {
                 case "Title":       // the Nautilus resting in blue twilight, sun shafts through the swell
                     w.surfaceY = 24f; w.extinction = new Color(0.2f, 0.07f, 0.065f); w.scatterAlbedo = new Color(0.25f, 0.42f, 0.52f);   // cold, from the browser build
-                    w.kd = new Color(0.14f, 0.05f, 0.045f); w.surfaceAmbient = new Color(0.05f, 0.09f, 0.1f); w.sunShafts = 2.2f; w.forwardScatter = 0.65f; w.maxDistance = 60f; break;
+                    w.kd = new Color(0.14f, 0.05f, 0.045f); w.surfaceAmbient = new Color(0.05f, 0.09f, 0.1f); w.sunShafts = 2.2f; w.forwardScatter = 0.65f; w.maxDistance = 60f; 
+                    w.optics = WaterOpticsMode.Physical; w.chlorophyll = 0.1f; w.cdom = 0.01f; w.physicalAmbientGain = 1.3f; w.causticDepth = 26f; break;
                 case "Mission1":    // Crespo: five fathoms, clear and vibrant near the surface, darker down the slope
                     // tuned with Source/tools/preview_water_mock.py (Source/previews/m3_water_mock_Mission1.png): grey-green luminous fog,
                     // stems as silhouettes, red kept at five fathoms (Kd red 0.12) so the sand stays warm where the sun lands
@@ -794,14 +797,22 @@ namespace Verne.EditorTools
                     // Nearly grey extinction (the colour is in the light, not the water), a high scattering albedo so the
                     // water glows, things gone to silhouette within ~15 m
                     w.surfaceY = 9f; w.extinction = new Color(0.075f, 0.03f, 0.036f); w.scatterAlbedo = new Color(0.62f, 0.9f, 0.86f);   // GUM Prompt_3 (5 Nov): vivid yet cold, teal-green as SOMA and the Crespo painting: red is absorbed first, green-blue carries   // GUM 4 Nov, as the book: "I clearly distinguished objects at a distance of a hundred and fifty yards"
-                    w.kd = new Color(0.16f, 0.06f, 0.075f); w.surfaceAmbient = new Color(0.26f, 0.5f, 0.47f); w.sunShafts = 7f; w.heroGain = 0.5f; w.forwardScatter = 0.82f; w.maxDistance = 60f; w.shadowDistance = 70f; break;   // god rays through the kelp   // round 7: brighter above, darker toward the floor (INSIDE's gradient)
+                    w.kd = new Color(0.16f, 0.06f, 0.075f); w.surfaceAmbient = new Color(0.26f, 0.5f, 0.47f); w.sunShafts = 7f; w.heroGain = 0.5f; w.forwardScatter = 0.82f; w.maxDistance = 60f; w.shadowDistance = 70f; 
+                    // 5 Nov 2026, physical optics (Docs/RESEARCH_underwater.md §1): clear oceanic water so the book's long view survives
+                    // (I.XVI, objects seen at 150 yards), a little silt hanging over the floor, caustics fading by 22 m. F7 compares with the above.
+                    w.optics = WaterOpticsMode.Physical; w.chlorophyll = 0.02f; w.cdom = 0.015f; w.silt = 0f; w.floorSilt = 0.05f; w.siltLayer = 2.5f;   // mock: Source/previews/m3_water_mock_physical_2026-11-05.png
+                    w.physicalAmbientGain = 0.95f; w.eyeAdaptation = 0.7f; w.caustics = 1f; w.causticDepth = 22f; w.multiScatter = 0.6f; break;   // god rays through the kelp   // round 7: brighter above, darker toward the floor (INSIDE's gradient)
                 case "Mission2":    // 150 fathoms at midnight: no daylight; the volcano's red glow is the only light (art-directed so red carries)
                     // GUM 3 Nov: the browser build: a dark umber water that the volcano's glow warms as you near it; the
                     // fire is amber, the rock is seen; things fall to silhouette against the glow
                     w.surfaceY = 274f; w.extinction = new Color(0.05f, 0.02f, 0.016f); w.scatterAlbedo = new Color(0.55f, 0.8f, 0.95f);   // GUM Prompt_3: the brown was wrong. Open-ocean water absorbs red first: the volcano is orange near and cools to blue with distance   // GUM 3 Nov pm: less fog
                     w.kd = new Color(0.002f, 0.002f, 0.002f); w.surfaceAmbient = Color.black; w.sunShafts = 9f; w.maxDistance = 110f; w.heroGain = 3f; w.forwardScatter = 0.8f; w.shadowDistance = 200f; w.sampleSpread = 1.25f;   // no orb: the crater light sits inside the rim and the lit cloud does the lighting; the mountain's shadow carves the rays
                     w.ambientFloor = new Color(0.008f, 0.02f, 0.034f);   // tour 13: the plain was black   // a dark night: the rays and the glow stand out of it
-                    w.glowColor = new Color(0.2f, 0.1f, 0.045f); w.glowPosition = AtlantisKit.CraterGlow + new Vector3(0f, 25f, 0f); w.glowRange = 240f; break;   // "it did light our way, vaguely": the glow reaches the plain;   // the glowing cloud over the crater
+                    w.glowColor = new Color(0.2f, 0.1f, 0.045f); w.glowPosition = AtlantisKit.CraterGlow + new Vector3(0f, 25f, 0f); w.glowRange = 240f; 
+                    // 5 Nov 2026, physical optics: deep, very clear ocean water (red still dies within ~3 m: the lava's red only survives
+                    // close to it). The glow keeps Verne's art direction (range ≥ 60 m lights aren't filtered): it must carry two miles.
+                    w.optics = WaterOpticsMode.Physical; w.chlorophyll = 0.03f; w.cdom = 0.005f; w.silt = 0.005f; w.floorSilt = 0.03f; w.siltLayer = 2f;
+                    w.caustics = 0f; w.multiScatter = 0.8f; w.eyeAdaptation = 0.35f; break;   // a night: keep it cold   // "it did light our way, vaguely": the glow reaches the plain;   // the glowing cloud over the crater
             }
             foreach (var l in hero) if (l != null) w.heroLights.Add(l);
             if (w.sunShafts > 0f)

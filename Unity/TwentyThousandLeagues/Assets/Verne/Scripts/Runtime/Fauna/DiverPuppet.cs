@@ -18,6 +18,11 @@ namespace Verne
         public float cadence = 0.75f;
         public float speed;                       // set by the mover, m/s
         public float blend = 3f;
+        /// <summary>Every diver in the scene (MarineSnow stirs round them).</summary>
+        public static readonly System.Collections.Generic.List<DiverPuppet> All = new System.Collections.Generic.List<DiverPuppet>();
+        void OnEnable() { if (!All.Contains(this)) All.Add(this); }
+        void OnDisable() { All.Remove(this); }
+        float m_LastS;
 
         Transform m_Hips, m_Torso, m_Head, m_ShL, m_ShR, m_ElL, m_ElR, m_HipL, m_HipR, m_KnL, m_KnR, m_AnL, m_AnR;
         float m_AnW;
@@ -48,6 +53,15 @@ namespace Verne
             float walk = Mathf.Clamp01(speed / 0.9f);
             m_Phase += dt * cadence * Mathf.PI * 2f * Mathf.Lerp(0.4f, 1f, walk) * (gesture == Gesture.Walk ? 1f : 0f);
             float s = Mathf.Sin(m_Phase), c = Mathf.Cos(m_Phase);
+            // a boot comes down each time the swing crosses zero: kick up the floor under it
+            if (gesture == Gesture.Walk && walk > 0.2f && (s >= 0f) != (m_LastS >= 0f))
+            {
+                var foot = s >= 0f ? m_AnL : m_AnR;
+                var at = foot != null ? foot.position : transform.position;
+                at.y = transform.position.y;
+                SedimentPuff.Kick(at, SurfaceAt(at), 0.5f * walk);
+            }
+            m_LastS = s;
             float breath = Mathf.Sin(m_T * 1.3f);
 
             // targets
@@ -55,12 +69,14 @@ namespace Verne
             switch (gesture)
             {
                 case Gesture.Walk:
-                    tHipL = -24f * s * walk; tHipR = 24f * s * walk;
+                    // weighted dress (Docs/RESEARCH_underwater.md §3.1): short deliberate steps, the lead boot lifted only a
+                    // little, the body leaning into the water's drag, arms out a touch for balance
+                    tHipL = -17f * s * walk; tHipR = 17f * s * walk;
                     // a knee bends while its leg swings FORWARD (hip angle falling), straight while it bears weight
-                    tKnL = Mathf.Max(0f, 38f * c) * walk; tKnR = Mathf.Max(0f, -38f * c) * walk;
-                    tShL = 14f * s * walk; tShR = -14f * s * walk;
-                    tTorso = -6f * walk + 2f * Mathf.Abs(s);
-                    tDrop = -0.035f * Mathf.Abs(s) * walk;
+                    tKnL = Mathf.Max(0f, 26f * c) * walk; tKnR = Mathf.Max(0f, -26f * c) * walk;
+                    tShL = 10f * s * walk; tShR = -10f * s * walk; tElL = tElR = -18f;
+                    tTorso = -11f * walk + 2.5f * Mathf.Abs(s);
+                    tDrop = -0.03f * Mathf.Abs(s) * walk;
                     break;
                 case Gesture.Beckon:
                     tShR = -85f; tElR = -55f + 30f * Mathf.Sin(m_T * 5f); tShRz = 10f; break;
@@ -96,6 +112,16 @@ namespace Verne
             m_AnW = Mathf.Lerp(m_AnW, gesture == Gesture.Walk ? 0.85f : 0f, k);
             Set(m_AnL, -(aHipL + aKnL) * m_AnW); Set(m_AnR, -(aHipR + aKnR) * m_AnW);
             if (m_ShR != null) m_ShR.localRotation = Quaternion.Euler(aShR, 0f, aShRz);
+        }
+
+        static string SurfaceAt(Vector3 p)
+        {
+            if (Physics.Raycast(p + Vector3.up * 0.5f, Vector3.down, out var hit, 1.5f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                var sf = hit.collider.GetComponentInParent<Surface>();
+                if (sf != null) return sf.kind;
+            }
+            return "sand";
         }
 
         static void Set(Transform t, float x) { if (t != null) t.localRotation = Quaternion.Euler(x, 0f, 0f); }

@@ -90,7 +90,7 @@ namespace Verne.EditorTools
                     var lg = new GameObject("Ruhmkorff lamp light"); lg.transform.SetParent(l.transform, false);
                     lg.transform.localPosition = new Vector3(0, -0.1f, 0.08f); lg.transform.localRotation = Quaternion.Euler(12f, 0f, 0f);
                     var li = lg.AddComponent<Light>(); li.type = LightType.Spot; li.range = 16f; li.spotAngle = 60f; li.innerSpotAngle = 30f;
-                    li.color = new Color(1f, 0.93f, 0.8f); li.intensity = 9f; li.shadows = LightShadows.None; li.enabled = false;
+                    li.color = new Color(1f, 0.74f, 0.45f); li.intensity = 9f;   // warm filament amber (GUM's 1860s rule) li.shadows = LightShadows.None; li.enabled = false;
                 }
             }
             foreach (var r in root.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;

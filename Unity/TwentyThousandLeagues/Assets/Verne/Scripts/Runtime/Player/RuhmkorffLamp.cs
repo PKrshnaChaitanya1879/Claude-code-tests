@@ -29,7 +29,7 @@ namespace Verne
             go.transform.localRotation = Quaternion.Euler(8f, 0f, 0f);
             m_Light = go.AddComponent<Light>();
             m_Light.type = LightType.Spot; m_Light.range = range; m_Light.spotAngle = angle; m_Light.innerSpotAngle = angle * 0.72f;
-            m_Light.color = new Color(1f, 0.93f, 0.8f);   // "white and continuous", but a carbon-arc white, never LED blue
+            m_Light.color = new Color(1f, 0.74f, 0.45f);   // GUM's 1860s rule over Verne's "white": warm filament amber (~2,400 K) with a touch of green from the thick lantern glass; VerneWater filters it further by the water it crosses
             m_Light.intensity = intensity;
             m_Light.shadows = LightShadows.None;    // one shadowed light per area: the sun keeps it
             m_Light.enabled = false;

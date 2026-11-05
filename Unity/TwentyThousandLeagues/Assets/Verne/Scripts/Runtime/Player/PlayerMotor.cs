@@ -58,7 +58,7 @@ namespace Verne
         };
         public ModeParams water = new ModeParams
         {
-            walkSpeed = 0.95f, sprintSpeed = 1.35f, crouchSpeed = 0.55f, accel = 1.6f, decel = 2.2f,
+            walkSpeed = 0.9f, sprintSpeed = 1.15f, crouchSpeed = 0.5f, accel = 0.8f, decel = 1.1f,   // 5 Nov: ~150 kg of man and dress to move through water (RESEARCH §3.1)
             gravity = 3.2f, jumpSpeed = 1.6f, bobFrequency = 0.55f, bobAmplitude = 0.045f, stepLength = 0.8f, lookDamping = 0.25f
         };
 
@@ -75,6 +75,7 @@ namespace Verne
 
         /// <summary>Raised at every footfall with (surface tag, loudness 0..1).</summary>
         public event Action<string, float> Footstep;
+        bool m_StepSide;
         /// <summary>Raised on landing with the impact speed in m/s.</summary>
         public event Action<float> Landed;
 
@@ -200,7 +201,13 @@ namespace Verne
             Vector3 targetVel = wish.normalized * targetSpeed;
             float rate = targetVel.sqrMagnitude > horiz.sqrMagnitude ? p.accel : p.decel;
             if (!m_Grounded) rate *= mode == MoveMode.Water ? 0.6f : 0.25f; // little air control
-            horiz = Vector3.MoveTowards(horiz, targetVel, rate * dt);
+            if (mode == MoveMode.Water)
+            {
+                // water drag: speed approaches the target exponentially (no skid on stopping), heavy to start, soft to stop
+                float k = rate / Mathf.Max(0.3f, p.walkSpeed);
+                horiz = Vector3.Lerp(horiz, targetVel, 1f - Mathf.Exp(-k * dt));
+            }
+            else horiz = Vector3.MoveTowards(horiz, targetVel, rate * dt);
 
             // gravity and jumping
             float vy = m_Velocity.y;
@@ -254,7 +261,11 @@ namespace Verne
                 {
                     m_StepAccum -= stepLen;
                     float loud = Mathf.Clamp01(m_HorizontalSpeed / Mathf.Max(0.1f, p.sprintSpeed)) * (stance == Stance.Crouching ? 0.5f : 1f);
-                    Footstep?.Invoke(SurfaceUnderfoot(), Mathf.Lerp(0.35f, 1f, loud));
+                    string kind = SurfaceUnderfoot();
+                    Footstep?.Invoke(kind, Mathf.Lerp(0.35f, 1f, loud));
+                    if (mode == MoveMode.Water)   // the boot kicks up the floor (RESEARCH §3.3)
+                        SedimentPuff.Kick(transform.position + transform.right * (m_StepSide ? 0.12f : -0.12f) + transform.forward * 0.25f, kind, Mathf.Lerp(0.4f, 1f, loud));
+                    m_StepSide = !m_StepSide;
                 }
             }
             else m_StepAccum = Mathf.Min(m_StepAccum, p.stepLength * 0.5f);
@@ -322,6 +333,7 @@ namespace Verne
             float targetTilt = -strafe * (mode == MoveMode.Air ? 0.6f : 1.2f) * bobScale;
             m_HeadTilt = Mathf.Lerp(m_HeadTilt, targetTilt, 1f - Mathf.Exp(-dt * 5f));
             float kneelPitch = stance == Stance.Kneeling ? 8f : 0f;
+            if (mode == MoveMode.Water) kneelPitch += 5f * Mathf.Clamp01(m_HorizontalSpeed / Mathf.Max(0.1f, p.walkSpeed));   // leaning into the water's drag
             head.localRotation = Quaternion.Euler(m_Pitch + kneelPitch * 0.3f, 0f, m_HeadTilt);
         }
 

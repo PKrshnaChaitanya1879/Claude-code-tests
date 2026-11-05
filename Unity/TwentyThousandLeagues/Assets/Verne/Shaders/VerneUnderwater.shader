@@ -1,6 +1,8 @@
 // Hidden/Verne/Underwater: the three passes of VerneUnderwaterFeature (M3).
 // 0 March (reduced res)  1 Temporal (reprojection + neighbourhood clamp)  2 Composite (full res, dithered).
 // Conservative URP HLSL: Core.hlsl, Lighting.hlsl (main light + shadows), DeclareDepthTexture.hlsl, core Blit.hlsl.
+// 5 Nov 2026: physical optics feed it (WaterOptics), caustics moved here from the light cookie (depth-blurred, chromatic on
+// Full), floor silt, albedo² multiple scattering, golden-ratio temporal jitter, INSIDE's fog cap on bright pixels.
 Shader "Hidden/Verne/Underwater"
 {
     SubShader
@@ -31,6 +33,11 @@ Shader "Hidden/Verne/Underwater"
         float4 _VerneGlowPos;          // xyz, w = range: a distant glow scattered many times (the volcano)
         float4 _VerneGlowCol;
         float4 _VerneSunRaw;           // the sun before VerneWater tints it for the eye's depth (w = 1 when set)
+        float4 _VerneExtra;            // x multiple-scatter strength, y caustic strength, z chromatic caustics (0/1), w bright-light fog cap
+        float4 _VerneWhiteBalance;     // rgb divisor: the eye adapting to the water's colour (physical optics; 1 = none)
+        float4 _VerneSilt;             // x floor silt (1/m), y silt layer height (m)
+        float4 _VerneCausticXform;     // x 1/tile size (1/m), y depth of full fade (m), zw drift offset
+        TEXTURE2D(_VerneCausticTex); SAMPLER(sampler_VerneCausticTex);
         TEXTURE2D(_VerneHistory);
         TEXTURE2D(_VerneScatterTex);
 
@@ -42,19 +49,27 @@ Shader "Hidden/Verne/Underwater"
             return (1.0 - g2) / (4.0 * PI * pow(max(1e-3, 1.0 + g2 - 2.0 * g * c), 1.5));
         }
 
-        // the sun's caustic cookie at p, sharp near the surface and blurring with depth (an explicit mip, so it is legal in the march loop)
-        float3 VolumeCookie(float3 p, float depth)
+        // The sun's caustic web at p (Docs/RESEARCH_underwater.md §1.4): the pattern is projected along the sun from the
+        // surface, two drifting layers combined with min() so the bright lines are thin, sharp just under the surface and
+        // blurred (higher mip) and fading with depth. chroma > 0 samples R, G and B a little apart: Verne's prism fringes.
+        float3 Caustic(float3 p, float depth, float chroma)
         {
-        #if defined(_LIGHT_COOKIES)
-            if (!IsMainLightCookieEnabled()) return 1.0;
-            float2 uv = mul(_MainLightWorldToLight, float4(p, 1)).xy * 0.5 + 0.5;
-            float4 c = SAMPLE_TEXTURE2D_LOD(_MainLightCookieTexture, sampler_MainLightCookieTexture, uv, clamp(depth * 0.12, 0.0, 5.0));
-            float3 v = IsMainLightCookieTextureRGBFormat() ? c.rgb : (IsMainLightCookieTextureAlphaFormat() ? c.aaa : c.rrr);
-            return lerp(1.0, v, exp(-depth * 0.05));
-        #else
-            return 1.0;
-        #endif
+            if (_VerneExtra.y <= 0.0) return 1.0;
+            Light sun = GetMainLight();
+            float3 L = sun.direction;                                   // toward the light
+            float2 xz = p.xz + L.xz / max(L.y, 0.2) * depth;          // where this point's light came through the surface
+            float2 uv = xz * _VerneCausticXform.x;
+            float lod = clamp(depth * 0.16, 0.0, 6.0);
+            float2 o1 = _VerneCausticXform.zw, o2 = -_VerneCausticXform.zw * 0.73 + float2(0.31, 0.57);
+            float2 disp = float2(0.004, 0.0025) * (1.0 + depth * 0.15) * chroma;
+            float3 c;
+            c.r = min(SAMPLE_TEXTURE2D_LOD(_VerneCausticTex, sampler_VerneCausticTex, uv + o1 + disp, lod).r, SAMPLE_TEXTURE2D_LOD(_VerneCausticTex, sampler_VerneCausticTex, uv * 1.37 + o2 + disp, lod).r);
+            c.g = min(SAMPLE_TEXTURE2D_LOD(_VerneCausticTex, sampler_VerneCausticTex, uv + o1, lod).r, SAMPLE_TEXTURE2D_LOD(_VerneCausticTex, sampler_VerneCausticTex, uv * 1.37 + o2, lod).r);
+            c.b = chroma > 0.0 ? min(SAMPLE_TEXTURE2D_LOD(_VerneCausticTex, sampler_VerneCausticTex, uv + o1 - disp, lod).r, SAMPLE_TEXTURE2D_LOD(_VerneCausticTex, sampler_VerneCausticTex, uv * 1.37 + o2 - disp, lod).r) : c.g;
+            float fade = saturate(1.0 - depth / max(_VerneCausticXform.y, 1.0));
+            return lerp(1.0, c * 2.2, fade * fade);                      // mean ≈ 1: the web redistributes light, it doesn't add it
         }
+        float3 VolumeCookie(float3 p, float depth) { return Caustic(p, depth, 0.0); }
         float3 Daylight(float y) { return exp(-_VerneKd.rgb * max(0.0, _VerneSurface.x - y)); }
         // the water's own light at p besides the sun: the floor ambient and the glow, art-directed as in the browser build
         float3 WaterGlow(float3 p)
@@ -87,7 +102,6 @@ Shader "Hidden/Verne/Underwater"
             #pragma vertex Vert
             #pragma fragment FragMarch
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
-            #pragma multi_compile _ _LIGHT_COOKIES
 
             half4 FragMarch(Varyings i) : SV_Target
             {
@@ -95,11 +109,13 @@ Shader "Hidden/Verne/Underwater"
                 EyeRay(i.texcoord, ro, rd, dist);
                 float tMax = min(dist, _VerneMarch.y);
                 int steps = (int)_VerneMarch.x;
-                float jitter = IGN(i.positionCS.xy + _VerneMarch.z * 5.588238);
+                float jitter = frac(IGN(i.positionCS.xy) + _VerneMarch.z * 0.6180339887);   // IGN in space, golden ratio in time (blue-noise-like after the temporal pass)
                 float invN = 1.0 / max(steps, 1);
                 float spread = max(_VerneSurface.w, 1.0);                                // 1 = even spacing, 2 = packed toward the eye
-                float3 sigT = max(_VerneSigmaT.rgb, 1e-4);
-                float3 sigS = sigT * _VerneAlbedo.rgb;
+                float3 sigT0 = max(_VerneSigmaT.rgb, 1e-4);
+                float3 sigS0 = sigT0 * _VerneAlbedo.rgb;
+                float floorY = ro.y + rd.y * dist;                                       // the floor this ray ends on (silt hangs above it)
+                bool hitsFloor = dist < 1e4;
                 Light sun = GetMainLight();
                 float phaseSun = PhaseHG(dot(rd, sun.direction), _VerneSurface.y) * _VerneSurface.z;
                 float3 T = 1.0, S = 0.0;
@@ -111,8 +127,14 @@ Shader "Hidden/Verne/Underwater"
                     float t = tMax * pow(u, spread);
                     float dt = tMax * (pow((k + 1.0) * invN, spread) - pow(k * invN, spread));
                     float3 p = ro + rd * t;
+                    // stirred-up silt in the bottom metres: grey, strongly scattering (Docs/RESEARCH_underwater.md §3.3)
+                    float silt = hitsFloor ? _VerneSilt.x * exp(-max(0.0, p.y - floorY) / max(_VerneSilt.y, 0.3)) : 0.0;
+                    float3 sigT = sigT0 + silt;
+                    float3 sigS = sigS0 + silt * 0.92;
                     float3 day = Daylight(p.y);
-                    float3 Lin = _VerneSurfaceAmbient.rgb * day + WaterGlow(p);          // diffuse sky light, isotropic
+                    float3 amb = _VerneSurfaceAmbient.rgb * day + WaterGlow(p);
+                    float3 alb = sigS / sigT;
+                    float3 Lin = amb * (1.0 + _VerneExtra.x * alb * alb);                 // diffuse sky light + light scattered again (albedo²)
                     float sh = MainLightRealtimeShadow(TransformWorldToShadowCoord(p));   // real shafts through the scene
                     float3 sunCol = _VerneSunRaw.w > 0.5 ? _VerneSunRaw.rgb : sun.color;   // daylight is applied per sample, once
                     // god rays, from two real causes only: what the shadow map says blocks the light (ridge, kelp, trees),
@@ -177,6 +199,7 @@ Shader "Hidden/Verne/Underwater"
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment FragComposite
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
 
             half4 FragComposite(Varyings i) : SV_Target
             {
@@ -202,13 +225,29 @@ Shader "Hidden/Verne/Underwater"
                 }
                 S /= max(wsum, 1e-5);
                 float3 sigT = max(_VerneSigmaT.rgb, 1e-4);
+                // caustics on surfaces that face the sun and aren't shadowed (normal from the depth's derivatives)
+                float3 posWS = ro + rd * min(dist, 1e4);
+                float3 n = normalize(cross(ddy(posWS), ddx(posWS)) + 1e-7);    // derivatives taken outside any branch
+                if (dot(n, -rd) < 0.0) n = -n;
+                if (dist < 1e4 && _VerneExtra.y > 0.0)
+                {
+                    Light sun = GetMainLight();
+                    float ndl = saturate(dot(n, sun.direction));
+                    float depthW = max(0.0, _VerneSurface.x - posWS.y);
+                    float sh = MainLightRealtimeShadow(TransformWorldToShadowCoord(posWS));
+                    float3 c = Caustic(posWS, depthW, _VerneExtra.z);
+                    scene.rgb *= lerp(1.0, c, saturate(ndl * 1.5) * sh * _VerneExtra.y);
+                }
                 // beyond the march: the analytic far field, lit by daylight at that depth
                 float3 Tm = exp(-sigT * tMax);
                 float3 farP = ro + rd * tMax;
                 float3 Lfar = _VerneSurfaceAmbient.rgb * Daylight(farP.y) + WaterGlow(farP);
                 float3 Sfar = Tm * Lfar * _VerneAlbedo.rgb * (1.0 - exp(-sigT * max(0.0, dist - tMax)));
                 float3 T = exp(-sigT * dist);
-                float3 col = scene.rgb * T + S + Sfar;
+                // INSIDE capped the fog so very bright sources still shine through: lava, lamp glass, the moon's gleam
+                float bright = saturate((dot(scene.rgb, float3(0.2126, 0.7152, 0.0722)) - 1.0) * 0.5) * _VerneExtra.w;
+                T = lerp(T, sqrt(T), bright);
+                float3 col = scene.rgb * T + (S + Sfar) * (1.0 - 0.5 * bright);
                 // Snell's window: looking up through open water, the sky is squeezed into a bright disc of
                 // half-angle 48.6°; outside it the surface is a dim mirror (total internal reflection)
                 if (dist > 1e4 && rd.y > 0.05)
@@ -219,6 +258,7 @@ Shader "Hidden/Verne/Underwater"
                     float3 sky = _VerneSurfaceAmbient.rgb * (win * 7.0 + (1.0 - win) * 0.5 * rd.y);
                     col += Ts * sky;
                 }
+                col /= max(_VerneWhiteBalance.rgb, 0.2);                                     // the diver's eye adapts to the water (RESEARCH §1)
                 col += (IGN(i.positionCS.xy + _VerneMarch.z * 3.1) - 0.5) * (1.0 / 255.0);   // dither against banding
                 return half4(max(col, 0.0), scene.a);
             }

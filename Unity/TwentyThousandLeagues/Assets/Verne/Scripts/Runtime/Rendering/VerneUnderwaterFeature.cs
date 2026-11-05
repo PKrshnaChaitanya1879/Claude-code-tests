@@ -16,7 +16,8 @@ namespace Verne
     ///     and blends, so a handful of steps reads as smooth light.
     ///  3. Composite (full resolution): scene colour × per-channel transmittance + depth-aware upsampled
     ///     in-scattering + the analytic far field, dithered against banding.
-    /// Quality: Light = 1/4 res and 14 steps; Balanced = 1/2 res and 20; Full = 1/2 res and 32 (quadratic spacing).
+    /// Quality (5 Nov 2026, retuned for the RTX 3050 laptop): Light = 1/4 res, 12 steps, single scattering, mono caustics;
+    /// Balanced = 1/2 res, 20 steps; Full = 1/2 res, 48 steps, multiple scattering, chromatic caustics, history 0.92.
     /// Only runs where a VerneWater exists and only for game cameras.
     /// </summary>
     public class VerneUnderwaterFeature : ScriptableRendererFeature
@@ -83,10 +84,12 @@ namespace Verne
 
             public void Dispose() { for (int i = 0; i < 2; i++) { m_Hist[i]?.Release(); m_Hist[i] = null; } }
 
-            static void Quality(out int down, out int steps)
+            static void Quality(out int down, out int steps, out float history, out float multi, out float chroma)
             {
                 int q = QualitySettings.GetQualityLevel();
-                if (q <= 0) { down = 4; steps = 14; } else if (q == 1) { down = 2; steps = 20; } else { down = 2; steps = 32; }   // enough samples to resolve real shadow edges (rays)
+                if (q <= 0) { down = 4; steps = 12; history = 0.9f; multi = 0f; chroma = 0f; }             // integrated GPUs (Ryzen 3 5300U class)
+                else if (q == 1) { down = 2; steps = 20; history = 0.9f; multi = 0.6f; chroma = 0f; }
+                else { down = 2; steps = 48; history = 0.92f; multi = 1f; chroma = 1f; }                  // RTX 3050: enough samples for crisp ray edges
             }
 
             void Ensure(int w, int h)
@@ -101,14 +104,26 @@ namespace Verne
                 }
             }
 
-            void PushMaterial(Camera cam, int steps, int w, int h)
+            void PushMaterial(Camera cam, int steps, int w, int h, float history, float multi, float chroma)
             {
                 var wtr = m_Water;
-                m_Mat.SetVector(ID_Params, new Vector4(steps, wtr.maxDistance, Time.frameCount % 64, m_HasPrev ? 0.9f : 0f));
-                m_Mat.SetVector(ID_Water0, (Vector4)wtr.extinction);
-                m_Mat.SetVector(ID_Albedo, (Vector4)wtr.scatterAlbedo);
-                m_Mat.SetVector(ID_Kd, (Vector4)wtr.kd);
-                var amb = wtr.surfaceAmbient;
+                wtr.RefreshOptics();
+                m_Mat.SetVector(ID_Params, new Vector4(steps, wtr.maxDistance, Time.frameCount % 64, m_HasPrev ? history : 0f));
+                m_Mat.SetVector(ID_Water0, (Vector4)wtr.Extinction);
+                m_Mat.SetVector(ID_Albedo, (Vector4)wtr.Albedo);
+                m_Mat.SetVector(ID_Kd, (Vector4)wtr.Kd);
+                bool caust = CausticCookie.Texture != null && wtr.caustics > 0f;
+                m_Mat.SetVector("_VerneExtra", new Vector4(wtr.multiScatter * multi, caust ? wtr.caustics : 0f, chroma, 1f));
+                m_Mat.SetVector("_VerneSilt", new Vector4(wtr.floorSilt, wtr.siltLayer, 0f, 0f));
+                var wb = wtr.WhiteBalance(cam.transform.position.y);
+                m_Mat.SetVector("_VerneWhiteBalance", new Vector4(Mathf.Max(0.2f, wb.r), Mathf.Max(0.2f, wb.g), Mathf.Max(0.2f, wb.b), 1f));
+                if (caust)
+                {
+                    m_Mat.SetTexture("_VerneCausticTex", CausticCookie.Texture);
+                    var off = CausticCookie.Offset;
+                    m_Mat.SetVector("_VerneCausticXform", new Vector4(1f / Mathf.Max(CausticCookie.TileSize, 0.5f), wtr.causticDepth, off.x, off.y));
+                }
+                var amb = wtr.SurfaceAmbient;
                 m_Mat.SetVector(ID_Surface, new Vector4(wtr.surfaceY, wtr.forwardScatter, wtr.sunShafts, wtr.sampleSpread));
                 m_Mat.SetColor("_VerneSurfaceAmbient", amb);
                 m_Mat.SetColor("_VerneAmbientFloor", wtr.ambientFloor);
@@ -124,7 +139,7 @@ namespace Verne
                     bool spot = l.type == LightType.Spot;
                     float cosOuter = spot ? Mathf.Cos(l.spotAngle * 0.5f * Mathf.Deg2Rad) : -2f;
                     float cosInner = spot ? Mathf.Cos(l.innerSpotAngle * 0.5f * Mathf.Deg2Rad) : -1f;
-                    var c = l.color.linear * l.intensity * wtr.heroGain;
+                    var c = wtr.BaseColor(l).linear * l.intensity * wtr.heroGain;   // untinted: the march absorbs per sample
                     m_LP[n] = new Vector4(t.position.x, t.position.y, t.position.z, l.range);
                     m_LD[n] = new Vector4(t.forward.x, t.forward.y, t.forward.z, cosOuter);
                     m_LC[n] = new Vector4(c.r, c.g, c.b, cosInner);
@@ -162,12 +177,12 @@ namespace Verne
                 if (res.isActiveTargetBackBuffer || !res.cameraDepthTexture.IsValid()) return;
                 s_LastFrame = Time.frameCount;     // the water really is drawn this frame (else scenes keep their fallback fog)
 
-                Quality(out int down, out int steps);
+                Quality(out int down, out int steps, out float history, out float multi, out float chroma);
                 var desc = camData.cameraTargetDescriptor;
                 int w = Mathf.Max(8, desc.width / down), h = Mathf.Max(8, desc.height / down);
                 Ensure(w, h);
                 var cam = camData.camera;
-                PushMaterial(cam, steps, w, h);
+                PushMaterial(cam, steps, w, h, history, multi, chroma);
 
                 var raw = renderGraph.CreateTexture(new TextureDesc(w, h)
                     { colorFormat = GraphicsFormat.R16G16B16A16_SFloat, name = "_VerneScatterRaw", clearBuffer = false, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp });

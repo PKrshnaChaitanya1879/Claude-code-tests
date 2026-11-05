@@ -76,14 +76,14 @@ namespace Verne
             return -1;
         }
 
-        /// <summary>First-run guess: integrated GPUs and small VRAM start on Light, big GPUs on Full.</summary>
+        /// <summary>First-run guess: integrated GPUs and small VRAM start on Light, discrete GPUs with 4 GB or more on Full.</summary>
         static QualityTier GuessTier()
         {
             int vram = SystemInfo.graphicsMemorySize;
             string gpu = (SystemInfo.graphicsDeviceName ?? "").ToLowerInvariant();
             bool integrated = gpu.Contains("vega") || gpu.Contains("radeon(tm) graphics") || gpu.Contains("intel") || gpu.Contains("uhd") || vram < 2048;
             if (integrated) return QualityTier.Light;
-            return vram >= 6000 ? QualityTier.Full : QualityTier.Balanced;
+            return vram >= 3500 ? QualityTier.Full : QualityTier.Balanced;   // 5 Nov 2026: an RTX 3050 laptop (4 GB) runs Full (Docs/RESEARCH_underwater.md §2.3)
         }
 
         /// <summary>The tier actually active right now (by Quality level name).</summary>

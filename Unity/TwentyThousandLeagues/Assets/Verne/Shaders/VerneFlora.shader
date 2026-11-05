@@ -44,6 +44,7 @@ Shader "Verne/Flora"
 
     float4 _VerneVisitors[8];      // xyz world position, w age 0 (now) .. 1 (forgotten); unused slots have w = 1
     float4 _VerneCurrent;          // xz direction of the swell's push, z strength multiplier (0 = unset → 1)
+    float4 _VerneSurfaceY;         // x sea surface height, y = 1 when set (VerneWater)
 
     // world-space displacement of one vertex; returns the new world position and how retracted it is (0..1)
     float3 Displace(float3 posWS, float3 normalWS, out float retract)
@@ -58,6 +59,9 @@ Shader "Verne/Flora"
             float t = _Time.y * _SwaySpeed;
             float2 dir = _VerneCurrent.z > 0 ? normalize(_VerneCurrent.xy) : float2(0.6, 0.8);
             float s = _VerneCurrent.z > 0 ? _VerneCurrent.z : 1.0;
+            // wave surge dies off with depth below the surface (orbital motion ~ exp(-k z), RESEARCH §3.4); half the motion is the
+            // plant's own (anemones' crowns), so it never stops entirely
+            if (_VerneSurfaceY.y > 0.5) s *= lerp(0.5, 1.0, exp(-0.12 * max(0.0, _VerneSurfaceY.x - originWS.y)));
             float a = sin(t * 0.9 + ph) * 0.7 + sin(t * 2.3 + ph * 1.7 + h * 0.8) * 0.3;     // the swell, then the eddies
             float c = sin(t * 1.3 + ph * 2.1 + h) * 0.35;                                      // a sideways wander
             float2 off = (dir * (a + 0.25) + float2(-dir.y, dir.x) * c) * _Sway * s * bend;
@@ -115,7 +119,7 @@ Shader "Verne/Flora"
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _LIGHT_COOKIES
-            #pragma multi_compile _ _FORWARD_PLUS
+            #pragma multi_compile _ _FORWARD_PLUS _CLUSTER_LIGHT_LOOP
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
