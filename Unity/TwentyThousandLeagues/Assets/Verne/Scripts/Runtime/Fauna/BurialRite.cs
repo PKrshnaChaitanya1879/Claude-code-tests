@@ -85,6 +85,7 @@ namespace Verne
             {
                 yield return new WaitForSeconds(1.3f);
                 if (m_Sparks != null) { m_Sparks.transform.position = grave + Vector3.up * 0.1f + Random.insideUnitSphere * 0.15f; m_Sparks.Emit(18); }
+                SedimentPuff.Kick(grave + Random.insideUnitSphere * 0.3f, "silt", 1f);   // each stroke clouds the water round the grave (RESEARCH §3.3)
                 yield return new WaitForSeconds(1.3f);
             }
             if (digger != null) digger.gesture = DiverPuppet.Gesture.Idle;

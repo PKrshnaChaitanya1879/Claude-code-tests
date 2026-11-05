@@ -87,7 +87,7 @@
 
 **→ Fathom:**
 - New quality tier **"High"** (between Full and the old tiers) is not needed: Full is retuned for the 3050, and auto-selected when the GPU is discrete with ≥ 3.5 GB VRAM. Light stays for integrated GPUs (Ryzen 3 5300U class): ¼ res, 12 steps, no chromatic caustics, no extra scatter.
-- Full and Balanced switch the renderer to Forward+ and enable the GPU Resident Drawer; Light stays on Forward (integrated GPUs and old drivers).
+- **GPU Resident Drawer: considered, not enabled (decided while building).** It needs Forward+, and our custom `Verne/Flora` and `Verne/SeaLit` shaders have no DOTS-instancing variants; Forward+'s keyword was also renamed in Unity 6.1 (`_FORWARD_PLUS` → `_CLUSTER_LIGHT_LOOP`). Switching blind risked the lamps no longer lighting the flora. The renderer stays on Forward; the density work gets the same benefit from our own instancing (below). Flora now declares both keywords, so Forward+ can be tried later.
 - Small scatter (pebbles, shells, granules) is drawn with `Graphics.RenderMeshInstanced` from a single component per patch, culled by distance per tier, with no colliders (they are below ankle height); anything above the ankle is a normal MeshRenderer with a collider, so the GPU Resident Drawer instances it.
 
 ---
@@ -100,7 +100,7 @@
 - **What that looks like:** short, deliberate steps, the boot lifted only a little, the body leaning forward into the drag, slow starts and slow stops (inertia), arms used for balance, turning the whole body (the helmet doesn't turn with the head). A modern hard-hat diver describes the first stand-up in ~65 kg of gear as a shock [23].
 
 **→ Fathom:**
-- Player suited gait: lower top speed (1.1 m/s), acceleration ~0.6 m/s² and braking ~0.9 m/s² (water drag gives a smooth exponential stop rather than a skid), head-bob slower and deeper, a slight forward lean when moving, and turning rate capped (the head turns inside a helmet, so look-yaw is limited to ±35° before the body follows).
+- Player suited gait (built): walk 0.9 m/s, "sprint" 1.15 m/s, water drag as an exponential approach (heavy to start, soft to stop, no skid), a slight forward lean when moving, a sediment puff at every step. *Not built:* the helmet-limited look-yaw (the head turning inside the bonnet before the body follows); it needs a change to the camera rig that I didn't want to make blind.
 - Divers (Nemo, crew): stride length shortened, boot lift lowered, step period lengthened in `DiverPuppet`, and a forward lean proportional to speed.
 - Each footfall kicks up silt (§3.3).
 
@@ -137,6 +137,7 @@
 
 **→ Fathom:**
 - Lamp in-scatter in the march keeps inverse-square × exp(−σt·d) per channel (already correct), now with the physical σt.
+- (While building, the CPU mock showed physically correct water reads **cyan**: real water has almost no red past a few metres. A diver's eye adapts to that, as an underwater photographer sets white balance, so the composite divides by the water's colour part-way, `eyeAdaptation` 0.7 in Crespo, 0.35 at night. The physics stays in the medium; the adaptation is the eye's.)
 - New: hero lamps' **surface** light is filtered per channel by the water over its effective reach (`VerneWater` tints each URP lamp light by exp(−σt·r/3)), so the floor at the edge of the beam goes yellow-green, not orange.
 - Lamp colour: 2,400 K filament amber, slight green from the glass; intensity stays modest (it's a Geissler lantern, not a searchlight).
 
@@ -160,7 +161,7 @@
 
 ## 5. Materials and density (what research changed in the plan)
 - **Textures:** real CC0 scans only (Poly Haven, ambientCG), at 1K (2K for the seabed sand, which fills half of every frame), BC7 (albedo) and BC5/DXT5nm (normal), roughness in its own channel, mipmaps on. At 1K, a full albedo/normal/roughness set is ~2.7 MB compressed, so ten packs stay under 40 MB of VRAM.
-- **Verne's sand:** off Crespo the sand is "fine, even sand, not wrinkled" (I.XV) at 30 ft, i.e. **no ripples** on the sunlit plain. Ripples belong where the bottom shoals or a current runs: the forest edge, the coral kingdom's approach, the Atlantis plain. We put ripples there, not under the spawn.
+- **Verne's sand:** off Crespo the sand is "fine, even sand, not wrinkled" (I.XV) at 30 ft, i.e. **no ripples** on the sunlit plain. Ripples belong where the bottom shoals or a current runs (forest edge, coral approach). *Not built this session:* blending a ripple scan into the floor needs a terrain shader that mixes two materials softly; a decal would show hard rectangular edges. The `SandRipples` pack is downloaded and ready.
 - **Density:** clustered placement (a few dense groups with sparse scatter between, as real reefs and rubble fields look), never grids; the walking route is kept clear by a corridor test in the scatter code itself, then checked again by `RouteAudit` when the scene is built.
 
 ---

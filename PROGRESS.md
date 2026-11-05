@@ -260,3 +260,42 @@ Each run appends to the log at the bottom and keeps this checklist honest.
 - The grey cloud in night frames was the helmet glass's painted smear (5% alpha): cleared (Source/tools/helmet_port.py too).
 - MarineSnow survives a script reload in play.
 - Verified on her laptop: frames round11 (Mission I) and round12 (Mission II); walk tests OK.
+
+### 2026-11-05 · live with GUM, Fathom now on the RTX 3050 laptop (Unity 6.6, URP) · the real ocean
+- **Research first:** `Docs/RESEARCH_underwater.md`, with 38 sources. It covers absorption by wavelength (Pope & Fry), Kd and Jerlov water types, scattering and visibility, caustics, god rays, URP volumetrics on a 4 GB laptop GPU against our march and INSIDE's, diver gait in a weighted dress, marine snow and sediment settling, kelp in waves, the Ruhmkorff lamp and the volcano. Each finding has a "→ Fathom" change. Where Verne and physics disagree, Verne wins: the Crespo sand is not rippled, and the volcano's glow carries two miles.
+- **Water and light (code):**
+  - `WaterOptics`: physical absorption, scattering, albedo and Kd from chlorophyll, CDOM and silt.
+  - `VerneWater.optics`: Physical (the new default in every outside scene) or Artistic (the tour-13 look). **F7** flips between them in play.
+  - The eye's adaptation (`eyeAdaptation`): physically correct water reads cyan (the CPU mock showed it), so the composite white-balances part-way, as a diver's eye and an underwater photographer do. Mock: `Source/previews/m3_water_mock_physical_2026-11-05.png`.
+  - Caustics moved from the URP light cookie into the water pass: sharp under the surface, blurred and faded with depth (gone by ~22 m), on sun-facing unshadowed surfaces only, with chromatic fringes on Full (Verne's "seven solar colours"). The same web drives the shafts. If the pass can't run, the cookie goes back on the light.
+  - Also in the march: floor silt hanging in the bottom metres; albedo² multiple scattering; golden-ratio temporal jitter; INSIDE's fog cap on bright pixels.
+  - Lamps: hero lamps' surface light is filtered per channel by the water over their reach. The Ruhmkorff lamps are warm filament amber (GUM's rule over Verne's "white").
+  - Tiers: Light ¼ res, 12 steps; Balanced ½ res, 20 steps; Full ½ res, 48 steps with multiple scattering and chromatic caustics. A discrete GPU with ≥ 3.5 GB VRAM now starts on Full.
+- **Physics:**
+  - `MarineSnow`: sinks at 0.5–2 mm/s, drifts with the current, sways with a surge that fades with depth, swirls in the wake of the visitor and the divers, and is coloured by the light that reaches it.
+  - `SedimentPuff` on every footstep: player, divers and the burial's pickaxe. Sand falls back in ~2 s; silt hangs and drifts ~12 s.
+  - Heavier suited gait: walk 0.9 m/s, drag-shaped starts and stops, forward lean. Divers take shorter, lower, leaning strides.
+  - Flora surge falls off with depth (Crespo's forest stays motionless, as the book says).
+- **Textures:** 14 CC0 packs (Poly Haven, ambientCG) in `Assets/Verne/Textures/<Pack>`, each with albedo, normal and roughness, about 26 MB in all. `README_texture_packs.md` lists every source and author. `TexturePacks.cs` imports them as BC7 albedo, BC5 normal and BC4 roughness at 1K (sand at 2K) and folds roughness into albedo alpha for URP Lit.
+  - In use: sea-floor sand, basalt, the mountain's lava rock, Atlantis masonry, ground detail.
+  - Sheet: `Source/previews/textures_packs_2026-11-05.jpg`.
+- **Density:**
+  - `InstancedScatter` + `SeabedDetail.Ground`: thousands of GPU-instanced pebbles, shells, gravel, coral crumbs and granules in patches within 26 m of the way, culled per cell by distance and tier, with no colliders (they are below the ankle).
+  - Clustered props, all with colliders, kept off the way:
+    - Crespo: coral heads, sponges, weed beds, shell and star drifts, and boulders with AO.
+    - Atlantis: basalt stone clusters, fallen petrified limbs lying along the way, and fallen drums round the ruins.
+- **Blender** (each previewed and looked at, `Source/previews/*2026-11-05*`):
+  - Divers rounder and bulkier after ill-003.
+  - Real coral colonies: Corallium with polyp warts, gorgonian lattices, meandering brain coral, jointed isis.
+  - Gnarled petrified trees with root plates and snapped limbs; the pines in whorls.
+  - Broken ruin wall-tops; cleft crags and basalt columns on the mountain.
+- **Verified here:** C# compiles (editor and player passes); every shader variant passes DXC; models looked at in renders; the water look checked on a CPU mock only.
+- **Not verified:** nothing has run in Unity this session. GUM tests on her laptop.
+- **Not done:**
+  - Lamp beams aren't shadowed by rocks in the march.
+  - No sand ripples (needs a blended terrain shader).
+  - No helmet-limited look-yaw.
+  - The GPU Resident Drawer isn't enabled (our custom shaders lack DOTS variants).
+  - The Crespo kelp forest got density only, not a remodel.
+  - The ground-detail shapes are simple meshes made in code, not Blender.
+- **Next:** GUM's test report; tune `eyeAdaptation`, `physicalAmbientGain` and caustic strength from her frames; read the RouteAudit lines in her setup report.
