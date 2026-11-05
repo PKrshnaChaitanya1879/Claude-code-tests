@@ -172,6 +172,7 @@ namespace Verne.EditorTools
             var c1 = Put("summit", new Vector3(17f, 0, SummitZ - 6f), 160f, 1f); if (c1 != null) c1.transform.localScale = new Vector3(0.32f, 0.26f, 0.32f);
             var c2 = Put("summit", new Vector3(-15f, 0, SummitZ - 4f), 20f, 1f); if (c2 != null) c2.transform.localScale = new Vector3(0.3f, 0.24f, 0.3f);
             Rubble();
+            Debris();
             // 7. the city below, lit only by the volcano
             float y = CityY;
             PutAt("acropolis", new Vector3(-70f, y, 255f), 12f, 1f, true);
@@ -382,6 +383,53 @@ namespace Verne.EditorTools
             }
             LavaSeams();
             VerneBootstrap.Note($"Mission II: {placed} rubble boulders and crags on the mountain, lava seams between.");
+        }
+
+        /// <summary>
+        /// 5 Nov 2026: denser ground on the way up (GUM: never flat or empty), in clusters: stones and slabs on the stony plain
+        /// and through the copse, fallen drums and broken shafts round the first platform's ruins, fallen petrified limbs among
+        /// the trees. Never on the way (|x| kept clear), always with colliders.
+        /// </summary>
+        static void Debris()
+        {
+            string[] stones = { "rock_boulder_a", "rock_boulder_b", "rock_slab_a", "rock_slab_b", "rock_pebbles" };
+            if (!s_Src.ContainsKey("rock_boulder_a")) return;
+            var basalt = Materials.Get("Basalt");
+            int placed = 0;
+            for (int k = 0; k < 34; k++)                                         // the plain and the copse
+            {
+                var c = new Vector3(Rf(-30f, 30f), 0, Rf(8f, CrevZ0 - 5f));
+                if (Mathf.Abs(c.x) < 5f) c.x = Mathf.Sign(c.x == 0f ? 1f : c.x) * Rf(5f, 9f);
+                int n = 3 + s_R.Next(5);
+                for (int i = 0; i < n; i++)
+                {
+                    var p = c + new Vector3(SeabedDetail.Gauss(s_R) * 1.6f, 0, SeabedDetail.Gauss(s_R) * 1.6f);
+                    if (Mathf.Abs(p.x) < 3f || (p.z < 6f && Mathf.Abs(p.x) < 6f)) continue;
+                    var go = Put(stones[s_R.Next(stones.Length)], p, Yaw(), i == 0 ? Rf(0.9f, 1.5f) : Rf(0.3f, 0.8f), true);
+                    if (go == null) continue;
+                    go.transform.position += Vector3.down * Rf(0.05f, 0.25f);
+                    go.transform.rotation = Quaternion.Euler(Rf(-15f, 15f), 0f, Rf(-15f, 15f)) * go.transform.rotation;
+                    Recolour(go, basalt); placed++;
+                }
+            }
+            for (int k = 0; k < 14; k++)                                         // fallen petrified limbs among the trees
+            {
+                var p = Rnd(-30, 30, 52, CrevZ0 - 6f, 7f);                       // well off the way: a lying trunk is long
+                var go = Put("deadtree_" + s_R.Next(4), p, Yaw(), Rf(0.5f, 0.8f), true);
+                if (go == null) continue;
+                go.transform.rotation = Quaternion.Euler(0f, Rf(-20f, 20f), 0f) * Quaternion.Euler(Rf(82f, 92f), 0f, 0f) * go.transform.rotation;   // tipped over onto the floor, lying roughly along the way (never across it)
+                go.transform.position = new Vector3(p.x, s_Ground(p) + 0.15f, p.z);
+                placed++;
+            }
+            for (int k = 0; k < 18; k++)                                         // drums and broken shafts round the ruins
+            {
+                var p = Rnd(-20, 20, 121, 137, 3.8f);
+                var go = Put(k % 3 == 0 ? "col_drum" : (k % 2 == 0 ? "col_broken_a" : "col_broken_b"), p, Yaw(), Rf(0.8f, 1.1f), true);
+                if (go == null) continue;
+                if (k % 2 == 1) { go.transform.rotation = Quaternion.Euler(0f, Yaw(), 0f) * Quaternion.Euler(90f, 0f, 0f) * go.transform.rotation; go.transform.position += Vector3.up * 0.35f; }   // fallen on its side
+                placed++;
+            }
+            VerneBootstrap.Note($"Mission II: {placed} more stones, fallen limbs and drums in clusters off the way.");
         }
 
         static void Recolour(GameObject go, Material m)

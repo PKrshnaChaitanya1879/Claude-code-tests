@@ -82,6 +82,8 @@ namespace Verne.EditorTools
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 var ti = AssetImporter.GetAtPath(path) as TextureImporter;
                 if (ti == null) continue;
+                string fn = Path.GetFileNameWithoutExtension(path);
+                if (fn.EndsWith("_albedo") || fn.EndsWith("_normal") || fn.EndsWith("_rough") || fn.EndsWith("_metal") || fn.EndsWith("_albedo_smooth")) continue;   // texture packs: TexturePacks.ImportAll
                 bool card = path.Contains("/VerneCards/");
                 bool normal = Path.GetFileNameWithoutExtension(path).EndsWith("_n");
                 bool changed = false;

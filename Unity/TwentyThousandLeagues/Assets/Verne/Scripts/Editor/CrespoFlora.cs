@@ -87,6 +87,16 @@ namespace Verne.EditorTools
                 gar.transform.localScale = LongAxisIsX("bindweed_garland") ? new Vector3(d.magnitude / 4f, 1f, 1f) : new Vector3(1f, 1f, d.magnitude / 4f);
             }
             Scatter(new[] { "red_coral", "isis", "gorgonian_fan", "anemone", "sea_star_red" }, 30, -10, 10, 102, 120, 0.9f, 1.4f, lane: 0f, avoid: c, avoidR: 4.5f);
+            // 6. 5 Nov 2026: denser, in clusters (a big piece with smaller ones round it, as real reefs and weed beds grow),
+            //    never on the way (|x| < lane) nor in the glade (Docs/RESEARCH_underwater.md §5)
+            int before = Placed;
+            Clusters(new[] { "shells", "sea_star_red", "sea_star_orange", "fungia" }, 26, 4, -24, 24, 3, 40, 1.6f, 0.8f, 1.4f, lane: 1.8f);
+            Clusters(new[] { "sponge", "cup_corals", "anemone", "brain_coral", "brain_coral_teal" }, 18, 5, -22, 22, 8, 44, 2.0f, 0.7f, 1.5f, lane: 2.6f);
+            Clusters(new[] { "red_algae", "padina", "acetabularia", "fucus" }, 22, 7, -22, 22, 20, 50, 2.4f, 0.9f, 1.8f, lane: 2.4f);
+            Clusters(new[] { "alaria", "fucus", "red_algae", "sponge" }, 20, 5, -26, 26, 46, 95, 2.2f, 0.85f, 1.3f, lane: 2.6f);
+            Clusters(new[] { "red_coral", "tuft_coral", "pink_coral", "isis", "gorgonian_fan", "gorgonian_fan_yellow", "brain_coral", "cup_corals", "basket_star" },
+                     22, 6, -14, 14, 94, 122, 1.8f, 0.8f, 1.6f, lane: 2.4f, avoid: c, avoidR: 5f);
+            VerneBootstrap.Note($"Mission I: {Placed - before} more props in clusters (coral heads, sponges, weed beds, shell and star drifts).");
             // colliders last, so every prop above was grounded on the sea floor and not on another prop
             s_Collect = false;
             foreach (var (go, name) in s_NeedCollider) if (go != null) AddCollider(go, name);
@@ -214,6 +224,28 @@ namespace Verne.EditorTools
                 if (d.magnitude < r && !keep) kill.Add(t.gameObject);
             }
             foreach (var g in kill) { Object.DestroyImmediate(g); Placed--; }
+        }
+
+        /// <summary>Clusters: a centre, then members falling off as a Gaussian round it; the first is the largest.</summary>
+        static void Clusters(string[] names, int clusters, int perCluster, float x0, float x1, float z0, float z1, float spread, float sMin, float sMax, float lane = 0f, Vector3 avoid = default, float avoidR = 0f)
+        {
+            for (int k = 0; k < clusters; k++)
+            {
+                var centre = new Vector3(Mathf.Lerp(x0, x1, (float)s_R.NextDouble()), 0, Mathf.Lerp(z0, z1, (float)s_R.NextDouble()));
+                if (Mathf.Abs(centre.x) < lane + spread * 0.5f) centre.x = Mathf.Sign(centre.x == 0f ? 1f : centre.x) * (lane + spread * 0.5f + (float)s_R.NextDouble() * 3f);
+                int n = Mathf.Max(1, perCluster + s_R.Next(-2, 3));
+                string lead = names[s_R.Next(names.Length)];
+                for (int i = 0; i < n; i++)
+                {
+                    var p = centre + new Vector3(SeabedDetail.Gauss(s_R) * spread * 0.6f, 0, SeabedDetail.Gauss(s_R) * spread * 0.6f);
+                    if (Mathf.Abs(p.x) < lane) continue;
+                    if (p.z < 4f && Mathf.Abs(p.x) < 4f) continue;
+                    if (avoidR > 0f && (new Vector2(p.x - avoid.x, p.z - avoid.z)).magnitude < avoidR) continue;
+                    string nm = i == 0 || s_R.NextDouble() < 0.45 ? lead : names[s_R.Next(names.Length)];   // clusters are mostly one kind
+                    float sc = Mathf.Lerp(sMin, sMax, (float)s_R.NextDouble()) * (i == 0 ? 1.25f : 1f);
+                    Put(nm, p, (float)s_R.NextDouble() * 360f, sc);
+                }
+            }
         }
 
         static void Scatter(string[] names, int count, float x0, float x1, float z0, float z1, float sMin, float sMax, float lane = 0f, Vector3 avoid = default, float avoidR = 0f)

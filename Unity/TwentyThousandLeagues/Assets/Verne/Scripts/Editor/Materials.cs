@@ -49,12 +49,35 @@ namespace Verne.EditorTools
 
         static readonly Dictionary<string, Material> s_Cache = new Dictionary<string, Material>();
 
+        // 5 Nov 2026: the outside's materials from the CC0 texture packs (Textures/README_texture_packs.md). The interiors keep theirs (GUM: "splendid").
+        static readonly Dictionary<string, (string pack, Color tint, float tile)> s_Packs = new Dictionary<string, (string, Color, float)>
+        {
+            { "Sand",   ("SeabedSand", new Color(0.62f, 0.58f, 0.5f), 1f) },      // fine, even sand (I.XV); tiled by the floor mesh's own UVs
+            { "Basalt", ("Basalt",     new Color(0.32f, 0.31f, 0.33f), 1f) },     // black basalt, still a silhouette against the glow
+            { "Rock2",  ("LavaRock",   new Color(0.62f, 0.6f, 0.6f), 1f) },       // the mountain's faceted rock: cooled lava
+        };
+
         public static void BuildAll()
         {
             s_Cache.Clear();
+            TexturePacks.ClearCache();
             var lit = Shader.Find("Universal Render Pipeline/Lit");
             if (lit == null) throw new System.Exception("URP Lit shader not found. Is the URP package installed?");
             foreach (var s in Specs) Make(s, lit);
+            int packed = 0;
+            foreach (var kv in s_Packs)
+            {
+                var m = s_Cache.TryGetValue(kv.Key, out var mm) ? mm : null;
+                if (m == null || !TexturePacks.Exists(kv.Value.pack)) continue;
+                var src = TexturePacks.Get(kv.Value.pack, kv.Value.tint, kv.Value.tile);
+                if (src == null) continue;
+                m.SetTexture("_BaseMap", src.GetTexture("_BaseMap")); m.SetTextureScale("_BaseMap", Vector2.one * kv.Value.tile);
+                m.SetColor("_BaseColor", kv.Value.tint);
+                m.SetTexture("_BumpMap", src.GetTexture("_BumpMap")); m.SetFloat("_BumpScale", 1f); m.EnableKeyword("_NORMALMAP");
+                m.SetFloat("_Smoothness", 0.85f); m.SetFloat("_SmoothnessTextureChannel", 1f); m.EnableKeyword("_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A");   // wet: the scan's own smoothness, a little raised
+                EditorUtility.SetDirty(m); packed++;
+            }
+            if (packed > 0) VerneBootstrap.Note($"{packed} outside materials now use the CC0 texture packs (sand, basalt, lava rock).");
             AssetDatabase.SaveAssets();
             VerneBootstrap.Note($"{Specs.Length} materials in {VerneBootstrap.Generated}/Materials.");
         }

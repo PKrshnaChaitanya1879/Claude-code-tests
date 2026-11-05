@@ -75,6 +75,7 @@ namespace Verne.EditorTools
             Step("Fonts (TextMesh Pro SDF assets)", ProjectSetup.Fonts);
             Step("URP assets and quality tiers (Light / Balanced / Full)", ProjectSetup.RenderPipelines);
             Step("Volume profiles (grade per scene)", ProjectSetup.VolumeProfiles);
+            Step("Texture packs (CC0 scans: import for a 4 GB GPU)", TexturePacks.ImportAll);
             Step("Materials", Materials.BuildAll);
             Step("Model: Nautilus exterior (Blender FBX → prefab with LODs and collider)", NautilusExterior.BuildPrefab);
             Step("Scene: Title", SceneBuilders.Title);

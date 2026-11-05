@@ -1041,6 +1041,29 @@ namespace Verne.EditorTools
             return float.IsNegativeInfinity(any) ? 0f : any;
         }
 
+        /// <summary>The sea floor's height and normal under p (only the "Sea floor" mesh), NaN height if none.</summary>
+        static (float y, Vector3 n) FloorAt(Vector3 p)
+        {
+            var hits = Physics.RaycastAll(new Vector3(p.x, 400f, p.z), Vector3.down, 800f, ~0, QueryTriggerInteraction.Ignore);
+            float best = float.NegativeInfinity; Vector3 n = Vector3.up;
+            foreach (var h in hits) if (h.collider != null && h.collider.name == "Sea floor" && h.point.y > best) { best = h.point.y; n = h.normal; }
+            return float.IsNegativeInfinity(best) ? (float.NaN, Vector3.up) : (best, n);
+        }
+
+        /// <summary>One more clustered boulder at p (SeabedDetail.RockClusters), with its collider and an AO decal.</summary>
+        static GameObject RockAt(Transform root, System.Random rnd, Vector3 p, float scale, string mat)
+        {
+            var art = RockArt(root, rnd, mat, scale);
+            if (art == null) return null;
+            float yaw = (float)rnd.NextDouble() * 360f;
+            float g = GroundAt(p);
+            art.transform.position = new Vector3(p.x, g - 0.05f * scale, p.z);
+            art.transform.rotation = Quaternion.Euler(0f, yaw, 0f) * art.transform.rotation;
+            var b = art.GetComponent<MeshRenderer>().bounds;
+            if (scale > 0.8f) AoBlob(root, new Vector3(p.x, g, p.z), b.size.x * 1.35f, b.size.z * 1.35f, 0f);   // AO only under the big ones (draw calls)
+            return art;
+        }
+
         static Material s_AoMat;
         /// <summary>
         /// Hand-placed contact shadow / AO under a thing, as Playdead did ("no global illumination or even automated AO"):
@@ -1207,6 +1230,14 @@ namespace Verne.EditorTools
                 Box("Coral cross upright", glade, new Vector3(gp.x, GroundAt(gp) + 1.8f, gp.z), new Vector3(0.22f, 2.0f, 0.22f), "CoralRed");
                 Box("Coral cross arms", glade, new Vector3(gp.x, GroundAt(gp) + 2.2f, gp.z), new Vector3(1.3f, 0.2f, 0.22f), "CoralRed");
             }
+            // 5 Nov 2026: denser floor (Docs/RESEARCH_underwater.md §5): clustered boulders off the way, then instanced ground detail
+            var m1Route = new[] { new Vector3(0.3f, 0, 0f), new Vector3(0.3f, 0, 14f), new Vector3(0f, 0, 30f), new Vector3(0f, 0, 46f), new Vector3(0.2f, 0, 70f), new Vector3(0f, 0, 95f), new Vector3(-1.6f, 0, 101f), new Vector3(-1.6f, 0, 105.4f), new Vector3(0f, 0, 112f) };
+            {
+                var rockRoot = new GameObject("Rock clusters").transform; rockRoot.SetParent(root, false);
+                var rr = new System.Random(5115);
+                int nr = SeabedDetail.RockClusters((p, sc, m) => RockAt(rockRoot, rr, p, sc, null), m1Route, 26, 4f, 118f, 30f, 3.2f, 5115);
+                Notes.Add($"Mission I: {nr} clustered boulders off the way.");
+            }
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             CrespoFauna(root);
             // clearings for the burial's actors and the sea-spider, then the NavMesh, before any diver exists
@@ -1275,6 +1306,7 @@ namespace Verne.EditorTools
             var sp = new Vector3(0, 0, 0);
             Spawn(new Vector3(0, GroundAt(sp) + 0.1f, 0), 0f, MoveMode.Water, 200f);
             LampShadows();
+            SeabedDetail.Ground(root, m1Route, "crespo", FloorAt, 1871);
             RouteAudit.Run("Mission I", root, new[] { G(0.3f, 6f), G(0.3f, 14f), G(0f, 30f), G(0f, 46f), G(0.2f, 70f), G(0f, 95f), G(-1.6f, 101f), G(-1.6f, 105.4f) });
             Water("Mission1");
             GlobalVolume("Mission1");
@@ -1308,6 +1340,13 @@ namespace Verne.EditorTools
             over.shadowStrength = 1f;
             var aim = over.gameObject.AddComponent<LightFromPoint>(); aim.source = AtlantisKit.CraterGlow;   // rays fan from the crater, carved by the ridge and the trees   // round 8: steep enough to reach the ground under your feet
             over.transform.SetParent(root, true);
+            var m2Route = new[] { new Vector3(0f, 0, 0f), new Vector3(0.5f, 0, 20f), new Vector3(0f, 0, 45f), new Vector3(0.5f, 0, 70f), new Vector3(0f, 0, 93f), new Vector3(0f, 0, 111f), new Vector3(0f, 0, 118f), new Vector3(0.4f, 0, 128f), new Vector3(-1.8f, 0, 150.2f) };
+            {
+                var rockRoot = new GameObject("Rock clusters").transform; rockRoot.SetParent(root, false);
+                var rr = new System.Random(6226);
+                int nr = SeabedDetail.RockClusters((p, sc, m) => RockAt(rockRoot, rr, p, sc, "Basalt"), m2Route, 22, 6f, 90f, 32f, 3.6f, 6226);   // the plain and the copse (the climb has its own rubble)
+                Notes.Add($"Mission II: {nr} clustered basalt boulders off the way.");
+            }
             NautilusAtTheDoor(root, SceneFlow.Nautilus);
             var sp = new Vector3(0, 0, 0);
             // Captain Nemo with his iron-pointed stick, no lamps ("They will be useless"), leading toward the red glow
@@ -1349,6 +1388,7 @@ namespace Verne.EditorTools
             fall.transform.SetParent(root, false);
             if (kit) AtlantisKit.Summit(root, nemo2 != null ? nemo2.GetComponent<DiverGuide>() : null);
             LampShadows();
+            SeabedDetail.Ground(root, m2Route, "atlantis", FloorAt, 1869);
             RouteAudit.Run("Mission II", root, new[] { G2(0.5f, 6f), G2(0.5f, 20f), G2(0f, 45f), G2(0.5f, 70f), G2(0f, 93f), G2(0f, 111f), G2(0f, 118f), G2(0.4f, 128f), G2(-1.8f, 150.2f) });
             Water("Mission2", l);
             GlobalVolume("Mission2");
