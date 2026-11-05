@@ -21,7 +21,7 @@ M = {
     'lead': mat('M_lead', (0.25, 0.25, 0.26), metal=0.6, rough=0.6),
     'iron': mat('M_iron', (0.22, 0.22, 0.22), metal=0.8, rough=0.6),
     'wood': mat('M_oak', (0.35, 0.22, 0.12), rough=0.6),
-    'lampglass': mat('M_lampglass', (0.9, 0.95, 1.0), emit=(1, 1, 1)),
+    'lampglass': mat('M_lampglass', (1.0, 0.85, 0.6), emit=(1.0, 0.72, 0.42)),   # warm filament, never white (GUM's 1860s rule)
     'linen': mat('M_linen', (0.8, 0.78, 0.72), rough=0.95),
     'leather': mat('M_leather', (0.2, 0.12, 0.07), rough=0.7),
     'skin': mat('M_skin', (0.62, 0.45, 0.36), rough=0.6),
@@ -79,8 +79,8 @@ def folds(profile, amp, n, z0, z1):
     return out
 
 def helmet(bm):
-    R = 0.225
-    ico(bm, (0, 0, 0.02), R, 2, MI['copper'], scale=(1, 1.02, 0.98))
+    R = 0.25   # 5 Nov: the big bonnet of im033, as wide as the shoulders
+    ico(bm, (0, 0, 0.02), R, 3, MI['copper'], scale=(1, 1.02, 0.98))
     # three ports (I.XIV: "three windows of thick glass"): two side by side in front, like eyes (im033), one on the right
     for (ax, ay, az, rr) in [(-0.42, -1, 0.05, 0.068), (0.42, -1, 0.05, 0.068), (1, -0.15, 0.08, 0.058)]:
         d = Vector((ax, ay, az)).normalized()
@@ -111,15 +111,16 @@ def helmet(bm):
     cylinder(bm, (0.06, 0.2, -0.04), 0.016, 0.06, 8, MI['brass'], axis='Y')
     for s in (-1, 1):
         box(bm, s * 0.2 - 0.03, s * 0.2 + 0.03, -0.06, 0.06, -0.16, -0.08, MI['lead'])
-prop('diver_helmet', helmet)
+prop('diver_helmet', helmet, smooth=30)
 
 def torso(bm):
     # waist z=0 to the corselet (z~0.55): a full chest and belly in loose india-rubber, creased at the waist
-    prof = [(0.0, -0.02), (0.165, -0.02), (0.185, 0.06), (0.2, 0.16), (0.215, 0.27), (0.215, 0.36), (0.205, 0.44), (0.17, 0.5), (0.12, 0.53), (0.0, 0.54)]
-    prof = folds(prof, 0.035, 2.5, 0.0, 0.2)
-    lathe(bm, prof, 14, (0, 0, 0), MI['rubber'])
+    # 5 Nov: bulkier and rounder, as Neuville draws it: the dress blown out by the air inside, a barrel of a chest
+    prof = [(0.0, -0.02), (0.18, -0.02), (0.205, 0.06), (0.225, 0.16), (0.24, 0.27), (0.24, 0.36), (0.228, 0.44), (0.19, 0.5), (0.13, 0.53), (0.0, 0.54)]
+    prof = folds(prof, 0.045, 3.0, 0.0, 0.24)
+    lathe(bm, prof, 16, (0, 0, 0), MI['rubber'])
     for v in bm.verts:
-        v.co.y *= 0.78
+        v.co.y *= 0.86
         if v.co.y < 0 and 0.08 < v.co.z < 0.3: v.co.y *= 1.12          # the belly (im033)
     # the copper corselet over the shoulders, its flange bolts, and the brails clamping the dress
     t = bmesh.new()
@@ -139,13 +140,13 @@ def torso(bm):
     box(bm, -0.035, 0.035, -0.16, -0.135, 0.02, 0.08, MI['brass'])
     # the hose from the reservoir over the right shoulder to the helmet
     tube(bm, [(0.08, 0.14, 0.36), (0.12, 0.12, 0.5), (0.1, 0.06, 0.6), (0.06, 0.02, 0.66)], 0.022, 6, MI['rubber'], cap=False)
-prop('diver_torso', torso)
+prop('diver_torso', torso, smooth=38)
 
 def hips(bm):
-    prof = [(0.0, 0.02), (0.168, 0.02), (0.18, -0.06), (0.17, -0.13), (0.14, -0.18), (0.0, -0.19)]
-    lathe(bm, prof, 14, (0, 0, 0), MI['rubber'])
-    for v in bm.verts: v.co.y *= 0.8
-prop('diver_hips', hips)
+    prof = [(0.0, 0.02), (0.182, 0.02), (0.198, -0.06), (0.19, -0.13), (0.155, -0.18), (0.0, -0.19)]
+    lathe(bm, prof, 16, (0, 0, 0), MI['rubber'])
+    for v in bm.verts: v.co.y *= 0.86
+prop('diver_hips', hips, smooth=38)
 
 def tank(bm):
     # the Rouquayrol reservoir: a box of thick iron plate on the back (im033), regulator chamber and its brass ring on top,
@@ -162,13 +163,13 @@ def tank(bm):
 prop('diver_tank', tank)
 
 def upperarm(bm):
-    prof = folds([(0.0, 0.04), (0.08, 0.02), (0.078, -0.08), (0.072, -0.18), (0.066, -0.27), (0.0, -0.3)], 0.06, 2, -0.2, -0.29)
-    lathe(bm, prof, 9, (0, 0, 0), MI['rubber'])
-prop('diver_upperarm', upperarm)
+    prof = folds([(0.0, 0.05), (0.098, 0.03), (0.096, -0.08), (0.09, -0.18), (0.084, -0.27), (0.0, -0.31)], 0.09, 2.5, -0.16, -0.3)   # baggy, creased at the elbow
+    lathe(bm, prof, 12, (0, 0, 0), MI['rubber'])
+prop('diver_upperarm', upperarm, smooth=38)
 
 def forearm(bm):
-    prof = folds([(0.0, 0.02), (0.066, 0.0), (0.064, -0.1), (0.058, -0.2), (0.05, -0.25), (0.0, -0.26)], 0.07, 1.5, -0.02, -0.12)
-    lathe(bm, prof, 9, (0, 0, 0), MI['rubber'])
+    prof = folds([(0.0, 0.02), (0.084, 0.0), (0.082, -0.1), (0.074, -0.2), (0.058, -0.25), (0.0, -0.26)], 0.09, 2.0, -0.02, -0.14)
+    lathe(bm, prof, 12, (0, 0, 0), MI['rubber'])
     lathe(bm, [(0.052, -0.235), (0.056, -0.255), (0.05, -0.27)], 9, (0, 0, 0), MI['brass'])   # the cuff ring
     # the bare hand (im033): palm and the fingers together, the thumb apart
     t = bmesh.new()
@@ -176,25 +177,26 @@ def forearm(bm):
     box(t, -0.04, 0.04, -0.018, 0.018, -0.42, -0.36, MI['skin'])
     box(t, 0.04, 0.065, -0.016, 0.016, -0.34, -0.29, MI['skin'])
     merge_into(bm, t)
-prop('diver_forearm', forearm)
+prop('diver_forearm', forearm, smooth=38)
 
 def thigh(bm):
-    prof = folds([(0.0, 0.03), (0.1, 0.0), (0.098, -0.12), (0.088, -0.26), (0.078, -0.38), (0.0, -0.42)], 0.06, 2, -0.3, -0.41)
-    lathe(bm, prof, 9, (0, 0, 0), MI['rubber'])
-prop('diver_thigh', thigh)
+    prof = folds([(0.0, 0.03), (0.122, 0.0), (0.12, -0.12), (0.108, -0.26), (0.096, -0.38), (0.0, -0.42)], 0.08, 2.5, -0.26, -0.41)   # baggy breeches, folds over the knee
+    lathe(bm, prof, 12, (0, 0, 0), MI['rubber'])
+prop('diver_thigh', thigh, smooth=38)
 
 def shin(bm):
-    prof = folds([(0.0, 0.03), (0.082, 0.0), (0.078, -0.12), (0.07, -0.26), (0.064, -0.34), (0.0, -0.36)], 0.07, 1.5, -0.01, -0.12)
-    lathe(bm, prof, 9, (0, 0, 0), MI['rubber'])
-    lathe(bm, [(0.075, -0.3), (0.078, -0.34), (0.072, -0.38)], 9, (0, 0, 0), MI['leather'])   # the boot's laced top
-prop('diver_shin', shin)
+    prof = folds([(0.0, 0.03), (0.1, 0.0), (0.096, -0.12), (0.086, -0.26), (0.078, -0.34), (0.0, -0.36)], 0.09, 2.0, -0.01, -0.14)
+    lathe(bm, prof, 12, (0, 0, 0), MI['rubber'])
+    lathe(bm, [(0.088, -0.3), (0.092, -0.34), (0.086, -0.38)], 12, (0, 0, 0), MI['leather'])   # the boot's laced top
+prop('diver_shin', shin, smooth=38)
 
 def boot(bm):
     # a laced canvas-and-leather boot on a thick lead sole, brass toe-cap, straps over the instep (im033)
-    box(bm, -0.07, 0.07, -0.2, 0.07, -0.07, 0.06, MI['leather'])
-    cylinder(bm, (0, 0, -0.02), 0.072, 0.1, 9, MI['leather'])
-    box(bm, -0.082, 0.082, -0.23, 0.09, -0.13, -0.07, MI['lead'])
-    box(bm, -0.075, 0.075, -0.24, -0.16, -0.12, -0.02, MI['brass'])
+    # rounder upper over a broad lead sole; the toe swells as Neuville's heavy boots do
+    lathe(bm, [(0.0, -0.07), (0.085, -0.07), (0.09, 0.0), (0.085, 0.06), (0.0, 0.07)], 12, (0, 0, 0), MI['leather'])
+    t = bmesh.new(); ico(t, (0, -0.15, -0.05), 0.085, 2, MI['leather'], scale=(1.0, 1.25, 0.7)); merge_into(bm, t)
+    box(bm, -0.092, 0.092, -0.27, 0.1, -0.14, -0.07, MI['lead'])
+    t = bmesh.new(); ico(t, (0, -0.24, -0.075), 0.06, 1, MI['brass'], scale=(1.4, 0.8, 0.7)); merge_into(bm, t)
     for yy in (-0.12, -0.04):
         box(bm, -0.074, 0.074, yy - 0.012, yy + 0.012, -0.075, 0.065, MI['iron'])
 prop('diver_boot', boot)

@@ -19,8 +19,8 @@ for x in (-0.22, 0.22):
 for x in (-0.09, 0.09):
     hp = hips + U(x, -0.12, 0); put('diver_thigh', hp); kn = hp + U(0, -0.42, 0); put('diver_shin', kn); put('diver_boot', kn + U(0, -0.4, 0))
 put('diver_lamp', hips + U(0.14, 0.06, 0.15))
-sc.render.engine = 'BLENDER_EEVEE'; sc.render.resolution_x, sc.render.resolution_y = 600, 900
-try: sc.eevee.taa_render_samples = 48
+sc.render.engine = 'BLENDER_EEVEE'; sc.render.resolution_x, sc.render.resolution_y = 400, 600
+try: sc.eevee.taa_render_samples = 16
 except Exception: pass
 sc.view_settings.view_transform = 'AgX'
 w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True; w.node_tree.nodes['Background'].inputs['Color'].default_value = (0.3, 0.32, 0.34, 1)

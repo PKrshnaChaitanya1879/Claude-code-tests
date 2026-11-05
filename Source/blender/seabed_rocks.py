@@ -72,6 +72,38 @@ rock('rock_outcrop_a', 6, 1.3, (0.8, 0.7, 1.5), rough=0.45, sharp=1.3, holes=2)
 rock('rock_outcrop_b', 7, 1.6, (1.1, 0.8, 1.2), rough=0.4, sharp=1.2, holes=3)
 rock('rock_pebbles', 8, 0.35, (1.0, 1.0, 0.6), subdiv=2)
 
+# 5 Nov 2026: the mountain's rocks (II.IX: "black basalt", the climb through crags and rubble). Crags: tall, cleft,
+# many cleavage planes, as volcanic rock breaks; basalt columns: the hexagonal jointing of cooled lava, a cluster of
+# prisms of different heights, tops tilted and broken.
+rock('rock_crag_a', 11, 1.4, (0.7, 0.6, 2.2), rough=0.5, sharp=2.4, holes=2)
+rock('rock_crag_b', 12, 1.7, (1.0, 0.55, 1.8), rough=0.45, sharp=2.2, holes=1)
+def basalt_columns(name, seed, n=9):
+    rnd = random.Random(seed)
+    bm = bmesh.new()
+    for i in range(n):
+        a = rnd.uniform(0, 2 * math.pi); d = rnd.uniform(0, 0.9)
+        cx, cy = math.cos(a) * d, math.sin(a) * d
+        r = rnd.uniform(0.22, 0.32); h = rnd.uniform(0.6, 2.6) * (1.2 - d * 0.5)
+        top = []
+        bot = [bm.verts.new((cx + math.cos(k * math.pi / 3) * r, cy + math.sin(k * math.pi / 3) * r, -0.2)) for k in range(6)]
+        tilt = Vector((rnd.uniform(-0.25, 0.25), rnd.uniform(-0.25, 0.25), 0))
+        for k in range(6):
+            x, y = math.cos(k * math.pi / 3) * r, math.sin(k * math.pi / 3) * r
+            top.append(bm.verts.new((cx + x, cy + y, h + tilt.x * x * 3 + tilt.y * y * 3 + rnd.uniform(-0.04, 0.04))))
+        for k in range(6):
+            bm.faces.new([bot[k], bot[(k + 1) % 6], top[(k + 1) % 6], top[k]])
+        f = bm.faces.new(top); f.material_index = 0
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.normal_update()
+    off = Vector((seed, seed * 0.5, 0))
+    for f in bm.faces:
+        if f.normal.z > 0.6 and noise.noise(f.calc_center_median() * 1.2 + off) > -0.2: f.material_index = 2
+        else: f.material_index = 0
+    o = new_obj(name, bm, MATS)
+    world_uv(o, 1.0); ROCKS.append(o)
+basalt_columns('rock_basalt_cols', 21)
+basalt_columns('rock_basalt_cols_b', 22, 6)
+
 # lay them out in a row for the preview .blend (export resets locations via bake of each object's own transform)
 bpy.ops.object.select_all(action='DESELECT')
 for o in ROCKS: o.select_set(True)

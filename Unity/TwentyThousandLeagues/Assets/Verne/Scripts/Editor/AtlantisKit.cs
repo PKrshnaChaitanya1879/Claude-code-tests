@@ -355,7 +355,7 @@ namespace Verne.EditorTools
         static void Rubble()
         {
             string[] small = { "rock_boulder_a", "rock_boulder_b", "rock_boulder_c", "rock_slab_a", "rock_slab_b" };
-            string[] big = { "rock_outcrop_a", "rock_outcrop_b", "rock_boulder_c" };
+            string[] big = { "rock_outcrop_a", "rock_outcrop_b", "rock_boulder_c", "rock_crag_a", "rock_crag_b", "rock_basalt_cols" };   // 5 Nov: cleft crags and basalt columns (seabed_rocks.py)
             if (!s_Src.ContainsKey("rock_boulder_a")) { VerneBootstrap.Note("Seabed_Rocks.fbx missing: the mountain has no rubble."); return; }
             var basalt = Materials.Get("Basalt");
             int placed = 0;
@@ -392,7 +392,7 @@ namespace Verne.EditorTools
         /// </summary>
         static void Debris()
         {
-            string[] stones = { "rock_boulder_a", "rock_boulder_b", "rock_slab_a", "rock_slab_b", "rock_pebbles" };
+            string[] stones = { "rock_boulder_a", "rock_boulder_b", "rock_slab_a", "rock_slab_b", "rock_pebbles", "rock_basalt_cols_b" };
             if (!s_Src.ContainsKey("rock_boulder_a")) return;
             var basalt = Materials.Get("Basalt");
             int placed = 0;
@@ -523,6 +523,11 @@ namespace Verne.EditorTools
                     if (m.StartsWith("M_lava_crust")) mats[i] = Materials.Emissive("LavaCrust", new Color(0.08f, 0.06f, 0.05f), new Color(0.55f, 0.16f, 0.04f));   // cooling crust: an ember glow
                     else if (m.StartsWith("M_lava")) mats[i] = Materials.Emissive("LavaRun", new Color(0.9f, 0.6f, 0.35f), new Color(4.2f, 1.7f, 0.5f));   // molten: bright enough to bloom   // GUM 3 Nov: "way too red": amber fire, as the browser build
                     else if (name == "summit" || name == "volcano") mats[i] = Materials.Get("Basalt");   // tour 3: "a rock of black basalt": a silhouette rimmed red, not a flat orange slab
+                    else if ((m.StartsWith("M_stone") || m.StartsWith("M_stone_dark")) && (name.StartsWith("house") || name == "aqueduct" || name == "quay" || name == "street" || name == "acropolis"))
+                    {   // 5 Nov 2026: the masonry from a real CC0 scan (EncrustedRuins: coursed stone under weed), darker for the deep
+                        var ruin = TexturePacks.Get("EncrustedRuins", m.StartsWith("M_stone_dark") ? new Color(0.32f, 0.33f, 0.31f) : new Color(0.5f, 0.5f, 0.47f), 1f);
+                        if (ruin != null) mats[i] = ruin;
+                    }
                     else if (m.StartsWith("M_pennatule")) mats[i] = Materials.Emissive("Pennatule", new Color(0.32f, 0.3f, 0.28f), new Color(0.03f, 0.07f, 0.06f));
                 }
                 mr.sharedMaterials = mats;

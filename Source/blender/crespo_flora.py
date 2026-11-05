@@ -230,65 +230,125 @@ def acetabularia(bm, seed=14):
 prop('acetabularia', acetabularia)
 
 # ------------------------------------------------------------ corals and their kin (the coral kingdom)
-def branching(bm, mi, depth=4, base=0.05, length=0.35, spread=0.6, seed=0, root=(0, 0, 0), up=(0, 0, 1), tips=None):
+def branching(bm, mi, depth=4, base=0.05, length=0.35, spread=0.6, seed=0, root=(0, 0, 0), up=(0, 0, 1), tips=None, knobs=0.0, planar=0.0):
+    """5 Nov 2026: real coral growth (after photographs of Corallium rubrum and the gorgonians): a short thick trunk,
+    dichotomous branching that keeps a crown (branches bend back toward the vertical), tapering to blunt tips with
+    polyps; optional knobs (budding polyp warts along the branches) and a planar bias (sea-fan-like colonies grow in
+    one plane across the current)."""
     r = random.Random(seed)
     def grow(p, d, rad, L, k):
+        mid = p + d * L * 0.5 + Vector((r.uniform(-1, 1), r.uniform(-1, 1) * (1 - planar), 0)) * L * 0.1
         q = p + d * L
-        tube(bm, [p, p + d * L * 0.5 + Vector((r.uniform(-1, 1), r.uniform(-1, 1), 0)) * L * 0.08, q], [rad, rad * 0.85, rad * 0.7], 5 if k < 2 else 4, mi, cap=False)
+        tube(bm, [p, mid, q], [rad, rad * 0.88, rad * 0.76], 6 if k < 2 else 5, mi, cap=False)
+        ico(bm, q, rad * 0.8, 1, mi)                                   # the fork's swelling: no seams between pieces
+        if knobs > 0 and k >= 1:
+            for j in range(r.randint(0, 2)):
+                t = r.uniform(0.25, 0.8); kp = p + (q - p) * t
+                kd = Vector((r.uniform(-1, 1), r.uniform(-1, 1) * (1 - planar), r.uniform(0, 0.5))).normalized()
+                ico(bm, kp + kd * rad * 0.7, rad * knobs, 0, tips if tips is not None else mi)
         if k >= depth:
-            ico(bm, q, rad * 0.9, 0, tips if tips is not None else mi)
+            ico(bm, q + d * rad * 0.4, rad * 1.05, 1, tips if tips is not None else mi)
             return
-        n = 2 if k < 2 else r.choice((2, 2, 3))
+        n = 2 if k < depth - 1 else r.choice((2, 3, 3))
+        base_ang = r.uniform(0, 2 * math.pi)
         for i in range(n):
-            ang = r.uniform(0, 2 * math.pi)
-            nd = (d + Vector((math.cos(ang), math.sin(ang), 0)) * spread * r.uniform(0.6, 1.2)).normalized()
-            grow(q, nd, rad * 0.72, L * r.uniform(0.7, 0.9), k + 1)
+            ang = base_ang + i * 2 * math.pi / n + r.uniform(-0.4, 0.4)
+            side = Vector((math.cos(ang), math.sin(ang) * (1 - planar), 0))
+            nd = (d * (1.0 + 0.25 * k) + side * spread * r.uniform(0.7, 1.15)).normalized()   # bends back toward the vertical: a crown
+            grow(q, nd, rad * 0.74, L * r.uniform(0.72, 0.9), k + 1)
     grow(Vector(root), Vector(up).normalized(), base, length, 0)
-prop('red_coral', lambda bm: branching(bm, MI['coral_red'], 4, 0.035, 0.26, 0.8, 3, tips=MI['polyp']), smooth=45)   # white polyps on the blood-red
-prop('tuft_coral', lambda bm: branching(bm, MI['coral_orange'], 3, 0.05, 0.3, 0.7, 1), smooth=45)
-prop('pink_coral', lambda bm: branching(bm, MI['coral_pink'], 3, 0.045, 0.3, 0.9, 2), smooth=45)
-def isis(bm, seed=5):
-    """Isis: jointed stems, white segments with gold nodes, in a fan."""
+
+def coral_colony(bm, mi, tips, seed, heads=3, depth=4, base=0.04, length=0.22, spread=0.85, knobs=0.35, planar=0.0):
+    """Several colonies from one rock: what a reef wall actually looks like (never a lone twig)."""
     r = random.Random(seed)
-    for k in range(7):
-        a = math.radians(-55 + 110 * k / 6); L = r.uniform(0.5, 0.8)
-        p = Vector((0, 0, 0))
-        d = Vector((math.sin(a), 0, math.cos(a)))
-        for s in range(5):
-            q = p + d * (L / 5)
-            tube(bm, [p, q], [0.012, 0.01], 4, MI['isis_white'], cap=False)
-            ico(bm, q, 0.016, 0, MI['isis_gold'])
-            d = (d + Vector((r.uniform(-0.15, 0.15), r.uniform(-0.05, 0.05), 0.05))).normalized()
+    ico(bm, (0, 0, 0.02), 0.12, 1, MI['coral_stone'], scale=(1.4, 1.1, 0.5))      # the encrusted holdfast rock
+    for h in range(heads):
+        a = r.uniform(0, 2 * math.pi); d = r.uniform(0.0, 0.1)
+        up = Vector((r.uniform(-0.25, 0.25), r.uniform(-0.25, 0.25) * (1 - planar), 1))
+        branching(bm, mi, depth, base * r.uniform(0.75, 1.1), length * r.uniform(0.8, 1.15), spread, seed * 7 + h,
+                  root=(math.cos(a) * d, math.sin(a) * d, 0.04), up=up, tips=tips, knobs=knobs, planar=planar)
+
+prop('red_coral', lambda bm: coral_colony(bm, MI['coral_red'], MI['polyp'], 3, heads=3, depth=4, base=0.035, length=0.21, spread=0.9, knobs=0.45), smooth=45)   # Corallium: blood-red, white polyps
+prop('tuft_coral', lambda bm: coral_colony(bm, MI['coral_orange'], MI['coral_yellow'], 1, heads=5, depth=3, base=0.03, length=0.2, spread=0.6, knobs=0.0), smooth=45)
+prop('pink_coral', lambda bm: coral_colony(bm, MI['coral_pink'], MI['polyp'], 2, heads=2, depth=4, base=0.04, length=0.24, spread=1.0, knobs=0.3), smooth=45)
+def isis(bm, seed=5):
+    """Isis (bamboo coral): jointed stems, white chalky segments and dark-gold horny nodes, branching in a loose fan."""
+    r = random.Random(seed)
+    def stem(p, d, L, n, rad, k):
+        for s in range(n):
+            q = p + d * (L / n)
+            tube(bm, [p, q], [rad, rad * 0.95], 5, MI['isis_white'], cap=False)
+            ico(bm, q, rad * 1.35, 1, MI['isis_gold'])
+            d = (d + Vector((r.uniform(-0.12, 0.12), r.uniform(-0.04, 0.04), 0.06))).normalized()
+            if k < 2 and s in (1, 3) and r.random() < 0.7:
+                side = Vector((r.choice((-1, 1)) * 0.6, 0, 0.4))
+                stem(q, (d + side).normalized(), L * 0.6, max(2, n - 2), rad * 0.75, k + 1)
             p = q
+    for k in range(5):
+        a = math.radians(-40 + 80 * k / 4)
+        stem(Vector((0, 0, 0)), Vector((math.sin(a), 0, math.cos(a))), r.uniform(0.55, 0.85), 6, 0.014, 0)
 prop('isis', isis, smooth=45)
 def fan(bm, mi=MI['coral_purple'], seed=4, size=1.0):
+    """Gorgonian sea fan: a flat, dense net in one plane across the current. Main branches fan out from a short stalk and
+    fork; every neighbouring pair is laced by fine anastomosing cross-links, so the colony reads as a lattice, not spokes."""
     r = random.Random(seed)
-    pts = []
-    for i in range(14):
-        a = math.radians(-70 + 140 * i / 13)
-        L = size * (0.7 + 0.3 * r.random())
-        p0 = Vector((0, 0, 0.05)); p1 = Vector((math.sin(a) * L * 0.45, 0, 0.05 + math.cos(a) * L * 0.5)); p2 = Vector((math.sin(a) * L, r.uniform(-0.02, 0.02), math.cos(a) * L))
-        tube(bm, [p0, p1, p2], [0.02 * size, 0.012 * size, 0.006 * size], 4, mi, cap=False)
-        pts.append((p1, p2))
-    for i in range(len(pts) - 1):
-        for t in (0.35, 0.6, 0.85):
-            tube(bm, [pts[i][1] * t, pts[i + 1][1] * t], [0.005 * size, 0.005 * size], 3, mi, cap=False)
-    cylinder(bm, (0, 0, -0.05), 0.04 * size, 0.12, 6, mi)
+    cylinder(bm, (0, 0, -0.04), 0.035 * size, 0.14, 6, mi)
+    lines = []                                             # each branch as a polyline in the fan's plane (x, z)
+    def branch(p, ang, L, rad, k):
+        pts = [p]
+        for s in range(4):
+            ang += r.uniform(-0.12, 0.12)
+            p = p + Vector((math.sin(ang), r.uniform(-0.01, 0.01), math.cos(ang))) * (L / 4)
+            pts.append(p)
+        tube(bm, pts, [rad * (1 - 0.15 * i) for i in range(len(pts))], 4, mi, cap=False)
+        lines.append(pts)
+        if k < 2:
+            for da in (-0.28, 0.28):
+                branch(p, ang + da, L * 0.62, rad * 0.7, k + 1)
+    for i in range(6):
+        branch(Vector((0, 0, 0.08)), math.radians(-55 + 110 * i / 5), size * r.uniform(0.32, 0.42), 0.014 * size, 0)
+    # the net: points scattered evenly over the fan's area (in its plane), each laced to its nearest neighbours
+    pts = [q for ln in lines for q in ln[1:]]
+    R = size * 0.78
+    tries = 0; target = len(pts) + 150
+    while len(pts) < target and tries < 6000:
+        tries += 1
+        a = r.uniform(-1.0, 1.0); rr = R * math.sqrt(r.uniform(0.04, 1.0))
+        q = Vector((math.sin(a) * rr, r.uniform(-0.008, 0.008), 0.08 + math.cos(a) * rr * 0.95))
+        if all((q - p).length > 0.05 * size for p in pts): pts.append(q)
+    done = set()
+    for i, a in enumerate(pts):
+        near = sorted(((b - a).length, j) for j, b in enumerate(pts) if j != i)
+        for dist, j in near[:3]:
+            key = (min(i, j), max(i, j))
+            if key in done or dist > 0.16 * size: continue
+            done.add(key)
+            tube(bm, [a, pts[j]], 0.0045 * size, 3, mi, cap=False)
 prop('gorgonian_fan', fan, smooth=45)
 prop('gorgonian_fan_yellow', lambda bm: fan(bm, MI['coral_yellow'], 7, 0.8), smooth=45)
 def brain(bm, mi=MI['coral_yellow']):
-    """Zebra-meandrines: grooved domes."""
+    """Zebra-meandrines (brain coral): a low dome covered in long winding valleys and ridges. The meander comes from a
+    domain-warped stripe pattern on the sphere; the base flares out where it grows over the rock."""
     t = bmesh.new()
-    bmesh.ops.create_icosphere(t, subdivisions=3, radius=0.5)
+    bmesh.ops.create_icosphere(t, subdivisions=5, radius=0.5)
+    def warp(n):
+        x, y, z = n.x * 7.0, n.y * 7.0, n.z * 7.0
+        for _ in range(2):
+            x, y, z = x + 0.9 * math.sin(y * 1.3 + z * 0.7), y + 0.9 * math.sin(z * 1.1 + x * 0.9), z + 0.9 * math.sin(x * 1.2 + y * 0.8)
+        return x, y, z
     for v in t.verts:
         n = v.co.normalized()
-        groove = 0.035 * math.sin(n.x * 22 + math.sin(n.y * 9) * 3) * math.sin(n.y * 19)
-        v.co = n * (0.5 + groove)
-        v.co.z = max(v.co.z * 0.7, -0.05)
+        x, y, z = warp(n)
+        stripe = math.sin(x * 1.7 + y * 1.1 + z * 0.6)
+        ridge = (1 - abs(stripe)) ** 1.6                      # thin sharp ridges, rounded valleys between
+        v.co = n * (0.5 + 0.04 * ridge - 0.015)
+        if v.co.z < 0: v.co.z *= 0.25                       # flat underside
+        v.co.z = v.co.z * 0.62
+        v.co.x *= 1.0 + 0.08 * max(0.0, 0.1 - v.co.z) * 10; v.co.y *= 1.0 + 0.08 * max(0.0, 0.1 - v.co.z) * 10   # flaring over the rock
     for f in t.faces: f.material_index = mi
     merge_into(bm, t)
-prop('brain_coral', brain, smooth=60)
-prop('brain_coral_teal', lambda bm: brain(bm, MI['coral_teal']), smooth=60)
+prop('brain_coral', brain, smooth=55)
+prop('brain_coral_teal', lambda bm: brain(bm, MI['coral_teal']), smooth=55)
 def cup_corals(bm, seed=6):
     """Yellow caryophylliae: cup corals in clusters."""
     r = random.Random(seed)

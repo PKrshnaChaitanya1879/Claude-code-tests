@@ -56,6 +56,13 @@ def tube(bm, pts, radii, seg=6, mi=0, cap=True):
         f = bm.faces.new(rings[0][::-1]); f.material_index = mi
         f = bm.faces.new(rings[-1]); f.material_index = mi
 
+def ico(bm, c, r, sub=1, mi=0, scale=(1, 1, 1)):
+    t = bmesh.new()
+    bmesh.ops.create_icosphere(t, subdivisions=sub, radius=r)
+    for v in t.verts: v.co = Vector((v.co.x * scale[0], v.co.y * scale[1], v.co.z * scale[2])) + Vector(c)
+    for f in t.faces: f.material_index = mi
+    merge_into(bm, t)
+
 def sub(fn, M_=Matrix.Identity(4)):
     t = bmesh.new(); fn(t)
     bmesh.ops.transform(t, matrix=M_, verts=t.verts)
@@ -202,7 +209,12 @@ def house(bm, w=7.0, d=6.0, seed=41):
     for k in range(5):     # rubble inside
         x, y = r.uniform(-w / 3, w / 3), r.uniform(-d / 3, d / 3)
         box(bm, x - 0.4, x + 0.4, y - 0.3, y + 0.3, 0, r.uniform(0.3, 0.6), MI['stone_dark'])
-    jitter(bm, 0.04, seed)
+    # 5 Nov 2026: broken, stepped wall-tops (blocks fallen out of the courses), not clean boxes
+    for v in bm.verts:
+        if v.co.z > 1.4:
+            k = noise.noise(Vector((v.co.x * 0.7, v.co.y * 0.7, seed * 0.37)))
+            v.co.z = max(1.2, v.co.z - max(0.0, k + 0.15) * 2.2)
+    jitter(bm, 0.05, seed)
     mantle(bm, seed)
 prop('house_ruin_a', lambda bm: house(bm))
 prop('house_ruin_b', lambda bm: house(bm, 9.0, 5.0, 43))
@@ -418,24 +430,53 @@ prop('cromlech', cromlech)
 
 # ------------------------------------------------------------ the petrified copse (im077) and the log bridge
 def deadtree(bm, seed=1, h=9.0, pine=False):
+    """5 Nov 2026: 'trees petrified by the action of the water': gnarled, leafless, mineral. A flared root plate gripping the
+    rock, a twisting trunk that splits into heavy limbs, each limb forking into broken, thinning branches ending in blunt
+    stubs (no twigs survive), knots and burls along the way. The pines: one tall shaft with whorls of short, drooping,
+    snapped-off branches ('here and there overtopped by gigantic pines')."""
     r = random.Random(seed)
-    pts = [(0, 0, -0.5)]; x = y = 0
-    for i in range(1, 7):
-        x += r.uniform(-0.18, 0.18); y += r.uniform(-0.18, 0.18)
-        pts.append((x, y, h * i / 6))
-    tube(bm, pts, [0.36, 0.3, 0.26, 0.2, 0.14, 0.09, 0.03], 6, MI['wood'])
-    nb = 9 if pine else r.randint(4, 7)
-    for k in range(nb):
-        z = (h * (0.3 + 0.65 * k / nb)) if pine else r.uniform(h * 0.35, h * 0.9)
-        a = r.uniform(0, 6.28) if not pine else k * 2.4
-        L = (r.uniform(1.4, 2.6) * (1.15 - z / h)) if pine else r.uniform(0.8, 2.4) * (1.2 - z / h)
-        p0 = Vector((x * z / h, y * z / h, z))
-        p1 = p0 + Vector((math.cos(a) * L, math.sin(a) * L, (-0.3 if pine else r.uniform(-0.1, 0.7))))
-        tube(bm, [p0, p1], [0.08, 0.02], 4, MI['wood'])
-        if not pine and r.random() < 0.6:     # twigs: "like fine black paper cuttings"
-            p2 = p1 + Vector((math.cos(a + 0.7) * L * 0.4, math.sin(a + 0.7) * L * 0.4, L * 0.3))
-            tube(bm, [p1, p2], [0.02, 0.006], 3, MI['wood'])
-    jitter(bm, 0.02, seed)
+    # the root plate: buttress roots spreading out and down into the floor
+    for k in range(5 if not pine else 4):
+        a = k * 2 * math.pi / (5 if not pine else 4) + r.uniform(-0.3, 0.3)
+        L = r.uniform(0.9, 1.6) * h / 9
+        tube(bm, [(0, 0, 0.6), (math.cos(a) * L * 0.4, math.sin(a) * L * 0.4, 0.15), (math.cos(a) * L, math.sin(a) * L, -0.25)], [0.3, 0.18, 0.05], 5, MI['wood'])
+    # the trunk: a slow twist
+    pts = [Vector((0, 0, -0.4))]; x = y = 0.0
+    n = 8
+    for i in range(1, n + 1):
+        x += r.uniform(-0.22, 0.22) * (0.4 if pine else 1); y += r.uniform(-0.22, 0.22) * (0.4 if pine else 1)
+        pts.append(Vector((x, y, h * i / n * (1.0 if pine else 0.62))))
+    base_r = 0.42 * h / 9
+    tube(bm, pts, [base_r * (1 - 0.75 * i / n) for i in range(n + 1)], 7, MI['wood'])
+    for i in range(2, n, 2):                                 # burls and knots
+        if r.random() < 0.6: ico(bm, pts[i] + Vector((r.uniform(-1, 1), r.uniform(-1, 1), 0)).normalized() * base_r * 0.6, base_r * r.uniform(0.35, 0.55), 1, MI['wood'])
+    def limb(p, d, L, rad, k):
+        q = p + d * L
+        mid = p + d * L * 0.5 + Vector((r.uniform(-1, 1), r.uniform(-1, 1), r.uniform(-0.3, 0.3))) * L * 0.15
+        tube(bm, [p, mid, q], [rad, rad * 0.8, rad * 0.62], 5 if k < 2 else 4, MI['wood'], cap=True)
+        if k >= 3 or rad < 0.025: return
+        for j in range(r.choice((1, 2, 2, 3))):
+            if r.random() < 0.18 * k: continue              # snapped off: a blunt stub
+            a = r.uniform(0, 2 * math.pi)
+            nd = (d + Vector((math.cos(a), math.sin(a), r.uniform(-0.1, 0.5))) * 0.8).normalized()
+            limb(q, nd, L * r.uniform(0.55, 0.75), rad * 0.6, k + 1)
+    if pine:
+        top = pts[-1]
+        for w in range(6):                                   # whorls of short drooping branches
+            z = h * (0.45 + 0.09 * w); c = Vector((x * z / h, y * z / h, z))
+            for k in range(4):
+                if r.random() < 0.35: continue
+                a = k * math.pi / 2 + w * 0.7 + r.uniform(-0.3, 0.3)
+                L = r.uniform(0.9, 2.0) * (1.2 - w * 0.12)
+                limb(c, Vector((math.cos(a), math.sin(a), -0.35)).normalized(), L, 0.09, 2)
+    else:
+        top = pts[-1]
+        for j in range(r.randint(3, 4)):                     # the crown: three or four heavy limbs
+            a = j * 2 * math.pi / 4 + r.uniform(-0.4, 0.4)
+            d = Vector((math.cos(a) * 0.75, math.sin(a) * 0.75, 1.0)).normalized()
+            start = pts[r.randint(n - 3, n)]
+            limb(start, d, h * r.uniform(0.22, 0.32), base_r * 0.45, 0)
+    jitter(bm, 0.015, seed)
 for i in range(4):
     prop('deadtree_%d' % i, lambda bm, i=i: deadtree(bm, i + 3, 7.0 + i * 1.5))
 prop('dead_pine', lambda bm: deadtree(bm, 17, 16.0, True))      # "here and there overtopped by gigantic pines"
